@@ -8,6 +8,7 @@ import { loadRole } from "./runtime/role.ts";
 import { openEvents, Log } from "./runtime/log.ts";
 import { openMemory } from "./runtime/memory.ts";
 import { openHygiene } from "./runtime/hygiene.ts";
+import { openSemantic } from "./runtime/semantic.ts";
 import { ToolRegistry } from "./runtime/tools.ts";
 import { tick } from "./runtime/tick.ts";
 import { linearTools } from "./tools/linear.ts";
@@ -41,6 +42,7 @@ async function main() {
   const events = openEvents(join(stateDir, "events.db"));
   const memory = openMemory(join(stateDir, "memory.db"));
   const hygiene = openHygiene(join(stateDir, "hygiene.db"));
+  const semantic = openSemantic(join(stateDir, "memory", "MEMORY.md"));
   const log = new Log(events, name);
 
   const tools = new ToolRegistry();
@@ -72,6 +74,7 @@ async function main() {
         events,
         memory,
         hygiene,
+        semantic,
         tools,
         llm,
         dryRun: !live,

@@ -18,12 +18,14 @@ import { Log } from "./log.ts";
 import type { ToolRegistry } from "./tools.ts";
 import { readTempo, readBudget, extractTempoGuidance } from "./tempo.ts";
 import { getCached, setCached, minInterval } from "./sensor-cache.ts";
+import type { SemanticMemory } from "./semantic.ts";
 
 export interface TickContext {
   role: Role;
   events: DatabaseSync;
   memory: DatabaseSync;
   hygiene: DatabaseSync;
+  semantic: SemanticMemory;
   tools: ToolRegistry;
   llm: LLMConfig;
   dryRun: boolean;
@@ -125,9 +127,16 @@ export async function tick(ctx: TickContext): Promise<void> {
     .actions()
     .filter((a) => allowedTools.has(a.name) || allowedNamespace(allowedTools, a.name));
 
+  // Augment the cached role prompt with the current semantic memory. This
+  // is the small (<= 2KB) MEMORY.md the coworker maintains for itself.
+  const semanticBody = ctx.semantic.read().trim();
+  const augmentedRole = semanticBody
+    ? { ...ctx.role, systemPrompt: `${ctx.role.systemPrompt}\n\n---\n\n# MEMORY (what you have learned)\n\n${semanticBody}` }
+    : ctx.role;
+
   let decision: any;
   try {
-    decision = await deliberate(ctx.role, perception, availableActions, ctx.llm);
+    decision = await deliberate(augmentedRole, perception, availableActions, ctx.llm);
     ctx.log.event("deliberate", { choice: decision.action, reason: decision.reason });
     if (decision.rawOutput) {
       // Parse fail — persist the full raw output for debugging.

@@ -23,6 +23,7 @@ const DOCS = [
   "RITUALS",
   "RELATIONSHIPS",
   "TOOLS",
+  "WORKSPACE",           // stable, human-authored context about the world the coworker operates in
 ] as const;
 
 export type Role = {
