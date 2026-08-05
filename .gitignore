@@ -3,9 +3,12 @@ node_modules/
 *.db-journal
 *.db-wal
 *.db-shm
-coworkers/*/state/*.db
-coworkers/*/state/journal/
-coworkers/*/state/worktrees/
+# Real coworker instances are per-machine state. Never commit them —
+# they contain personal workspace facts, credentials, and running memory.
+# Sanitised templates live under examples/ instead.
+coworkers/*
+!coworkers/README.md
+!coworkers/.gitkeep
 .env
 .env.local
 *.log

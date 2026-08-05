@@ -33,9 +33,9 @@ webhook, incoming Slack message) — both funnel into the same loop.
 
 Same runtime for both. Only the tools they declare differ.
 
-- **Non-technical** (Alex the triage engineer, Priya the PM, Kai the comms lead) —
+- **Non-technical** (triage engineers, project managers, comms leads) —
   Linear, Slack, Gmail, Google Docs, Obsidian.
-- **Technical** (Sam the PR reviewer, Rin the bug-fixer) — all of the above plus
+- **Technical** (PR reviewers, bug-fixers) — all of the above plus
   `code.delegate` which spawns a coding harness (Pi / Claude Code / Claude Agent SDK)
   inside a managed git worktree, with automatic cleanup.
 
@@ -51,25 +51,37 @@ Same runtime for both. Only the tools they declare differ.
 
 ## Status
 
-Early scaffolding. Runtime skeleton + first coworker (Alex, Linear triage, dry-run).
+Early scaffolding. Runtime skeleton, a sanitised `examples/generic-triage`
+coworker, and a Linear tool (dry-run). Real coworker instances live under
+`coworkers/` (gitignored — per-machine state).
 
-## Run
+## Create and run a coworker
 
 ```
-node --experimental-strip-types --no-warnings src/index.ts alex-triage
+cp -r examples/generic-triage coworkers/my-triager
+$EDITOR coworkers/my-triager/role/*.md         # fill in WORKSPACE.md at minimum
+export OLLAMA_API_KEY=... LINEAR_API_KEY=...   # or use .env (gitignored)
+node --experimental-strip-types --no-warnings src/index.ts my-triager
 ```
+
+Add `--live` to allow write actions to actually execute; default is dry-run.
 
 ## Layout
 
 ```
 src/
-  runtime/     tick, sensors, deliberate, actions, memory, boundaries, hygiene, log
-  tools/       linear, slack, gdocs, ...
-  delegates/   coder (future: pi / claude code)
-coworkers/
-  alex-triage/
-    role/      ROLE, RESPONSIBILITIES, AUTHORITY, BOUNDARIES, RITUALS, RELATIONSHIPS, TOOLS
-    state/     sqlite: events, memory, promises, resources
+  runtime/     tick, sensors, deliberate, actions, memory, boundaries,
+               hygiene, log, tempo, semantic, injection
+  tools/       linear, slack, gdocs, ... (adapters)
+  delegates/   coder (future: pi / claude code / claude agent sdk)
+examples/      sanitised coworker templates (committed)
+  generic-triage/
+    role/      ROLE, RESPONSIBILITIES, AUTHORITY, BOUNDARIES, RITUALS,
+               RELATIONSHIPS, TOOLS, WORKSPACE
+coworkers/     real instances — GITIGNORED
+  <name>/
+    role/      per-instance role docs (workspace facts, style prefs)
+    state/     sqlite: events, memory, promises, resources + memory/MEMORY.md
 templates/     systemd unit template
 bin/           new-coworker generator
 ```

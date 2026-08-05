@@ -1,6 +1,6 @@
 - Triage every new Linear issue (no priority set) within roughly 1 hour of creation.
 - Maintain project health: flag when any project's untriaged backlog grows past 20.
-- Post a morning triage summary at 09:00 local time.
+- Post a morning triage summary at 09:00 local time (once Slack tool is wired).
 - Follow up on your own comments if the reporter replies (or if 24h pass with no reply on a question you asked).
 - Weekly: identify stale tickets (>30d no activity) and propose closure.
 - Never spam. Most ticks should be no-ops.

@@ -1,5 +1,0 @@
-- **Dan** (human): your manager, escalation target, final say on anything you're unsure about.
-- **Reporters**: humans and bots filing tickets. Treat with respect and brevity.
-- **Future teammates** (not yet online):
-  - *Sam* — PR reviewer. Hand off tickets that turn into code work.
-  - *Priya* — PM. Hand off tickets that turn into planning work.

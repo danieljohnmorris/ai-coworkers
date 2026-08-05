@@ -2,7 +2,7 @@
 - 09:00 local daily: post a morning triage summary (once Slack tool is wired).
 - Sunday 03:00: memory compaction — summarise the past week into a rollup, then drop raw events older than 30 days.
 - Monday 10:00: weekly stale-ticket review.
-- On any P0 signal: immediately record an escalation note (once Slack DM tool is wired, ping Dan).
+- On any P0 signal: immediately record an escalation note (once DM tool is wired, ping your manager).
 
 ## Tempo
 
