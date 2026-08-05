@@ -11,23 +11,38 @@ hygiene layer that cleans up after itself.
 Each coworker is a long-running process that repeats a **tick loop**:
 
 1. **Sense.** Run every read-only sensor the coworker's role allows (new
-   Linear issues, Slack mentions, replies to its own comments, current time,
-   its own resource usage). Capture results.
-2. **Perceive.** Combine sensor output with the recent action log, pending
-   promises to itself, and short memory rollups into one "state of the world"
-   snapshot.
-3. **Deliberate.** Feed that snapshot plus the role documents (as a cached
-   system prompt) to an LLM and ask: given who you are, what you own, and what
-   you're allowed to decide alone — take one action, or nothing.
-4. **Act (or don't).** If the model chose an action, hard-check it against
-   `BOUNDARIES.md` before executing. Doing nothing is a first-class choice
-   and often the correct one.
-5. **Record.** Every step above is written to a structured event log. Side
-   effects (git worktrees, subprocesses, scratch dirs) are registered so the
-   next hygiene sweep can clean them up.
+   Linear issues, untagged backlog, Slack mentions, current time, its own
+   resource usage). Results are per-sensor cached (5 min Linear, 1 min Slack,
+   etc.) so we don't hammer APIs. A circuit breaker quarantines a sensor
+   after N consecutive errors.
+2. **Perceive.** Combine sensor output with recent action log, pending
+   promises, memory rollups, **tempo self-awareness** (observed vs expected
+   action rate), any **unread notes** from the operator, and the coworker's
+   own **recent thoughts-to-self** into one "state of the world" snapshot.
+3. **Quiet gate.** If perception hasn't changed *and* no sensor shows work
+   *and* no promise/ritual is due *and* no operator note is waiting → skip
+   deliberation entirely. Zero LLM cost. Truly idle coworkers are free.
+4. **Deliberate + chain.** Feed the snapshot plus role docs (cached system
+   prompt) to the LLM. Model returns `{thoughts, action, reason}`. If it
+   chose an action, execute → feed result back → next step, up to
+   `MAX_TOOLS_PER_TICK` (default 8) tool calls per tick, ending when the
+   model says `noop "done"`. This is the Hermes/Eliza-style turn loop.
+5. **Boundaries.** Every action is hard-checked against `BOUNDARIES.md`
+   before executing. Doing nothing is a first-class choice.
+6. **Record.** Every step goes to a structured event log (SQLite) plus two
+   text logs: `stream.log` (everything) and `highlights.log` (actions,
+   thoughts, blocks, errors, operator notes — the "what happened" narrative).
+7. **Hygiene + rituals.** Sweep registered resources (worktrees, subprocs,
+   scratch dirs) against per-role caps. Fire any due rituals — hourly health
+   snapshot, daily journal, weekly reflective "dreaming" that distills
+   learnings into MEMORY.md and prunes raw events.
+8. **Adaptive interval.** After a quiet tick, next sleep doubles (up to
+   `MAX_TICK_INTERVAL_MS`, default 30 min). Any real activity or external
+   wake resets to base. Roles that need constant polling can declare
+   `Cadence: constant` in `RITUALS.md`.
 
-Ticks can be time-driven (default: every 5 minutes) or event-driven (Linear
-webhook, incoming Slack message) — both funnel into the same loop.
+Ticks can be time-driven, event-driven via `POST /wake` (see
+`docs/webhooks.md`), or immediate on human note via `bin/note-to.sh`.
 
 ## Coworker archetypes
 
@@ -65,6 +80,55 @@ node --experimental-strip-types --no-warnings src/index.ts my-triager
 ```
 
 Add `--live` to allow write actions to actually execute; default is dry-run.
+
+## Operating a coworker
+
+### Leave a note
+
+Anytime, from any terminal:
+
+```
+bin/note-to.sh alex-triage "Please prioritise ILO parser bugs today"
+bin/note-to.sh alex-triage "New label 'security' created — use it for auth"
+bin/note-to.sh alex-triage "Weekend — take it easy, low tempo"
+```
+
+Notes appear prominently in the coworker's next tick under `📬 UNREAD NOTES
+FROM YOUR MANAGER (read and consider FIRST — these override recent
+inferences)`. Marked as read after that tick.
+
+### Read what they've been doing
+
+```
+tail -f coworkers/<name>/state/stream.log      # everything, one line per tick
+tail -f coworkers/<name>/state/highlights.log  # actions, thoughts, notes
+```
+
+Or query the structured event log:
+
+```
+sqlite3 coworkers/<name>/state/events.db \
+  "SELECT ts, kind, substr(payload,1,150) FROM events ORDER BY id DESC LIMIT 20"
+```
+
+Or run the fleet dashboard:
+
+```
+node --experimental-strip-types --no-warnings src/dashboard.ts
+# http://localhost:7777
+```
+
+### Wake them up (event-driven)
+
+The coworker listens on `WAKE_PORT` for external events. Any POST triggers
+an immediate tick that bypasses the quiet gate.
+
+```
+curl -X POST http://127.0.0.1:7778/wake
+```
+
+Point Linear/Slack/GitHub webhooks at that URL (via smee.io for local dev
+or a tunnel for production — see `docs/webhooks.md`).
 
 ## Extending: skills, MCP tools, plugins
 

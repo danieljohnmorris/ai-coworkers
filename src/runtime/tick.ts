@@ -17,7 +17,7 @@ import { pendingPromises, recentRollups } from "./memory.ts";
 import { Log } from "./log.ts";
 import type { ToolRegistry } from "./tools.ts";
 import { readTempo, readBudget, extractTempoGuidance } from "./tempo.ts";
-import { getCached, setCached, minInterval } from "./sensor-cache.ts";
+import { getCached, setCached, minInterval, invalidatePrefix } from "./sensor-cache.ts";
 import type { SemanticMemory } from "./semantic.ts";
 import { runDue, type RitualDef } from "./rituals.ts";
 import { dreamOnce } from "./reflect.ts";
@@ -281,12 +281,27 @@ export async function tick(ctx: TickContext): Promise<TickOutcome> {
       dryRun: ctx.dryRun,
       step,
     });
+    // Repeat-action guard: refuse to call the identical (tool, input) pair
+    // more than once in a single tick. Prevents the model from thrashing on
+    // a specific ticket and never moving on.
+    const sig = `${tool.name}:${JSON.stringify(decision.input)}`;
+    if (priorSteps.some((s) => `${s.tool}:${JSON.stringify(s.input)}` === sig)) {
+      ctx.log.event("action.error", { tool: tool.name, error: "repeat guard", input: decision.input });
+      ctx.log.highlight(`✗ repeat guard: ${tool.name} with same input already tried this tick — move on`);
+      priorSteps.push({ tool: tool.name, input: decision.input, outcome: { error: "duplicate call this tick — pick a different action or different input" } });
+      continue;
+    }
+
     let outcome: unknown;
     try {
       outcome = await tool.handler(decision.input, decisionCtx);
       ctx.log.highlight(`→ ${tool.name}${ctx.dryRun ? " (dry-run)" : ""}: ${JSON.stringify(decision.input).slice(0, 120)}`);
       ctx.log.event("note", { tool: tool.name, outcome, step });
       ranAnyAction = true;
+      // Any successful write to an external system means cached reads of that
+      // system are stale. Invalidate so the next perception reflects reality.
+      const prefix = tool.name.split(".")[0] + ".";
+      if (!ctx.dryRun) invalidatePrefix(prefix);
     } catch (err) {
       outcome = { error: String(err) };
       ctx.log.event("action.error", { tool: tool.name, error: String(err), step });

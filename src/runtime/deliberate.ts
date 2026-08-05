@@ -102,8 +102,10 @@ export async function deliberate(
     `A well-paced coworker is more valuable than a busy one.`,
     ``,
     priorSteps.length
-      ? `You are ALREADY mid-task within this tick. You may chain another tool call to continue, or noop with reason "done" to end the tick. Choose noop when the current task is complete or would be better resumed later.`
-      : `You may start a chain — if you take an action, you can call further tools this same tick based on the results before ending. But do so only when the steps genuinely belong together (e.g. detail → team_labels → set_labels for one issue). Otherwise finish with one action and let the next tick see fresh perception.`,
+      ? `You are ALREADY mid-task within this tick. You may chain another tool call to continue, or noop with reason "done" to end the tick. NEVER call the same (tool, input) pair twice in one tick — if it succeeded, move on; if it failed, try a genuinely different approach or bail.`
+      : `You may start a chain — if you take an action, you can call further tools this same tick based on results. Do so only when the steps genuinely belong together (e.g. detail → team_labels → set_labels for one issue).`,
+    ``,
+    `**Do not thrash on the same ticket.** Your recent thoughts + highlights show what you have already handled. If you labelled an issue in the last few ticks, DO NOT re-open it — pick a different untagged issue from the sensor. A single sanity re-check is fine, and it IS worth re-reading an issue you previously handled IF its updatedAt is newer than when you last touched it (the reporter may have edited or replied). Otherwise, move on. If nothing new needs doing on the backlog, noop with reason "backlog quiet".`,
     ``,
     `Also, keep a running notebook to yourself. Include a "thoughts" field —`,
     `short, private, working-notes-to-future-self. This is NOT for the reason`,

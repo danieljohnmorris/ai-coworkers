@@ -33,3 +33,14 @@ export function getCached(sensorName: string, now: number): unknown | undefined 
 export function setCached(sensorName: string, value: unknown, now: number): void {
   store.set(sensorName, { at: now, value });
 }
+
+// Invalidate all cached results whose sensor name starts with the given
+// prefix. Used after a write action so the next tick sees fresh state.
+// e.g. invalidatePrefix("linear.") after a linear.comment / set_labels.
+export function invalidatePrefix(prefix: string): number {
+  let n = 0;
+  for (const k of [...store.keys()]) {
+    if (k.startsWith(prefix)) { store.delete(k); n++; }
+  }
+  return n;
+}

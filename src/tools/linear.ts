@@ -61,27 +61,53 @@ export const linearUntaggedIssues: ToolDef = {
     const key = ctx.env.LINEAR_API_KEY;
     if (!key) return { issues: [], warning: "LINEAR_API_KEY not set" };
     const ignore = new Set((ctx.env.LINEAR_IGNORE_TEAMS ?? "").split(",").map((s) => s.trim()).filter(Boolean));
-    const q = `
-      query {
-        issues(first: 30, orderBy: updatedAt) {
-          nodes {
-            id identifier title priority updatedAt
-            team { key name }
-            state { name type }
-            labels { nodes { id name } }
+    // Fetch across multiple pages so older untagged backlog isn't missed.
+    // Filter server-side by state (open) and client-side by "no labels".
+    const collected: any[] = [];
+    let after: string | null = null;
+    for (let page = 0; page < 5; page++) {                     // up to 5 * 100 = 500 issues
+      const q = `
+        query ($after: String) {
+          issues(
+            first: 100, after: $after,
+            filter: { state: { type: { in: ["backlog","unstarted","started"] } } },
+            orderBy: createdAt
+          ) {
+            nodes {
+              id identifier title priority updatedAt
+              team { key name }
+              state { name type }
+              labels { nodes { id name } }
+            }
+            pageInfo { hasNextPage endCursor }
           }
-        }
-      }`;
-    const data = await gql<{ issues: { nodes: any[] } }>(q, {}, key);
-    const untagged = data.issues.nodes.filter((i) =>
-      i.state.type !== "completed"
-      && i.state.type !== "canceled"
-      && (i.labels?.nodes?.length ?? 0) === 0
-      && !ignore.has(i.team.key)
+        }`;
+      const data = await gql<{ issues: { nodes: any[]; pageInfo: { hasNextPage: boolean; endCursor: string | null } } }>(
+        q, { after }, key
+      );
+      collected.push(...data.issues.nodes);
+      if (!data.issues.pageInfo.hasNextPage) break;
+      after = data.issues.pageInfo.endCursor;
+    }
+    const untagged = collected.filter((i) =>
+      (i.labels?.nodes?.length ?? 0) === 0 && !ignore.has(i.team.key)
     );
-    return { issues: untagged.slice(0, 10) };
+    return {
+      totalUntagged: untagged.length,
+      issues: untagged.slice(0, 15),      // send 15 to the model per tick
+      byTeam: countByKey(untagged, (i) => i.team.key),
+    };
   },
 };
+
+function countByKey<T>(arr: T[], key: (x: T) => string): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const item of arr) {
+    const k = key(item);
+    out[k] = (out[k] ?? 0) + 1;
+  }
+  return out;
+}
 
 export const linearComment: ToolDef = {
   name: "linear.comment",
@@ -145,6 +171,42 @@ export const linearIssueDetail: ToolDef = {
       }`;
     const data = await gql<{ issue: unknown }>(q, input, key);
     return { issue: data.issue };
+  },
+};
+
+export const linearSearchIssues: ToolDef = {
+  name: "linear.search",
+  kind: "action",
+  description: "Search Linear issues by keyword and/or team. Use when you need to find issues beyond what sensors surface — e.g. re-check an older ticket, cross-reference by keyword, or scan a specific team.",
+  inputSchema: {
+    type: "object",
+    properties: {
+      query: { type: "string", description: "Free-text search (title + description)" },
+      teamKey: { type: "string", description: "Optional team filter e.g. ILO" },
+      limit: { type: "integer", minimum: 1, maximum: 50, default: 20 },
+    },
+  },
+  handler: async (input: { query?: string; teamKey?: string; limit?: number }, ctx: ToolCtx) => {
+    const key = ctx.env.LINEAR_API_KEY;
+    if (!key) return { warning: "LINEAR_API_KEY not set" };
+    const filter: Record<string, unknown> = {};
+    if (input.query) filter.searchableContent = { contains: input.query };
+    if (input.teamKey) filter.team = { key: { eq: input.teamKey } };
+    const q = `
+      query ($filter: IssueFilter, $limit: Int!) {
+        issues(filter: $filter, first: $limit, orderBy: updatedAt) {
+          nodes {
+            id identifier title priority updatedAt
+            team { key name }
+            state { name type }
+            labels { nodes { name } }
+          }
+        }
+      }`;
+    const data = await gql<{ issues: { nodes: unknown[] } }>(
+      q, { filter, limit: input.limit ?? 20 }, key
+    );
+    return { count: data.issues.nodes.length, issues: data.issues.nodes };
   },
 };
 
@@ -242,4 +304,5 @@ export const linearTools: ToolDef[] = [
   linearIssueDetail,
   linearTeamLabels,
   linearSetLabels,
+  linearSearchIssues,
 ];
