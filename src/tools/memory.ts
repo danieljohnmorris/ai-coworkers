@@ -41,4 +41,55 @@ export const memorySearch: ToolDef = {
   },
 };
 
-export const memoryTools: ToolDef[] = [memorySearch];
+// Write to a per-project entity note. Use to build up your own dictionary of
+// conventions (labels, priority patterns, reporters) that will auto-load into
+// perception on future ticks whenever that project is mentioned. Injection-
+// scanned + size-capped by the entity store.
+export const memoryNoteProject: ToolDef = {
+  name: "memory.note_project",
+  kind: "action",
+  description:
+    "Save or replace a short markdown note about a project. Auto-loaded into perception when the project's key next appears. Use to remember label conventions, priority patterns, or reporter habits per team.",
+  inputSchema: {
+    type: "object",
+    required: ["projectKey", "body"],
+    properties: {
+      projectKey: { type: "string", description: "e.g. ILO, AIC — the team/project key" },
+      body: { type: "string", description: "Concise markdown, ideally <2 KB" },
+    },
+  },
+  handler: async (input: { projectKey: string; body: string }, ctx: ToolCtx) => {
+    if (ctx.dryRun) return { dryRun: true, wouldNote: { project: input.projectKey, chars: input.body.length } };
+    // Reuse the entity store keyed to this coworker.
+    const { openEntities } = await import("../runtime/entities.ts");
+    const { join } = await import("node:path");
+    const repoRoot = new URL("../..", import.meta.url).pathname;
+    const store = openEntities(join(repoRoot, "coworkers", ctx.coworker, "state", "entities"));
+    return store.upsertProject(input.projectKey, input.body, "coworker-note");
+  },
+};
+
+export const memoryNotePerson: ToolDef = {
+  name: "memory.note_person",
+  kind: "action",
+  description:
+    "Save or replace a short markdown note about a person (reporter, teammate). Auto-loaded when their handle next appears.",
+  inputSchema: {
+    type: "object",
+    required: ["handle", "body"],
+    properties: {
+      handle: { type: "string", description: "handle used in Linear/Slack/etc." },
+      body: { type: "string" },
+    },
+  },
+  handler: async (input: { handle: string; body: string }, ctx: ToolCtx) => {
+    if (ctx.dryRun) return { dryRun: true, wouldNote: { person: input.handle, chars: input.body.length } };
+    const { openEntities } = await import("../runtime/entities.ts");
+    const { join } = await import("node:path");
+    const repoRoot = new URL("../..", import.meta.url).pathname;
+    const store = openEntities(join(repoRoot, "coworkers", ctx.coworker, "state", "entities"));
+    return store.upsertPerson(input.handle, input.body, "coworker-note");
+  },
+};
+
+export const memoryTools: ToolDef[] = [memorySearch, memoryNoteProject, memoryNotePerson];
