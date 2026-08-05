@@ -22,6 +22,7 @@ import type { SemanticMemory } from "./semantic.ts";
 import { runDue, type RitualDef } from "./rituals.ts";
 import { dreamOnce } from "./reflect.ts";
 import { writeJournal } from "./journal.ts";
+import { matchIntents } from "./intents.ts";
 import { tailHighlights } from "./log.ts";
 import { join } from "node:path";
 import type { EntityStore } from "./entities.ts";
@@ -326,8 +327,13 @@ export async function tick(ctx: TickContext): Promise<TickOutcome> {
     ctx.log.highlight(`cap: ${maxToolsPerTick} tool calls reached this tick`);
   }
 
-  // 5. record + hygiene
+  // 5. record + hygiene + intent matcher
   sweep(ctx.hygiene, ctx.role.limits, ctx.log);
+  const firedPromises = matchIntents(ctx.memory, ctx.events);
+  for (const f of firedPromises) {
+    ctx.log.event("promise.fire", { id: f.id, trigger: f.trigger, action: f.action, matched: f.matchedEvent });
+    ctx.log.highlight(`⏰ promise fired: ${f.action.slice(0, 100)}`);
+  }
 
   // 6. rituals — cheap check; only fires when due, at most one per tick.
   const rituals: RitualDef[] = [

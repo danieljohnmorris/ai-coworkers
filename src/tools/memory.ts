@@ -92,4 +92,55 @@ export const memoryNotePerson: ToolDef = {
   },
 };
 
-export const memoryTools: ToolDef[] = [memorySearch, memoryNoteProject, memoryNotePerson];
+// AIC-41 — recall = search + summarise. Coworker asks "have I dealt with
+// this before?" and gets a paragraph, not a wall of hits.
+export const memoryRecall: ToolDef = {
+  name: "memory.recall",
+  kind: "action",
+  description:
+    "Recall what you know about a topic. Searches your event history by keyword, then returns a short paragraph summary. Use for 'have I handled this before?' or 'what did I decide about X?' — cheaper for you to read than raw hits.",
+  inputSchema: {
+    type: "object",
+    required: ["query"],
+    properties: {
+      query: { type: "string" },
+      purpose: { type: "string", description: "Optional: what you plan to do with the recall — helps the summariser focus." },
+    },
+  },
+  handler: async (input: { query: string; purpose?: string }, ctx: ToolCtx) => {
+    const { openEvents } = await import("../runtime/log.ts");
+    const { initEpisodic, search } = await import("../runtime/episodic.ts");
+    const { chat } = await import("../runtime/llm.ts");
+    const { join } = await import("node:path");
+    const repoRoot = new URL("../..", import.meta.url).pathname;
+    const dbo = openEvents(join(repoRoot, "coworkers", ctx.coworker, "state", "events.db"));
+    initEpisodic(dbo);
+    const hits = search(dbo, input.query, 15);
+    if (!hits.length) return { summary: "no prior events matched", hitCount: 0 };
+    const bullet = hits.map((h) => `- [${h.ts.slice(0, 16)}] ${h.kind}: ${h.snippet}`).join("\n");
+    const cfg = {
+      baseUrl: ctx.env.OLLAMA_HOST ?? "https://ollama.com",
+      apiKey: ctx.env.OLLAMA_API_KEY,
+      model: ctx.env.COWORKER_MODEL ?? "gemma4:cloud",
+    };
+    try {
+      const res = await chat(cfg, [
+        { role: "system", content: "You summarise a coworker's own past events into one short paragraph. Be terse. No preamble." },
+        { role: "user", content:
+          `Query: ${input.query}\n` +
+          (input.purpose ? `Purpose: ${input.purpose}\n` : "") +
+          `\nRecent matching events:\n${bullet}\n\n` +
+          `Summarise in 3–5 sentences what you (the coworker) know about this from your own past.`,
+        },
+      ], { temperature: 0.2, maxTokens: 300 });
+      return { summary: res.content.trim(), hitCount: hits.length };
+    } catch (err) {
+      return {
+        summary: `search returned ${hits.length} hits but summariser failed: ${err}. Raw hits: ${bullet}`,
+        hitCount: hits.length,
+      };
+    }
+  },
+};
+
+export const memoryTools: ToolDef[] = [memorySearch, memoryRecall, memoryNoteProject, memoryNotePerson];

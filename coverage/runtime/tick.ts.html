@@ -23,16 +23,16 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">73.68% </span>
+                <span class="strong">73.88% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>126/171</span>
+                <span class='fraction'>133/180</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">55.42% </span>
+                <span class="strong">58.06% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>46/83</span>
+                <span class='fraction'>54/93</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">76.62% </span>
+                <span class="strong">76.68% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>118/154</span>
+                <span class='fraction'>125/163</span>
             </div>
         
             
@@ -452,7 +452,27 @@
 <a name='L387'></a><a href='#L387'>387</a>
 <a name='L388'></a><a href='#L388'>388</a>
 <a name='L389'></a><a href='#L389'>389</a>
-<a name='L390'></a><a href='#L390'>390</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L390'></a><a href='#L390'>390</a>
+<a name='L391'></a><a href='#L391'>391</a>
+<a name='L392'></a><a href='#L392'>392</a>
+<a name='L393'></a><a href='#L393'>393</a>
+<a name='L394'></a><a href='#L394'>394</a>
+<a name='L395'></a><a href='#L395'>395</a>
+<a name='L396'></a><a href='#L396'>396</a>
+<a name='L397'></a><a href='#L397'>397</a>
+<a name='L398'></a><a href='#L398'>398</a>
+<a name='L399'></a><a href='#L399'>399</a>
+<a name='L400'></a><a href='#L400'>400</a>
+<a name='L401'></a><a href='#L401'>401</a>
+<a name='L402'></a><a href='#L402'>402</a>
+<a name='L403'></a><a href='#L403'>403</a>
+<a name='L404'></a><a href='#L404'>404</a>
+<a name='L405'></a><a href='#L405'>405</a>
+<a name='L406'></a><a href='#L406'>406</a>
+<a name='L407'></a><a href='#L407'>407</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -512,6 +532,12 @@
 <span class="cline-any cline-yes">7x</span>
 <span class="cline-any cline-yes">7x</span>
 <span class="cline-any cline-yes">7x</span>
+<span class="cline-any cline-yes">7x</span>
+<span class="cline-any cline-yes">7x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
@@ -688,11 +714,14 @@
 <span class="cline-any cline-yes">7x</span>
 <span class="cline-any cline-yes">7x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">7x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">7x</span>
 <span class="cline-any cline-yes">7x</span>
 <span class="cline-any cline-yes">7x</span>
+<span class="cline-any cline-yes">7x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -771,6 +800,11 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">6x</span>
@@ -865,11 +899,12 @@ import type { SemanticMemory } from "./semantic.ts";
 import { runDue, type RitualDef } from "./rituals.ts";
 import { dreamOnce } from "./reflect.ts";
 import { writeJournal } from "./journal.ts";
+import { matchIntents } from "./intents.ts";
 import { tailHighlights } from "./log.ts";
 import { join } from "node:path";
 import type { EntityStore } from "./entities.ts";
 import type { Inbox } from "./inbox.ts";
-import { checkBudget, extractCallCap } from "./budget.ts";
+import { checkBudget, extractCallCap, extractWindowCap, extractWindowMinutes } from "./budget.ts";
 import { shouldSkip as circuitShouldSkip, recordError as circuitError, recordSuccess as circuitOk } from "./circuit.ts";
 import { compactRecentActions, truncateSensorPayloads } from "./working.ts";
 &nbsp;
@@ -889,7 +924,9 @@ export interface TickContext {
 }
 &nbsp;
 export interface TickOutcome {
-  quiet: boolean;   // perception unchanged, no promise/ritual due, no LLM call made
+  quiet: boolean;         // true if we short-circuited before deliberation (zero LLM cost)
+  didNoAction?: boolean;  // true if we deliberated but chose noop (LLM ran, but no side effect)
+  pace?: "faster" | "hold" | "slower";
 }
 &nbsp;
 export async function tick(ctx: TickContext): Promise&lt;TickOutcome&gt; {
@@ -899,12 +936,18 @@ export async function tick(ctx: TickContext): Promise&lt;TickOutcome&gt; {
 &nbsp;
   // 0. budget gate — cheap check, cut expensive LLM call if we're over cap
   const cap = extractCallCap(ctx.role.docs.BOUNDARIES);
-  const budgetGate = checkBudget(ctx.events, cap);
-  if (budgetGate.overBudget) {
-    ctx.log.event("note", { message: "over_budget", ...budgetGate });
-    ctx.log.highlight(`OVER BUDGET (${budgetGate.callsToday}/${budgetGate.cap}) — sleeping ${budgetGate.minutesUntilReset}m until reset`);
+  const windowCap = extractWindowCap(ctx.role.docs.BOUNDARIES);
+  const windowMinutes = extractWindowMinutes(ctx.role.docs.BOUNDARIES);
+  const budgetGate = checkBudget(ctx.events, cap, windowCap, windowMinutes);
+  if (budgetGate.overDailyBudget || budgetGate.overWindowBudget) {
+    const which = budgetGate.overWindowBudget ? "WINDOW" : <span class="branch-1 cbranch-no" title="branch not covered" >"DAILY";</span>
+    const detail = budgetGate.overWindowBudget
+      ? `${budgetGate.callsInWindow}/${budgetGate.windowCap} in ${budgetGate.windowMinutes}min window`
+      : <span class="branch-1 cbranch-no" title="branch not covered" >`${budgetGate.callsToday}/${budgetGate.dailyCap} today`;</span>
+    ctx.log.event("note", { message: "over_budget", which, ...budgetGate });
+    ctx.log.highlight(`OVER ${which} BUDGET (${detail}) — sleeping`);
     await finish(ctx, tStart);
-    return { quiet: true };
+    return { quiet: true, pace: "slower" };
   }
 &nbsp;
   // 1. sense (with per-sensor min-interval caching + circuit breaker)
@@ -1076,15 +1119,18 @@ export async function tick(ctx: TickContext): Promise&lt;TickOutcome&gt; {
   const maxToolsPerTick = Number(process.env.MAX_TOOLS_PER_TICK ?? 8);
   const priorSteps: { tool: string; input: unknown; outcome: unknown }[] = [];
   let ranAnyAction = false;
+  let lastPace: "faster" | "hold" | "slower" | undefined;
 &nbsp;
   for (let step = 0; step &lt; maxToolsPerTick; step++) {
     let decision: any;
     try {
       decision = await deliberate(augmentedRole, perception, availableActions, ctx.llm, priorSteps);
+      lastPace = decision.pace ?? lastPace;
       ctx.log.event("deliberate", {
         choice: decision.action,
         reason: decision.reason,
         thoughts: decision.thoughts ?? null,
+        pace: decision.pace ?? null,
         step,
       });
       <span class="missing-if-branch" title="if path not taken" >I</span>if (decision.thoughts) {
@@ -1158,8 +1204,13 @@ export async function tick(ctx: TickContext): Promise&lt;TickOutcome&gt; {
 <span class="cstat-no" title="statement not covered" >    ctx.log.highlight(`cap: ${maxToolsPerTick} tool calls reached this tick`);</span>
   }
 &nbsp;
-  // 5. record + hygiene
+  // 5. record + hygiene + intent matcher
   sweep(ctx.hygiene, ctx.role.limits, ctx.log);
+  const firedPromises = matchIntents(ctx.memory, ctx.events);
+  for (const f of firedPromises) {
+<span class="cstat-no" title="statement not covered" >    ctx.log.event("promise.fire", { id: f.id, trigger: f.trigger, action: f.action, matched: f.matchedEvent });</span>
+<span class="cstat-no" title="statement not covered" >    ctx.log.highlight(`⏰ promise fired: ${f.action.slice(0, 100)}`);</span>
+  }
 &nbsp;
   // 6. rituals — cheap check; only fires when due, at most one per tick.
   const rituals: RitualDef[] = [
@@ -1205,7 +1256,7 @@ export async function tick(ctx: TickContext): Promise&lt;TickOutcome&gt; {
 &nbsp;
   await finish(ctx, tStart);
   // Tick was NOT quiet if we got this far — we ran deliberation.
-  return { quiet: false };
+  return { quiet: false, didNoAction: !ranAnyAction, pace: lastPace };
 }
 &nbsp;
 async function finish(ctx: TickContext, tStart: number): Promise&lt;void&gt; {
@@ -1237,7 +1288,7 @@ function sensorSuggestsWork(result: unknown): boolean {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-08-05T23:08:07.276Z
+                at 2026-08-05T23:34:48.345Z
             </div>
         <script src="../prettify.js"></script>
         <script>

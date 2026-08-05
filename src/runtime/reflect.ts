@@ -12,6 +12,8 @@ import type { SemanticMemory } from "./semantic.ts";
 import type { LLMConfig } from "./llm.ts";
 import { chat } from "./llm.ts";
 import type { Log } from "./log.ts";
+import { appendFileSync, mkdirSync } from "node:fs";
+import { dirname } from "node:path";
 
 export interface DreamOptions {
   retentionDays?: number;         // raw events older than this get pruned
@@ -97,12 +99,52 @@ export async function dreamOnce(args: {
       .run(since, now, rollup);
   }
 
-  // 4. Promote learnings to semantic MEMORY.md (cap + injection scan enforced).
+  // 4. Promote learnings to semantic MEMORY.md — with AIC-38 promotion gate,
+  // AIC-39 version snapshot + 25% loss guard, AIC-40 Dream Diary append.
   let promoted = false;
+  const priorBody = semantic.read();
   if (learnings) {
-    const r = semantic.propose(learnings, `dream-${new Date().toISOString().slice(0, 10)}`);
-    promoted = r.accepted;
-    log.event("memory.compact", { step: "propose", accepted: r.accepted, reason: r.reason });
+    const dreamId = `dream-${new Date().toISOString().slice(0, 10)}`;
+
+    // AIC-38 gate — reject learnings that contain no reference to any entity
+    // or ticket identifier seen in the events window. Cheap sanity check
+    // against LLM-hallucinated "learnings".
+    const seenIdentifiers = new Set(
+      rows.flatMap((r) => (r.payload.match(/\b[A-Z]{2,4}-\d+\b/g) ?? []))
+    );
+    const learningsMentionKnownIds = seenIdentifiers.size === 0
+      || [...seenIdentifiers].some((id) => learnings.includes(id))
+      || /\b(pattern|noticed|tends? to|usually|always|never)\b/i.test(learnings);
+    if (!learningsMentionKnownIds) {
+      log.event("memory.compact", { step: "gate.reject", reason: "no reference to recent events / no pattern language" });
+    } else {
+      // AIC-39 — 25% loss guard: if the new body drops >25% chars vs prior,
+      // require operator confirmation via a persisted question, do not
+      // overwrite in place.
+      const priorLen = priorBody.length;
+      const lossPct = priorLen === 0 ? 0 : Math.max(0, (priorLen - learnings.length) / priorLen);
+      if (lossPct > 0.25) {
+        log.event("memory.compact", { step: "loss_guard", reason: `would remove ${Math.round(lossPct * 100)}% of prior memory — kept prior, logged candidate` });
+        appendDreamDiary(args, dreamId, {
+          added: [], dropped: [],
+          note: `LOSS-GUARD blocked promotion (${Math.round(lossPct * 100)}% shrink). Candidate saved to memory_versions; run bin/memory-rollback.sh to review.`,
+        });
+        saveVersion(memory, dreamId + "-candidate", learnings);
+      } else {
+        // Snapshot the current body before overwriting.
+        saveVersion(memory, dreamId + "-before", priorBody);
+        const r = semantic.propose(learnings, dreamId);
+        promoted = r.accepted;
+        log.event("memory.compact", { step: "propose", accepted: r.accepted, reason: r.reason });
+        if (promoted) {
+          appendDreamDiary(args, dreamId, {
+            added: diffBullets(priorBody, learnings),
+            dropped: diffBullets(learnings, priorBody),
+            note: `promoted (${learnings.length} chars; rollup ${rollup.length} chars)`,
+          });
+        }
+      }
+    }
   }
 
   // 5. Prune raw events older than retention.
@@ -114,6 +156,49 @@ export async function dreamOnce(args: {
 
   log.event("memory.compact", { step: "done", promoted, rollupChars: rollup.length, prunedRows });
   return { promoted, rollupChars: rollup.length, prunedRows };
+}
+
+// --- AIC-39 memory_versions table (rollback support) ---
+function saveVersion(memory: DatabaseSync, tag: string, body: string): void {
+  memory.exec(`
+    CREATE TABLE IF NOT EXISTS memory_versions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      ts TEXT NOT NULL, tag TEXT NOT NULL, body TEXT NOT NULL
+    );
+  `);
+  memory.prepare(`INSERT INTO memory_versions (ts, tag, body) VALUES (?, ?, ?)`)
+    .run(new Date().toISOString(), tag, body);
+}
+
+// --- AIC-40 DREAMS.md diary ---
+function appendDreamDiary(
+  args: { role: { dir: string; name: string } },
+  dreamId: string,
+  entry: { added: string[]; dropped: string[]; note: string }
+): void {
+  const path = args.role.dir + "/../state/memory/DREAMS.md";
+  const block = [
+    `## ${dreamId}`,
+    entry.added.length ? `**Added:**\n${entry.added.map((s) => "- " + s).join("\n")}` : "",
+    entry.dropped.length ? `**Dropped:**\n${entry.dropped.map((s) => "- " + s).join("\n")}` : "",
+    entry.note ? `_${entry.note}_` : "",
+    "",
+  ].filter(Boolean).join("\n") + "\n";
+  try {
+    mkdirSync(dirname(path), { recursive: true });
+    appendFileSync(path, block);
+  } catch {
+    // best-effort — diary is diagnostic, not load-bearing
+  }
+}
+
+// Bullet-line set diff for the DREAMS.md summary. Not exhaustive but useful.
+function diffBullets(a: string, b: string): string[] {
+  const asLines = (s: string) => new Set(
+    s.split(/\r?\n/).map((l) => l.replace(/^\s*[-*]\s*/, "").trim()).filter(Boolean)
+  );
+  const aa = asLines(a), bb = asLines(b);
+  return [...bb].filter((l) => !aa.has(l)).slice(0, 20);
 }
 
 function stripFences(s: string): string {

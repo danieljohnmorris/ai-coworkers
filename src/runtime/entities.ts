@@ -65,9 +65,33 @@ export function openEntities(root: string): EntityStore {
     upsertPerson: (h, body, src) => upsert(peopleDir, h, body, src),
     upsertProject: (k, body, src) => upsert(projectsDir, k, body, src),
     detect(text) {
-      const people = list(peopleDir).filter((h) => text.includes(h));
-      const projects = list(projectsDir).filter((k) => new RegExp(`\\b${k}(?:-\\d+)?\\b`).test(text));
+      // AIC-37 — identity clustering. Read each person file's YAML-ish
+      // frontmatter `aliases: [dan, @dan_slack, daniel@…]` and treat all
+      // aliases as the same person for detection purposes. Returns the
+      // canonical handle (filename without .md) on a hit against any alias.
+      const people: string[] = [];
+      for (const canonical of list(peopleDir)) {
+        const body = read(peopleDir, canonical);
+        const identities = new Set<string>([canonical, ...extractAliases(body)]);
+        if ([...identities].some((h) => h && text.includes(h))) {
+          people.push(canonical);
+        }
+      }
+      const projects = list(projectsDir).filter(
+        (k) => new RegExp(`\\b${k}(?:-\\d+)?\\b`).test(text)
+      );
       return { people, projects };
     },
   };
+}
+
+// Parse the `aliases: [x, y, z]` line out of a markdown frontmatter block.
+// Tolerant of the surrounding HTML comment we write in upsertPerson.
+function extractAliases(body: string): string[] {
+  const m = body.match(/^\s*aliases:\s*\[([^\]]+)\]/im);
+  if (!m) return [];
+  return m[1]
+    .split(",")
+    .map((s) => s.trim().replace(/^["']|["']$/g, ""))
+    .filter(Boolean);
 }
