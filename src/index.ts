@@ -18,6 +18,7 @@ import { memoryTools } from "./tools/memory.ts";
 import { githubTools } from "./tools/github.ts";
 import { connectMcp, parseMcpEnv, type McpConnection } from "./adapters/mcp.ts";
 import { loadHermesSkills, renderSkillsIndex } from "./adapters/hermes.ts";
+import { startWakeServer } from "./runtime/wake.ts";
 
 async function main() {
   const args = process.argv.slice(2);
@@ -89,10 +90,21 @@ async function main() {
   log.event("note", { message: "startup", model: llm.model, live });
 
   const baseIntervalMs = Number(process.env.TICK_INTERVAL_MS ?? 5 * 60_000);
-  const maxIntervalMs = Number(process.env.MAX_TICK_INTERVAL_MS ?? 30 * 60_000);
+  const maxIntervalMs = role.cadence === "constant"
+    ? baseIntervalMs                       // no backoff when role is "constant"
+    : Number(process.env.MAX_TICK_INTERVAL_MS ?? 30 * 60_000);
   let intervalMs = baseIntervalMs;
-  let consecutiveQuiescent = 0;
+  let consecutiveQuiet = 0;
   const stop = { flag: false };
+  const wake = { flag: false };            // event-driven wake trigger
+
+  // Optional HTTP /wake endpoint (WAKE_PORT env). Lets Linear/Slack/GitHub
+  // webhooks (or any curl) fire an immediate tick.
+  const wakePort = Number(process.env.WAKE_PORT ?? 0);
+  if (wakePort > 0) {
+    startWakeServer(wakePort, wake, process.env.WAKE_SECRET);
+    log.stream(`wake endpoint: http://127.0.0.1:${wakePort}/wake`);
+  }
   const onSig = () => {
     log.stream(`shutdown signal`);
     stop.flag = true;
@@ -100,11 +112,11 @@ async function main() {
   process.on("SIGINT", onSig);
   process.on("SIGTERM", onSig);
 
-  // Adaptive tick loop. After each quiescent tick the interval doubles up to
+  // Adaptive tick loop. After each quiet tick the interval doubles up to
   // maxIntervalMs; any real tick (deliberation ran) resets to baseIntervalMs.
   // Keeps quiet coworkers cheap without missing new signals for long.
   while (!stop.flag) {
-    let outcome = { quiescent: false };
+    let outcome = { quiet: false };
     try {
       outcome = await tick({
         role, events, memory, hygiene, semantic, entities,
@@ -114,19 +126,25 @@ async function main() {
       log.event("note", { fatal: false, error: String(err) });
       log.stream(`tick error: ${err}`);
     }
-    if (outcome.quiescent) {
-      consecutiveQuiescent++;
+    if (outcome.quiet) {
+      consecutiveQuiet++;
       intervalMs = Math.min(intervalMs * 2, maxIntervalMs);
-      log.stream(`quiescent x${consecutiveQuiescent} — next tick in ${Math.round(intervalMs / 1000)}s`);
-    } else if (consecutiveQuiescent > 0) {
-      consecutiveQuiescent = 0;
+      log.stream(`quiet x${consecutiveQuiet} — next tick in ${Math.round(intervalMs / 1000)}s`);
+    } else if (consecutiveQuiet > 0) {
+      consecutiveQuiet = 0;
       intervalMs = baseIntervalMs;
       log.stream(`activity resumed — interval reset to ${Math.round(intervalMs / 1000)}s`);
     }
-    // sleep in small slices so we exit promptly on signal
-    const wake = Date.now() + intervalMs;
-    while (!stop.flag && Date.now() < wake) {
-      await new Promise((r) => setTimeout(r, 1000));
+    // sleep in small slices so we exit promptly on signal OR /wake
+    const wakeAt = Date.now() + intervalMs;
+    while (!stop.flag && !wake.flag && Date.now() < wakeAt) {
+      await new Promise((r) => setTimeout(r, 500));
+    }
+    if (wake.flag) {
+      wake.flag = false;
+      intervalMs = baseIntervalMs;         // reset backoff on external wake
+      consecutiveQuiet = 0;
+      log.stream(`woken by event — next tick immediately`);
     }
   }
   log.event("note", { message: "shutdown" });

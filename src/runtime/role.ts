@@ -32,7 +32,10 @@ export type Role = {
   docs: Record<(typeof DOCS)[number], string>;
   systemPrompt: string;
   limits: ResourceLimits;
+  cadence: Cadence;
 };
+
+export type Cadence = "adaptive" | "constant";
 
 export interface ResourceLimits {
   maxWorktrees: number;
@@ -66,7 +69,16 @@ export function loadRole(coworkersDir: string, name: string): Role {
     docs,
     systemPrompt,
     limits: parseLimits(docs.BOUNDARIES) ?? DEFAULT_LIMITS,
+    cadence: parseCadence(docs.RITUALS),
   };
+}
+
+// Cadence is declared in RITUALS.md — a line like "Cadence: constant" opts
+// the coworker out of adaptive backoff (e.g. a monitoring or on-call role
+// that must poll on a fixed interval). Default is adaptive.
+function parseCadence(ritualsMd: string): Cadence {
+  const m = ritualsMd.match(/^\s*(?:-\s*)?cadence:\s*(constant|adaptive)\b/im);
+  return (m?.[1]?.toLowerCase() as Cadence) ?? "adaptive";
 }
 
 // Very small parser: reads "- Max concurrent worktrees: 5" style lines from

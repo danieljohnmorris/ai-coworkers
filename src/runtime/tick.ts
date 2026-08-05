@@ -42,7 +42,7 @@ export interface TickContext {
 }
 
 export interface TickOutcome {
-  quiescent: boolean;   // perception unchanged, no promise/ritual due, no LLM call made
+  quiet: boolean;   // perception unchanged, no promise/ritual due, no LLM call made
 }
 
 export async function tick(ctx: TickContext): Promise<TickOutcome> {
@@ -57,7 +57,7 @@ export async function tick(ctx: TickContext): Promise<TickOutcome> {
     ctx.log.event("note", { message: "over_budget", ...budgetGate });
     ctx.log.stream(`over budget (${budgetGate.callsToday}/${budgetGate.cap}) — sleeping ${budgetGate.minutesUntilReset}m until reset`);
     await finish(ctx, tStart);
-    return { quiescent: true };
+    return { quiet: true };
   }
 
   // 1. sense (with per-sensor min-interval caching + circuit breaker)
@@ -143,7 +143,7 @@ export async function tick(ctx: TickContext): Promise<TickOutcome> {
   ctx.log.event("perception.hash", { hash: changeHash, ts: perceptionUnchanged ? prev.ts : new Date().toISOString() });
   tempo.secondsSinceLastPerceptionChange = secSinceChange;
 
-  // Quiescence shortcut — no perception change, no promises due, no due
+  // Quiet shortcut — no perception change, no promises due, no due
   // ritual → skip deliberation entirely. Zero LLM cost. This is the big
   // idle-cost win.
   const promisesDue = promises.length > 0;
@@ -152,11 +152,11 @@ export async function tick(ctx: TickContext): Promise<TickOutcome> {
       `SELECT ts FROM events WHERE kind = 'ritual.run' ORDER BY id DESC LIMIT 1`
     ).get() ? false : true;  // conservative: if we've never run a ritual, fall through
   if (perceptionUnchanged && !promisesDue && !anyRitualDue) {
-    ctx.log.event("note", { quiescent: true, secSinceChange });
-    ctx.log.stream(`quiescent — nothing new for ${secSinceChange}s, no LLM call`);
+    ctx.log.event("note", { quiet: true, secSinceChange });
+    ctx.log.stream(`quiet — nothing new for ${secSinceChange}s, no LLM call`);
     sweep(ctx.hygiene, ctx.role.limits, ctx.log);
     await finish(ctx, tStart);
-    return { quiescent: true };
+    return { quiet: true };
   }
 
   // Working-memory trim: bound the recent-actions blob.
@@ -206,7 +206,7 @@ export async function tick(ctx: TickContext): Promise<TickOutcome> {
     ctx.log.event("deliberate.error", { error: String(err) });
     ctx.log.stream(`deliberate error: ${err}`);
     await finish(ctx, tStart);
-    return { quiescent: false };
+    return { quiet: false };
   }
 
   // 4. act
@@ -288,8 +288,8 @@ export async function tick(ctx: TickContext): Promise<TickOutcome> {
   if (fired.length) ctx.log.stream(`ritual: ${fired.map((f) => f.name).join(", ")}`);
 
   await finish(ctx, tStart);
-  // Tick was NOT quiescent if we got this far — we ran deliberation.
-  return { quiescent: false };
+  // Tick was NOT quiet if we got this far — we ran deliberation.
+  return { quiet: false };
 }
 
 async function finish(ctx: TickContext, tStart: number): Promise<void> {
