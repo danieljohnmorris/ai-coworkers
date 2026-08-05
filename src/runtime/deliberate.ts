@@ -88,7 +88,10 @@ export async function deliberate(
     priorSteps.length ? `# Steps you have taken in THIS tick (chained tool calls so far)` : ``,
     priorSteps.length
       ? priorSteps.map((s, i) =>
-          `${i + 1}. ${s.tool} ${JSON.stringify(s.input).slice(0, 200)}\n   → ${JSON.stringify(s.outcome).slice(0, 400)}`
+          // 4000 chars is enough for a full team_labels payload or issue detail
+          // without wrecking the prompt budget. Bump if you routinely see the
+          // model complain about "truncated" outcomes.
+          `${i + 1}. ${s.tool} ${JSON.stringify(s.input).slice(0, 400)}\n   → ${JSON.stringify(s.outcome).slice(0, 4000)}`
         ).join("\n")
       : ``,
     priorSteps.length ? `` : ``,
