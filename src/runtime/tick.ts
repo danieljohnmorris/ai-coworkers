@@ -46,8 +46,9 @@ export interface TickContext {
 }
 
 export interface TickOutcome {
-  quiet: boolean;   // perception unchanged, no promise/ritual due, no LLM call made
-  pace?: "faster" | "hold" | "slower";  // optional model-chosen hint the loop respects within bounds
+  quiet: boolean;         // true if we short-circuited before deliberation (zero LLM cost)
+  didNoAction?: boolean;  // true if we deliberated but chose noop (LLM ran, but no side effect)
+  pace?: "faster" | "hold" | "slower";
 }
 
 export async function tick(ctx: TickContext): Promise<TickOutcome> {
@@ -372,7 +373,7 @@ export async function tick(ctx: TickContext): Promise<TickOutcome> {
 
   await finish(ctx, tStart);
   // Tick was NOT quiet if we got this far — we ran deliberation.
-  return { quiet: false, pace: lastPace };
+  return { quiet: false, didNoAction: !ranAnyAction, pace: lastPace };
 }
 
 async function finish(ctx: TickContext, tStart: number): Promise<void> {

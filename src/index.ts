@@ -150,10 +150,13 @@ async function main() {
       log.stream(`pace=slower — next tick in ${Math.round(intervalMs / 1000)}s`);
     } else if (outcome.pace === "hold") {
       log.stream(`pace=hold — next tick in ${Math.round(intervalMs / 1000)}s`);
-    } else if (outcome.quiet) {
+    } else if (outcome.quiet || outcome.didNoAction) {
+      // Either a quiet-skipped tick OR a tick where deliberation ran but
+      // chose to do nothing → back off. Repeatedly deciding "nothing to do"
+      // should not keep us spinning at base cadence.
       consecutiveQuiet++;
       intervalMs = Math.min(intervalMs * 2, maxIntervalMs);
-      log.stream(`quiet x${consecutiveQuiet} — next tick in ${Math.round(intervalMs / 1000)}s`);
+      log.stream(`idle x${consecutiveQuiet} — next tick in ${Math.round(intervalMs / 1000)}s`);
     } else if (consecutiveQuiet > 0) {
       consecutiveQuiet = 0;
       intervalMs = baseIntervalMs;
