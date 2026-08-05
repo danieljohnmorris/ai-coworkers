@@ -120,13 +120,16 @@ async function main() {
   // Adaptive tick loop. After each quiet tick the interval doubles up to
   // maxIntervalMs; any real tick (deliberation ran) resets to baseIntervalMs.
   // Keeps quiet coworkers cheap without missing new signals for long.
+  let forceNext = false;
   while (!stop.flag) {
     let outcome = { quiet: false };
     try {
       outcome = await tick({
         role, events, memory, hygiene, semantic, entities,
         tools, llm, dryRun: !live, log,
+        forceDeliberate: forceNext,
       });
+      forceNext = false;
     } catch (err) {
       log.event("note", { fatal: false, error: String(err) });
       log.stream(`tick error: ${err}`);
@@ -149,6 +152,7 @@ async function main() {
       wake.flag = false;
       intervalMs = baseIntervalMs;         // reset backoff on external wake
       consecutiveQuiet = 0;
+      forceNext = true;                    // bypass quiet gate — they poked us
       log.stream(`woken by event — next tick immediately`);
     }
   }

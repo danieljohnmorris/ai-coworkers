@@ -40,6 +40,7 @@ export interface TickContext {
   llm: LLMConfig;
   dryRun: boolean;
   log: Log;
+  forceDeliberate?: boolean;   // set by external wake — bypass quiet gate this tick
 }
 
 export interface TickOutcome {
@@ -152,7 +153,7 @@ export async function tick(ctx: TickContext): Promise<TickOutcome> {
     .prepare(
       `SELECT ts FROM events WHERE kind = 'ritual.run' ORDER BY id DESC LIMIT 1`
     ).get() ? false : true;  // conservative: if we've never run a ritual, fall through
-  if (perceptionUnchanged && !promisesDue && !anyRitualDue) {
+  if (perceptionUnchanged && !promisesDue && !anyRitualDue && !ctx.forceDeliberate) {
     ctx.log.event("note", { quiet: true, secSinceChange });
     ctx.log.stream(`quiet — nothing new for ${secSinceChange}s, no LLM call`);
     sweep(ctx.hygiene, ctx.role.limits, ctx.log);
