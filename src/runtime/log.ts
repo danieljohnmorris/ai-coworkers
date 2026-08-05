@@ -40,7 +40,12 @@ export function openEvents(dbPath: string): DatabaseSync {
 }
 
 export class Log {
-  constructor(private db: DatabaseSync, private coworker: string) {}
+  private db: DatabaseSync;
+  private coworker: string;
+  constructor(db: DatabaseSync, coworker: string) {
+    this.db = db;
+    this.coworker = coworker;
+  }
 
   event(kind: EventKind, payload: unknown): void {
     const ts = new Date().toISOString();

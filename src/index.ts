@@ -2,7 +2,7 @@
 //   node --experimental-strip-types --no-warnings src/index.ts <coworker> [--live]
 // Default is dry-run. Pass --live to allow write actions to actually execute.
 
-import { mkdirSync } from "node:fs";
+import { mkdirSync, appendFileSync } from "node:fs";
 import { join } from "node:path";
 import { loadRole } from "./runtime/role.ts";
 import { openEvents, Log } from "./runtime/log.ts";
@@ -25,6 +25,17 @@ async function main() {
   const coworkersDir = join(repoRoot, "coworkers");
   const stateDir = join(coworkersDir, name, "state");
   mkdirSync(stateDir, { recursive: true });
+
+  // Crash log — captures anything that kills the process before the event log
+  // exists. Path is stable so `tail -f` works across runs.
+  const crashLog = join(stateDir, "crash.log");
+  const crash = (label: string, err: unknown): void => {
+    const line = `[${new Date().toISOString()}] ${label}: ${err instanceof Error ? err.stack ?? err.message : String(err)}\n`;
+    try { appendFileSync(crashLog, line); } catch {}
+    try { process.stderr.write(line); } catch {}
+  };
+  process.on("uncaughtException", (e) => crash("uncaughtException", e));
+  process.on("unhandledRejection", (e) => crash("unhandledRejection", e));
 
   const role = loadRole(coworkersDir, name);
   const events = openEvents(join(stateDir, "events.db"));
