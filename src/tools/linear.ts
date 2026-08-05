@@ -265,6 +265,41 @@ export const linearSetLabels: ToolDef = {
   },
 };
 
+export const linearCreateLabel: ToolDef = {
+  name: "linear.create_label",
+  kind: "action",
+  description:
+    "Create a NEW label in a team's vocabulary. Use ONLY when reusing an existing label is genuinely wrong AND your manager has approved (ask via `ask` to='manager' first if in doubt). Prefer the smallest label vocabulary possible; overuse creates label sprawl.",
+  inputSchema: {
+    type: "object",
+    required: ["teamId", "name"],
+    properties: {
+      teamId: { type: "string", description: "Team UUID (from linear.team_labels or workspace_snapshot)" },
+      name: { type: "string", description: "Label name — short, lowercase, no spaces preferred" },
+      color: { type: "string", description: "Hex colour like '#F0A020'" },
+      description: { type: "string" },
+    },
+  },
+  handler: async (input: { teamId: string; name: string; color?: string; description?: string }, ctx: ToolCtx) => {
+    if (ctx.dryRun) return { dryRun: true, wouldCreate: input };
+    const key = ctx.env.LINEAR_API_KEY;
+    if (!key) throw new Error("LINEAR_API_KEY not set");
+    const m = `
+      mutation ($input: IssueLabelCreateInput!) {
+        issueLabelCreate(input: $input) {
+          success
+          issueLabel { id name color }
+        }
+      }`;
+    const data = await gql<{ issueLabelCreate: { success: boolean; issueLabel: { id: string; name: string; color: string } } }>(
+      m,
+      { input: { teamId: input.teamId, name: input.name, color: input.color, description: input.description } },
+      key
+    );
+    return data.issueLabelCreate;
+  },
+};
+
 export const linearWorkspaceSnapshot: ToolDef = {
   name: "linear.workspace_snapshot",
   kind: "sensor",
@@ -305,4 +340,5 @@ export const linearTools: ToolDef[] = [
   linearTeamLabels,
   linearSetLabels,
   linearSearchIssues,
+  linearCreateLabel,
 ];

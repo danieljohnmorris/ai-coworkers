@@ -6,6 +6,7 @@ import type { Role } from "./role.ts";
 import { chat, type LLMConfig } from "./llm.ts";
 import type { ToolDef } from "./tools.ts";
 import type { TempoSnapshot, BudgetSnapshot } from "./tempo.ts";
+import { cfg, truncated } from "./config.ts";
 
 export interface Perception {
   now: string;
@@ -91,7 +92,7 @@ export async function deliberate(
           // 4000 chars is enough for a full team_labels payload or issue detail
           // without wrecking the prompt budget. Bump if you routinely see the
           // model complain about "truncated" outcomes.
-          `${i + 1}. ${s.tool} ${JSON.stringify(s.input).slice(0, 400)}\n   → ${JSON.stringify(s.outcome).slice(0, 4000)}`
+          `${i + 1}. ${s.tool} ${truncated(JSON.stringify(s.input), cfg.priorStepInputMaxChars)}\n   → ${truncated(JSON.stringify(s.outcome), cfg.priorStepOutcomeMaxChars)}`
         ).join("\n")
       : ``,
     priorSteps.length ? `` : ``,

@@ -18,6 +18,7 @@ import { linearTools } from "./tools/linear.ts";
 import { memoryTools } from "./tools/memory.ts";
 import { githubTools } from "./tools/github.ts";
 import { slackTools } from "./tools/slack.ts";
+import { askTools } from "./tools/ask.ts";
 import { connectMcp, parseMcpEnv, type McpConnection } from "./adapters/mcp.ts";
 import { loadHermesSkills, renderSkillsIndex } from "./adapters/hermes.ts";
 import { startWakeServer } from "./runtime/wake.ts";
@@ -65,6 +66,7 @@ async function main() {
   for (const t of memoryTools) tools.register(t);
   for (const t of githubTools) tools.register(t);
   for (const t of slackTools) tools.register(t);
+  for (const t of askTools) tools.register(t);
 
   // Optional MCP servers via MCP_SERVERS env var.
   const mcpConnections: McpConnection[] = [];
