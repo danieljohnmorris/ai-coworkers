@@ -217,62 +217,77 @@ export async function tick(ctx: TickContext): Promise<TickOutcome> {
   if (entityCards) augmentedPrompt += `\n\n---\n\n# ENTITIES (mentioned in current perception)\n\n${entityCards}`;
   const augmentedRole = augmentedPrompt === ctx.role.systemPrompt ? ctx.role : { ...ctx.role, systemPrompt: augmentedPrompt };
 
-  let decision: any;
-  try {
-    decision = await deliberate(augmentedRole, perception, availableActions, ctx.llm);
-    ctx.log.event("deliberate", {
-      choice: decision.action,
-      reason: decision.reason,
-      thoughts: decision.thoughts ?? null,
-    });
-    if (decision.thoughts) {
-      // Surface Alex's private working notes on the visible live stream so
-      // humans (and Alex himself via the highlights tail) can follow the
-      // train of thought alongside actions.
-      ctx.log.highlight(`💭 ${decision.thoughts.slice(0, 400)}`);
-    }
-    if (decision.rawOutput) {
-      // Parse fail — persist the full raw output for debugging.
-      ctx.log.event("deliberate.rawoutput", { raw: String(decision.rawOutput).slice(0, 4000) });
-    }
-  } catch (err) {
-    ctx.log.event("deliberate.error", { error: String(err) });
-    ctx.log.highlight(`deliberate error: ${err}`);
-    await finish(ctx, tStart);
-    return { quiet: false };
-  }
+  // 3+4. deliberate → act — CHAINED. The model may call several tools in one
+  // tick, each one seeing the previous outcome, until it noops with reason
+  // "done" or we hit the cap. This is the Hermes/Eliza turn-based pattern.
+  const maxToolsPerTick = Number(process.env.MAX_TOOLS_PER_TICK ?? 8);
+  const priorSteps: { tool: string; input: unknown; outcome: unknown }[] = [];
+  let ranAnyAction = false;
 
-  // 4. act
-  if (decision.action === "noop") {
-    ctx.log.stream(`noop — ${decision.reason.slice(0, 100)}`);
-  } else {
+  for (let step = 0; step < maxToolsPerTick; step++) {
+    let decision: any;
+    try {
+      decision = await deliberate(augmentedRole, perception, availableActions, ctx.llm, priorSteps);
+      ctx.log.event("deliberate", {
+        choice: decision.action,
+        reason: decision.reason,
+        thoughts: decision.thoughts ?? null,
+        step,
+      });
+      if (decision.thoughts) {
+        ctx.log.highlight(`💭 ${decision.thoughts.slice(0, 400)}`);
+      }
+      if (decision.rawOutput) {
+        ctx.log.event("deliberate.rawoutput", { raw: String(decision.rawOutput).slice(0, 4000) });
+      }
+    } catch (err) {
+      ctx.log.event("deliberate.error", { error: String(err) });
+      ctx.log.highlight(`deliberate error: ${err}`);
+      break;
+    }
+
+    if (decision.action === "noop") {
+      ctx.log.stream(`noop — ${decision.reason.slice(0, 100)}`);
+      break;
+    }
+
     const tool = ctx.tools.get(decision.tool);
     if (!tool) {
       ctx.log.event("action.error", { tool: decision.tool, error: "not registered" });
       ctx.log.highlight(`✗ ${decision.tool} not registered`);
-    } else {
-      const decisionCtx = { coworker: ctx.role.name, dryRun: ctx.dryRun, env: process.env };
-      const b = checkAction(ctx.role, tool, decision.input, decisionCtx);
-      if (!b.allowed) {
-        ctx.log.event("boundary.block", { tool: tool.name, reason: b.reason, input: decision.input });
-        ctx.log.highlight(`✗ boundary: ${b.reason}`);
-      } else {
-        ctx.log.event("action", {
-          tool: tool.name,
-          input: decision.input,
-          reason: decision.reason,
-          dryRun: ctx.dryRun,
-        });
-        try {
-          const outcome = await tool.handler(decision.input, decisionCtx);
-          ctx.log.highlight(`→ ${tool.name}${ctx.dryRun ? " (dry-run)" : ""}: ${JSON.stringify(decision.input).slice(0, 120)}`);
-          ctx.log.event("note", { tool: tool.name, outcome });
-        } catch (err) {
-          ctx.log.event("action.error", { tool: tool.name, error: String(err) });
-          ctx.log.highlight(`✗ ${tool.name} failed: ${err}`);
-        }
-      }
+      break;
     }
+    const decisionCtx = { coworker: ctx.role.name, dryRun: ctx.dryRun, env: process.env };
+    const b = checkAction(ctx.role, tool, decision.input, decisionCtx);
+    if (!b.allowed) {
+      ctx.log.event("boundary.block", { tool: tool.name, reason: b.reason, input: decision.input });
+      ctx.log.highlight(`✗ boundary: ${b.reason}`);
+      break;
+    }
+    ctx.log.event("action", {
+      tool: tool.name,
+      input: decision.input,
+      reason: decision.reason,
+      dryRun: ctx.dryRun,
+      step,
+    });
+    let outcome: unknown;
+    try {
+      outcome = await tool.handler(decision.input, decisionCtx);
+      ctx.log.highlight(`→ ${tool.name}${ctx.dryRun ? " (dry-run)" : ""}: ${JSON.stringify(decision.input).slice(0, 120)}`);
+      ctx.log.event("note", { tool: tool.name, outcome, step });
+      ranAnyAction = true;
+    } catch (err) {
+      outcome = { error: String(err) };
+      ctx.log.event("action.error", { tool: tool.name, error: String(err), step });
+      ctx.log.highlight(`✗ ${tool.name} failed: ${err}`);
+      // Let the model see the failure and decide whether to try again or bail.
+    }
+    priorSteps.push({ tool: tool.name, input: decision.input, outcome });
+  }
+
+  if (priorSteps.length >= maxToolsPerTick) {
+    ctx.log.highlight(`cap: ${maxToolsPerTick} tool calls reached this tick`);
   }
 
   // 5. record + hygiene

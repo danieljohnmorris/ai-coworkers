@@ -25,11 +25,18 @@ export type Decision =
   | { action: "noop"; reason: string; thoughts?: string }
   | { action: "call"; tool: string; input: unknown; reason: string; thoughts?: string };
 
+export interface PriorStep {
+  tool: string;
+  input: unknown;
+  outcome: unknown;
+}
+
 export async function deliberate(
   role: Role,
   perception: Perception,
   actions: ToolDef[],
-  llm: LLMConfig
+  llm: LLMConfig,
+  priorSteps: PriorStep[] = [],
 ): Promise<Decision> {
   const toolCatalog = actions.map((a) => ({
     name: a.name,
@@ -73,6 +80,13 @@ export async function deliberate(
     `# Your recent thoughts to yourself`,
     perception.recentThoughts || "(no recent thoughts logged)",
     ``,
+    priorSteps.length ? `# Steps you have taken in THIS tick (chained tool calls so far)` : ``,
+    priorSteps.length
+      ? priorSteps.map((s, i) =>
+          `${i + 1}. ${s.tool} ${JSON.stringify(s.input).slice(0, 200)}\n   → ${JSON.stringify(s.outcome).slice(0, 400)}`
+        ).join("\n")
+      : ``,
+    priorSteps.length ? `` : ``,
     `# Task`,
     `Given your role, responsibilities, authority, boundaries, rituals, AND`,
     `the tempo section above, decide whether to take ONE action this tick`,
@@ -81,6 +95,10 @@ export async function deliberate(
     `Rhythm matters. If you are acting far above your expected tempo, or if`,
     `nothing has meaningfully changed since your last action, prefer noop.`,
     `A well-paced coworker is more valuable than a busy one.`,
+    ``,
+    priorSteps.length
+      ? `You are ALREADY mid-task within this tick. You may chain another tool call to continue, or noop with reason "done" to end the tick. Choose noop when the current task is complete or would be better resumed later.`
+      : `You may start a chain — if you take an action, you can call further tools this same tick based on the results before ending. But do so only when the steps genuinely belong together (e.g. detail → team_labels → set_labels for one issue). Otherwise finish with one action and let the next tick see fresh perception.`,
     ``,
     `Also, keep a running notebook to yourself. Include a "thoughts" field —`,
     `short, private, working-notes-to-future-self. This is NOT for the reason`,
