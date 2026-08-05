@@ -15,6 +15,8 @@ import { ToolRegistry } from "./runtime/tools.ts";
 import { tick } from "./runtime/tick.ts";
 import { linearTools } from "./tools/linear.ts";
 import { memoryTools } from "./tools/memory.ts";
+import { connectMcp, parseMcpEnv, type McpConnection } from "./adapters/mcp.ts";
+import { loadHermesSkills, renderSkillsIndex } from "./adapters/hermes.ts";
 
 async function main() {
   const args = process.argv.slice(2);
@@ -41,7 +43,7 @@ async function main() {
   process.on("uncaughtException", (e) => crash("uncaughtException", e));
   process.on("unhandledRejection", (e) => crash("unhandledRejection", e));
 
-  const role = loadRole(coworkersDir, name);
+  let role = loadRole(coworkersDir, name);
   const events = openEvents(join(stateDir, "events.db"));
   initEpisodic(events);
   const memory = openMemory(join(stateDir, "memory.db"));
@@ -53,6 +55,26 @@ async function main() {
   const tools = new ToolRegistry();
   for (const t of linearTools) tools.register(t);
   for (const t of memoryTools) tools.register(t);
+
+  // Optional MCP servers via MCP_SERVERS env var.
+  const mcpConnections: McpConnection[] = [];
+  for (const serverCfg of parseMcpEnv(process.env)) {
+    try {
+      const conn = await connectMcp(serverCfg);
+      for (const t of conn.tools) tools.register(t);
+      mcpConnections.push(conn);
+      log.stream(`mcp: connected ${serverCfg.name} (${conn.tools.length} tools)`);
+    } catch (err) {
+      log.stream(`mcp: failed to connect ${serverCfg.name}: ${err}`);
+    }
+  }
+
+  // Optional Hermes-style skills dir (defaults to ~/.hermes/skills if it exists).
+  const skillsDir = process.env.SKILLS_DIR ?? join(process.env.HOME ?? "", ".hermes", "skills");
+  const skills = loadHermesSkills(skillsDir);
+  const skillsIndex = renderSkillsIndex(skills);
+  if (skills.length) log.stream(`skills: ${skills.length} loaded from ${skillsDir}`);
+  if (skillsIndex) role = { ...role, systemPrompt: `${role.systemPrompt}\n\n---\n\n${skillsIndex}` };
 
   const llm = {
     baseUrl: process.env.OLLAMA_HOST ?? "https://ollama.com",

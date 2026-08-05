@@ -4,6 +4,7 @@
 // stdout for `journalctl` consumption.
 
 import { DatabaseSync } from "node:sqlite";
+import { retrySync } from "./sqlite-retry.ts";
 
 export type EventKind =
   | "tick.start" | "tick.end"
@@ -51,9 +52,11 @@ export class Log {
 
   event(kind: EventKind, payload: unknown): void {
     const ts = new Date().toISOString();
-    this.db
-      .prepare(`INSERT INTO events (ts, coworker, kind, payload) VALUES (?, ?, ?, ?)`)
-      .run(ts, this.coworker, kind, JSON.stringify(payload ?? null));
+    retrySync(() =>
+      this.db
+        .prepare(`INSERT INTO events (ts, coworker, kind, payload) VALUES (?, ?, ?, ?)`)
+        .run(ts, this.coworker, kind, JSON.stringify(payload ?? null))
+    );
   }
 
   stream(line: string): void {

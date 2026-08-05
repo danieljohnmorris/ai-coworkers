@@ -22,6 +22,9 @@ import type { SemanticMemory } from "./semantic.ts";
 import { runDue, type RitualDef } from "./rituals.ts";
 import { dreamOnce } from "./reflect.ts";
 import type { EntityStore } from "./entities.ts";
+import { checkBudget, extractCallCap } from "./budget.ts";
+import { shouldSkip as circuitShouldSkip, recordError as circuitError, recordSuccess as circuitOk } from "./circuit.ts";
+import { compactRecentActions, truncateSensorPayloads } from "./working.ts";
 
 export interface TickContext {
   role: Role;
@@ -41,12 +44,26 @@ export async function tick(ctx: TickContext): Promise<void> {
   ctx.log.event("tick.start", { ts: new Date().toISOString() });
   ctx.log.stream(`tick →`);
 
-  // 1. sense (with per-sensor min-interval caching so we don't hammer APIs)
+  // 0. budget gate — cheap check, cut expensive LLM call if we're over cap
+  const cap = extractCallCap(ctx.role.docs.BOUNDARIES);
+  const budgetGate = checkBudget(ctx.events, cap);
+  if (budgetGate.overBudget) {
+    ctx.log.event("note", { message: "over_budget", ...budgetGate });
+    ctx.log.stream(`over budget (${budgetGate.callsToday}/${budgetGate.cap}) — sleeping ${budgetGate.minutesUntilReset}m until reset`);
+    await finish(ctx, tStart);
+    return;
+  }
+
+  // 1. sense (with per-sensor min-interval caching + circuit breaker)
   const allowedTools = new Set(ctx.tools.scopedTo(ctx.role.docs.TOOLS));
   const sensors: Perception["sensors"] = [];
   const nowMs = Date.now();
   for (const s of ctx.tools.sensors()) {
     if (!allowedTools.has(s.name) && !allowedNamespace(allowedTools, s.name)) continue;
+    if (circuitShouldSkip(s.name, nowMs)) {
+      ctx.log.event("sensor.error", { name: s.name, error: "quarantined" });
+      continue;
+    }
     const cached = getCached(s.name, nowMs);
     if (cached !== undefined) {
       sensors.push({ name: s.name, result: cached });
@@ -62,11 +79,17 @@ export async function tick(ctx: TickContext): Promise<void> {
       if (minInterval(s.name) > 0) setCached(s.name, result, nowMs);
       sensors.push({ name: s.name, result });
       ctx.log.event("sensor.read", { name: s.name, ok: true, cached: false });
+      circuitOk(s.name);
     } catch (err) {
       sensors.push({ name: s.name, result: null, error: String(err) });
       ctx.log.event("sensor.error", { name: s.name, error: String(err) });
+      const c = circuitError(s.name, nowMs);
+      if (c.quarantined) ctx.log.event("note", { sensor: s.name, quarantined: true });
     }
   }
+
+  // Working-memory trim: truncate any single verbose sensor result.
+  const trimmedSensors = truncateSensorPayloads(sensors);
 
   // 2. perceive
   const recentActions = (
@@ -114,10 +137,13 @@ export async function tick(ctx: TickContext): Promise<void> {
   ctx.log.event("perception.hash", { hash: changeHash, ts: perceptionUnchanged ? prev.ts : new Date().toISOString() });
   tempo.secondsSinceLastPerceptionChange = secSinceChange;
 
+  // Working-memory trim: bound the recent-actions blob.
+  const { compact: compactActions } = compactRecentActions(recentActions);
+
   const perception: Perception = {
     now: new Date().toISOString(),
-    sensors,
-    recentActions,
+    sensors: trimmedSensors,
+    recentActions: compactActions,
     pendingPromises: promises,
     resources,
     rollups: recentRollups(ctx.memory, 3),
@@ -211,6 +237,20 @@ export async function tick(ctx: TickContext): Promise<void> {
           llm: ctx.llm,
           log: ctx.log,
         });
+      },
+    },
+    {
+      name: "health.snapshot",
+      cadence: { kind: "hourly" },
+      run: async () => {
+        const hourAgo = new Date(Date.now() - 3600_000).toISOString();
+        const rows = ctx.events
+          .prepare(
+            `SELECT kind, COUNT(*) AS n FROM events WHERE ts >= ? GROUP BY kind`
+          )
+          .all(hourAgo) as { kind: string; n: number }[];
+        const summary = Object.fromEntries(rows.map((r) => [r.kind, r.n]));
+        ctx.log.event("note", { snapshot: "hourly_health", counts: summary });
       },
     },
   ];
