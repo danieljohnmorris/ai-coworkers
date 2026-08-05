@@ -17,6 +17,7 @@ export type EventKind =
   | "memory.compact"
   | "perception.hash"
   | "ritual.run"
+  | "tick.quiescent"
   | "note";
 
 export interface EventRow {

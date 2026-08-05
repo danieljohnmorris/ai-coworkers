@@ -74,7 +74,8 @@ async function main() {
   // Optional Hermes-style skills dir (defaults to ~/.hermes/skills if it exists).
   const skillsDir = process.env.SKILLS_DIR ?? join(process.env.HOME ?? "", ".hermes", "skills");
   const skills = loadHermesSkills(skillsDir);
-  const skillsIndex = renderSkillsIndex(skills);
+  const activeSkills = (process.env.ACTIVE_SKILLS ?? "").split(",").map((s) => s.trim()).filter(Boolean);
+  const skillsIndex = renderSkillsIndex(skills, activeSkills);
   if (skills.length) log.stream(`skills: ${skills.length} loaded from ${skillsDir}`);
   if (skillsIndex) role = { ...role, systemPrompt: `${role.systemPrompt}\n\n---\n\n${skillsIndex}` };
 
@@ -87,7 +88,10 @@ async function main() {
   log.stream(`start coworker=${name} model=${llm.model} live=${live}`);
   log.event("note", { message: "startup", model: llm.model, live });
 
-  const intervalMs = Number(process.env.TICK_INTERVAL_MS ?? 5 * 60_000);
+  const baseIntervalMs = Number(process.env.TICK_INTERVAL_MS ?? 5 * 60_000);
+  const maxIntervalMs = Number(process.env.MAX_TICK_INTERVAL_MS ?? 30 * 60_000);
+  let intervalMs = baseIntervalMs;
+  let consecutiveQuiescent = 0;
   const stop = { flag: false };
   const onSig = () => {
     log.stream(`shutdown signal`);
@@ -96,24 +100,28 @@ async function main() {
   process.on("SIGINT", onSig);
   process.on("SIGTERM", onSig);
 
-  // Simple loop; event-driven wake-ups can be layered later.
+  // Adaptive tick loop. After each quiescent tick the interval doubles up to
+  // maxIntervalMs; any real tick (deliberation ran) resets to baseIntervalMs.
+  // Keeps quiet coworkers cheap without missing new signals for long.
   while (!stop.flag) {
+    let outcome = { quiescent: false };
     try {
-      await tick({
-        role,
-        events,
-        memory,
-        hygiene,
-        semantic,
-        entities,
-        tools,
-        llm,
-        dryRun: !live,
-        log,
+      outcome = await tick({
+        role, events, memory, hygiene, semantic, entities,
+        tools, llm, dryRun: !live, log,
       });
     } catch (err) {
       log.event("note", { fatal: false, error: String(err) });
       log.stream(`tick error: ${err}`);
+    }
+    if (outcome.quiescent) {
+      consecutiveQuiescent++;
+      intervalMs = Math.min(intervalMs * 2, maxIntervalMs);
+      log.stream(`quiescent x${consecutiveQuiescent} — next tick in ${Math.round(intervalMs / 1000)}s`);
+    } else if (consecutiveQuiescent > 0) {
+      consecutiveQuiescent = 0;
+      intervalMs = baseIntervalMs;
+      log.stream(`activity resumed — interval reset to ${Math.round(intervalMs / 1000)}s`);
     }
     // sleep in small slices so we exit promptly on signal
     const wake = Date.now() + intervalMs;

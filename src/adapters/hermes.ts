@@ -38,15 +38,24 @@ export function loadHermesSkills(dir: string): HermesSkill[] {
 }
 
 // Compose the procedural-memory section for the system prompt. Kept terse —
-// only names + descriptions, so the model can request full context ("if you
-// need the details of skill X, ask") rather than loading everything.
-export function renderSkillsIndex(skills: HermesSkill[]): string {
+// only names + descriptions for most skills, so the model can request full
+// context if needed. Skills listed in `activeNames` get their full body
+// inlined (use for always-on style skills like caveman-mode).
+export function renderSkillsIndex(skills: HermesSkill[], activeNames: string[] = []): string {
   if (!skills.length) return "";
-  const lines = [
+  const active = new Set(activeNames);
+  const lines: string[] = [
     "# SKILLS (procedural memory — instructions and playbooks you can consult)",
     "",
     ...skills.map((s) => `- **${s.name}** — ${s.description}`),
   ];
+  const activated = skills.filter((s) => active.has(s.name));
+  if (activated.length) {
+    lines.push("", "## Active skills (apply their rules to every response)");
+    for (const s of activated) {
+      lines.push("", `### ${s.name}`, "", s.body);
+    }
+  }
   return lines.join("\n");
 }
 
