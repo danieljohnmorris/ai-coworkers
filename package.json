@@ -5,8 +5,31 @@
   "description": "Long-running AI coworkers with role docs, tick loop, sensors, boundaries, hygiene.",
   "scripts": {
     "coworker": "node --experimental-strip-types --no-warnings src/index.ts",
-    "new-coworker": "bash bin/new-coworker.sh"
+    "new-coworker": "bash bin/new-coworker.sh",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:cov": "vitest run --coverage"
   },
-  "engines": { "node": ">=22" },
-  "license": "MIT"
+  "engines": {
+    "node": ">=22"
+  },
+  "license": "MIT",
+  "main": "index.js",
+  "directories": {
+    "example": "examples"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/danieljohnmorris/ai-coworkers.git"
+  },
+  "keywords": [],
+  "author": "",
+  "bugs": {
+    "url": "https://github.com/danieljohnmorris/ai-coworkers/issues"
+  },
+  "homepage": "https://github.com/danieljohnmorris/ai-coworkers#readme",
+  "devDependencies": {
+    "@vitest/coverage-v8": "^4.1.10",
+    "vitest": "^4.1.10"
+  }
 }

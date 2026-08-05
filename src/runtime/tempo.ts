@@ -69,8 +69,29 @@ export function readBudget(events: DatabaseSync): BudgetSnapshot {
 }
 
 // Extract the "Tempo" section from RITUALS.md, so the coworker sees its own
-// expected cadence alongside its observed cadence.
+// expected cadence alongside its observed cadence. Returns everything from
+// the "## Tempo" heading up to (but not including) the next heading of the
+// same or shallower level, or end-of-file.
 export function extractTempoGuidance(ritualsMd: string): string {
-  const m = ritualsMd.match(/^#+\s*Tempo[\s\S]*?(?=\n#+\s|\n*$)/im);
-  return m ? m[0].trim() : "";
+  const lines = ritualsMd.split(/\r?\n/);
+  let start = -1;
+  let headingLevel = 0;
+  for (let i = 0; i < lines.length; i++) {
+    const m = lines[i].match(/^(#+)\s*Tempo\b/i);
+    if (m) {
+      start = i;
+      headingLevel = m[1].length;
+      break;
+    }
+  }
+  if (start === -1) return "";
+  let end = lines.length;
+  for (let i = start + 1; i < lines.length; i++) {
+    const m = lines[i].match(/^(#+)\s+\S/);
+    if (m && m[1].length <= headingLevel) {
+      end = i;
+      break;
+    }
+  }
+  return lines.slice(start, end).join("\n").trim();
 }
