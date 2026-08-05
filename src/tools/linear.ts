@@ -52,6 +52,37 @@ export const linearNewIssues: ToolDef = {
   },
 };
 
+export const linearUntaggedIssues: ToolDef = {
+  name: "linear.untagged_issues",
+  kind: "sensor",
+  description: "Open Linear issues in watched teams that currently have no labels. Feed the label-maintenance responsibility. Respects team ignore list via LINEAR_IGNORE_TEAMS env (comma-separated team keys).",
+  inputSchema: { type: "object", properties: {} },
+  handler: async (_input, ctx: ToolCtx) => {
+    const key = ctx.env.LINEAR_API_KEY;
+    if (!key) return { issues: [], warning: "LINEAR_API_KEY not set" };
+    const ignore = new Set((ctx.env.LINEAR_IGNORE_TEAMS ?? "").split(",").map((s) => s.trim()).filter(Boolean));
+    const q = `
+      query {
+        issues(first: 30, orderBy: updatedAt) {
+          nodes {
+            id identifier title priority updatedAt
+            team { key name }
+            state { name type }
+            labels { nodes { id name } }
+          }
+        }
+      }`;
+    const data = await gql<{ issues: { nodes: any[] } }>(q, {}, key);
+    const untagged = data.issues.nodes.filter((i) =>
+      i.state.type !== "completed"
+      && i.state.type !== "canceled"
+      && (i.labels?.nodes?.length ?? 0) === 0
+      && !ignore.has(i.team.key)
+    );
+    return { issues: untagged.slice(0, 10) };
+  },
+};
+
 export const linearComment: ToolDef = {
   name: "linear.comment",
   kind: "action",
@@ -203,6 +234,7 @@ export const linearWorkspaceSnapshot: ToolDef = {
 
 export const linearTools: ToolDef[] = [
   linearNewIssues,
+  linearUntaggedIssues,
   linearComment,
   linearWorkspaceSnapshot,
   linearIssueDetail,
