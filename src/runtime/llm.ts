@@ -22,13 +22,14 @@ export interface LLMResult {
 export async function chat(
   cfg: LLMConfig,
   messages: LLMMessage[],
-  opts: { json?: boolean; temperature?: number } = {}
+  opts: { json?: boolean; temperature?: number; maxTokens?: number } = {}
 ): Promise<LLMResult> {
   const url = `${cfg.baseUrl.replace(/\/$/, "")}/v1/chat/completions`;
   const body: Record<string, unknown> = {
     model: cfg.model,
     messages,
     temperature: opts.temperature ?? 0.2,
+    max_tokens: opts.maxTokens ?? 800,
   };
   if (opts.json) body.response_format = { type: "json_object" };
 

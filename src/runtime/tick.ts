@@ -7,6 +7,7 @@
 //   6. sleep    — until next scheduled tick or event
 
 import type { DatabaseSync } from "node:sqlite";
+import { createHash } from "node:crypto";
 import { deliberate, type Perception } from "./deliberate.ts";
 import type { LLMConfig } from "./llm.ts";
 import { checkAction } from "./boundaries.ts";
@@ -15,6 +16,8 @@ import { sweep, activeCount } from "./hygiene.ts";
 import { pendingPromises, recentRollups } from "./memory.ts";
 import { Log } from "./log.ts";
 import type { ToolRegistry } from "./tools.ts";
+import { readTempo, readBudget, extractTempoGuidance } from "./tempo.ts";
+import { getCached, setCached, minInterval } from "./sensor-cache.ts";
 
 export interface TickContext {
   role: Role;
@@ -32,19 +35,27 @@ export async function tick(ctx: TickContext): Promise<void> {
   ctx.log.event("tick.start", { ts: new Date().toISOString() });
   ctx.log.stream(`tick →`);
 
-  // 1. sense
+  // 1. sense (with per-sensor min-interval caching so we don't hammer APIs)
   const allowedTools = new Set(ctx.tools.scopedTo(ctx.role.docs.TOOLS));
   const sensors: Perception["sensors"] = [];
+  const nowMs = Date.now();
   for (const s of ctx.tools.sensors()) {
     if (!allowedTools.has(s.name) && !allowedNamespace(allowedTools, s.name)) continue;
+    const cached = getCached(s.name, nowMs);
+    if (cached !== undefined) {
+      sensors.push({ name: s.name, result: cached });
+      ctx.log.event("sensor.read", { name: s.name, ok: true, cached: true });
+      continue;
+    }
     try {
       const result = await s.handler({}, {
         coworker: ctx.role.name,
         dryRun: ctx.dryRun,
         env: process.env,
       });
+      if (minInterval(s.name) > 0) setCached(s.name, result, nowMs);
       sensors.push({ name: s.name, result });
-      ctx.log.event("sensor.read", { name: s.name, ok: true });
+      ctx.log.event("sensor.read", { name: s.name, ok: true, cached: false });
     } catch (err) {
       sensors.push({ name: s.name, result: null, error: String(err) });
       ctx.log.event("sensor.error", { name: s.name, error: String(err) });
@@ -78,6 +89,25 @@ export async function tick(ctx: TickContext): Promise<void> {
     count: activeCount(ctx.hygiene, k as any),
   }));
 
+  const tempo = readTempo(ctx.events);
+  const budget = readBudget(ctx.events);
+  const tempoGuidance = extractTempoGuidance(ctx.role.docs.RITUALS);
+
+  // Perception-change hash: if sensors + promises are unchanged since last
+  // tick, note it so the model (and future gates) can see quiescence.
+  const changeInput = JSON.stringify({ sensors, promises });
+  const changeHash = createHash("sha1").update(changeInput).digest("hex").slice(0, 12);
+  const prevRow = ctx.events
+    .prepare(`SELECT ts, payload FROM events WHERE kind = 'perception.hash' ORDER BY id DESC LIMIT 1`)
+    .get() as { ts: string; payload: string } | undefined;
+  const prev = prevRow ? JSON.parse(prevRow.payload) : null;
+  const perceptionUnchanged = prev && prev.hash === changeHash;
+  const secSinceChange = perceptionUnchanged && prev?.ts
+    ? Math.floor((Date.now() - Date.parse(prev.ts)) / 1000)
+    : 0;
+  ctx.log.event("perception.hash", { hash: changeHash, ts: perceptionUnchanged ? prev.ts : new Date().toISOString() });
+  tempo.secondsSinceLastPerceptionChange = secSinceChange;
+
   const perception: Perception = {
     now: new Date().toISOString(),
     sensors,
@@ -85,6 +115,9 @@ export async function tick(ctx: TickContext): Promise<void> {
     pendingPromises: promises,
     resources,
     rollups: recentRollups(ctx.memory, 3),
+    tempo,
+    budget,
+    tempoGuidance,
   };
 
   // 3. deliberate
@@ -92,10 +125,14 @@ export async function tick(ctx: TickContext): Promise<void> {
     .actions()
     .filter((a) => allowedTools.has(a.name) || allowedNamespace(allowedTools, a.name));
 
-  let decision;
+  let decision: any;
   try {
     decision = await deliberate(ctx.role, perception, availableActions, ctx.llm);
-    ctx.log.event("deliberate", { choice: decision.action, reason: (decision as any).reason });
+    ctx.log.event("deliberate", { choice: decision.action, reason: decision.reason });
+    if (decision.rawOutput) {
+      // Parse fail — persist the full raw output for debugging.
+      ctx.log.event("deliberate.rawoutput", { raw: String(decision.rawOutput).slice(0, 4000) });
+    }
   } catch (err) {
     ctx.log.event("deliberate.error", { error: String(err) });
     ctx.log.stream(`deliberate error: ${err}`);

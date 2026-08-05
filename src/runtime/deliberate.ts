@@ -5,6 +5,7 @@
 import type { Role } from "./role.ts";
 import { chat, type LLMConfig } from "./llm.ts";
 import type { ToolDef } from "./tools.ts";
+import type { TempoSnapshot, BudgetSnapshot } from "./tempo.ts";
 
 export interface Perception {
   now: string;
@@ -13,6 +14,9 @@ export interface Perception {
   pendingPromises: { id: number; trigger: string; action: string; fire_after: string | null }[];
   resources: { kind: string; count: number }[];
   rollups: { period: string; body: string }[];
+  tempo: TempoSnapshot;
+  budget: BudgetSnapshot;
+  tempoGuidance: string;         // extracted from RITUALS.md "Tempo" section
 }
 
 export type Decision =
@@ -35,6 +39,17 @@ export async function deliberate(
     `# Now`,
     perception.now,
     ``,
+    `# Your tempo (observed)`,
+    `actions_last_1h: ${perception.tempo.actionsLast1h}`,
+    `actions_last_24h: ${perception.tempo.actionsLast24h}`,
+    `noop_ratio_last_100_ticks: ${perception.tempo.noopRatioLast100Ticks}`,
+    `seconds_since_last_action: ${perception.tempo.secondsSinceLastAction ?? "never"}`,
+    `seconds_since_perception_changed: ${perception.tempo.secondsSinceLastPerceptionChange ?? "unknown"}`,
+    `llm_calls_today: ${perception.budget.llmCallsToday}`,
+    ``,
+    `# Your expected tempo (from RITUALS.md)`,
+    perception.tempoGuidance || "(no explicit tempo section in RITUALS.md — infer from responsibilities)",
+    ``,
     `# Sensors (what's happening in the world)`,
     JSON.stringify(perception.sensors, null, 2),
     ``,
@@ -54,13 +69,17 @@ export async function deliberate(
     JSON.stringify(toolCatalog, null, 2),
     ``,
     `# Task`,
-    `Given your role, responsibilities, authority, boundaries, and rituals,`,
-    `decide whether to take ONE action this tick, or do nothing.`,
-    `Doing nothing is often correct — do not act just because you can.`,
+    `Given your role, responsibilities, authority, boundaries, rituals, AND`,
+    `the tempo section above, decide whether to take ONE action this tick`,
+    `or do nothing.`,
     ``,
-    `Respond with a single JSON object, no prose, matching one of:`,
-    `  { "action": "noop", "reason": "..." }`,
-    `  { "action": "call", "tool": "<name>", "input": {...}, "reason": "..." }`,
+    `Rhythm matters. If you are acting far above your expected tempo, or if`,
+    `nothing has meaningfully changed since your last action, prefer noop.`,
+    `A well-paced coworker is more valuable than a busy one.`,
+    ``,
+    `Respond with a single JSON object, no prose, no code fences, matching one of:`,
+    `  {"action":"noop","reason":"..."}`,
+    `  {"action":"call","tool":"<name>","input":{...},"reason":"..."}`,
   ].join("\n");
 
   const res = await chat(
@@ -69,28 +88,64 @@ export async function deliberate(
       { role: "system", content: role.systemPrompt },
       { role: "user", content: userMsg },
     ],
-    { json: true, temperature: 0.2 }
+    { json: true, temperature: 0.2, maxTokens: 800 }
   );
 
   return parseDecision(res.content);
 }
 
-function parseDecision(raw: string): Decision {
+export function parseDecision(raw: string): Decision & { rawOutput?: string } {
   const text = raw.trim();
-  // Strip fenced code if the model wrapped it
-  const stripped = text.replace(/^```(?:json)?\s*/i, "").replace(/```$/, "").trim();
-  try {
-    const obj = JSON.parse(stripped);
-    if (obj.action === "noop") return { action: "noop", reason: String(obj.reason ?? "") };
-    if (obj.action === "call")
-      return {
-        action: "call",
-        tool: String(obj.tool),
-        input: obj.input ?? {},
-        reason: String(obj.reason ?? ""),
-      };
-  } catch {
-    // fall through
+  // Try direct parse first, then extract the first {...} block if the model
+  // wrapped it in prose or a code fence.
+  const attempts = [
+    text,
+    text.replace(/^```(?:json)?\s*/i, "").replace(/```$/, "").trim(),
+    extractFirstJsonObject(text),
+  ].filter(Boolean) as string[];
+
+  for (const candidate of attempts) {
+    try {
+      const obj = JSON.parse(candidate);
+      if (obj.action === "noop") return { action: "noop", reason: String(obj.reason ?? "") };
+      if (obj.action === "call")
+        return {
+          action: "call",
+          tool: String(obj.tool),
+          input: obj.input ?? {},
+          reason: String(obj.reason ?? ""),
+        };
+    } catch {
+      // try next candidate
+    }
   }
-  return { action: "noop", reason: `unparseable model output: ${text.slice(0, 200)}` };
+  return {
+    action: "noop",
+    reason: `unparseable model output`,
+    rawOutput: raw,
+  };
+}
+
+function extractFirstJsonObject(s: string): string | null {
+  const start = s.indexOf("{");
+  if (start === -1) return null;
+  let depth = 0;
+  let inString = false;
+  let escape = false;
+  for (let i = start; i < s.length; i++) {
+    const c = s[i];
+    if (inString) {
+      if (escape) escape = false;
+      else if (c === "\\") escape = true;
+      else if (c === '"') inString = false;
+    } else {
+      if (c === '"') inString = true;
+      else if (c === "{") depth++;
+      else if (c === "}") {
+        depth--;
+        if (depth === 0) return s.slice(start, i + 1);
+      }
+    }
+  }
+  return null;
 }

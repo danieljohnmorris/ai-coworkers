@@ -8,12 +8,13 @@ import { DatabaseSync } from "node:sqlite";
 export type EventKind =
   | "tick.start" | "tick.end"
   | "sensor.read" | "sensor.error"
-  | "deliberate" | "deliberate.error"
+  | "deliberate" | "deliberate.error" | "deliberate.rawoutput"
   | "action" | "action.error"
   | "boundary.block"
   | "hygiene.sweep" | "hygiene.reap"
   | "promise.add" | "promise.fire" | "promise.expire"
   | "memory.compact"
+  | "perception.hash"
   | "note";
 
 export interface EventRow {
