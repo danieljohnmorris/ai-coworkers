@@ -1,248 +1,238 @@
 # ai-coworkers
 
-Long-running AI coworkers with roles, responsibilities, and boundaries — not one-shot
-task agents. Each coworker is a persistent process with a persona, an area of
-responsibility, sensors that read the world, actions gated by explicit authority,
-a tick loop that decides whether to act, memory that grows and compacts, and a
-hygiene layer that cleans up after itself.
+Long-running AI coworkers with **roles**, **boundaries**, and a **tick loop**.
+Not one-shot task agents — persistent processes that decide when *not* to act.
 
-## How a coworker works
+Unlike Hermes / ElizaOS (single-agent, chat-native) or CrewAI (task
+orchestration), ai-coworkers models **roles with hard boundaries**, defaults
+to **dry-run**, and **escalates to a human inbox** instead of guessing.
 
-Each coworker is a long-running process that repeats a **tick loop**:
+MIT, TypeScript, Node ≥ 22, ~3 kLOC, 170 tests.
 
-1. **Sense.** Run every read-only sensor the coworker's role allows (new
-   Linear issues, untagged backlog, Slack mentions, current time, its own
-   resource usage). Results are per-sensor cached (5 min Linear, 1 min Slack,
-   etc.) so we don't hammer APIs. A circuit breaker quarantines a sensor
-   after N consecutive errors.
-2. **Perceive.** Combine sensor output with recent action log, pending
-   promises, memory rollups, **tempo self-awareness** (observed vs expected
-   action rate), any **unread notes** from the operator, and the coworker's
-   own **recent thoughts-to-self** into one "state of the world" snapshot.
-3. **Quiet gate.** If perception hasn't changed *and* no sensor shows work
-   *and* no promise/ritual is due *and* no operator note is waiting → skip
-   deliberation entirely. Zero LLM cost. Truly idle coworkers are free.
-4. **Deliberate + chain.** Feed the snapshot plus role docs (cached system
-   prompt) to the LLM. Model returns `{thoughts, action, reason}`. If it
-   chose an action, execute → feed result back → next step, up to
-   `MAX_TOOLS_PER_TICK` (default 8) tool calls per tick, ending when the
-   model says `noop "done"`. This is the Hermes/Eliza-style turn loop.
-5. **Boundaries.** Every action is hard-checked against `BOUNDARIES.md`
-   before executing. Doing nothing is a first-class choice.
-6. **Record.** Every step goes to a structured event log (SQLite) plus two
-   text logs: `stream.log` (everything) and `highlights.log` (actions,
-   thoughts, blocks, errors, operator notes — the "what happened" narrative).
-7. **Hygiene + rituals.** Sweep registered resources (worktrees, subprocs,
-   scratch dirs) against per-role caps. Fire any due rituals — hourly health
-   snapshot, daily journal, weekly reflective "dreaming" that distills
-   learnings into MEMORY.md and prunes raw events.
-8. **Adaptive interval.** After a quiet tick, next sleep doubles (up to
-   `MAX_TICK_INTERVAL_MS`, default 30 min). Any real activity or external
-   wake resets to base. Roles that need constant polling can declare
-   `Cadence: constant` in `RITUALS.md`.
+---
 
-Ticks can be time-driven, event-driven via `POST /wake` (see
-`docs/webhooks.md`), or immediate on human note via `bin/note-to.sh`.
+## Install
 
-## Coworker archetypes
-
-Same runtime for both. Only the tools they declare differ.
-
-- **Non-technical** (triage engineers, project managers, comms leads) —
-  Linear, Slack, Gmail, Google Docs, Obsidian.
-- **Technical** (PR reviewers, bug-fixers) — all of the above plus
-  `code.delegate` which spawns a coding harness (Pi / Claude Code / Claude Agent SDK)
-  inside a managed git worktree, with automatic cleanup.
-
-## Design debts
-
-- **Hermes** — SOUL.md / skills folder / config layout
-- **ElizaOS** — providers-as-sensors, actions, evaluators-as-reflection, plugin registry
-- **Generative Agents (Stanford)** — sense → reflect → plan → act → memory-stream
-- **MemGPT / Letta** — tiered memory + scheduled compaction
-- **Pi** — TS agent loop shape, MCP wiring (for future coding delegate)
-- **Claude Code / Claude Agent SDK** — the multi-step coding loop we delegate to
-- **Vercel Eve** — mission-scoped agent-per-process shape, streaming tool calls, clean per-run event log
-
-## Status
-
-Early scaffolding. Runtime skeleton, a sanitised `examples/generic-triage`
-coworker, and a Linear tool (dry-run). Real coworker instances live under
-`coworkers/` (gitignored — per-machine state).
-
-## Create and run a coworker
-
-```
-cp -r examples/generic-triage coworkers/my-triager
-$EDITOR coworkers/my-triager/role/*.md         # fill in WORKSPACE.md at minimum
-export OLLAMA_API_KEY=... LINEAR_API_KEY=...   # or use .env (gitignored)
-node --experimental-strip-types --no-warnings src/index.ts my-triager
+```bash
+git clone https://github.com/danieljohnmorris/ai-coworkers
+cd ai-coworkers && npm install
 ```
 
-Add `--live` to allow write actions to actually execute; default is dry-run.
+Set two env vars in `.env`:
+
+```
+OLLAMA_API_KEY=...    # or any OpenAI-compatible endpoint
+LINEAR_API_KEY=...    # optional — only if you want the Linear coworker
+```
+
+---
+
+## A coworker in one directory
+
+```
+coworkers/alex-triage/
+  role/
+    ROLE.md            who they are, working style
+    RESPONSIBILITIES.md  what they own
+    AUTHORITY.md       decide alone vs escalate
+    BOUNDARIES.md      hard "must not touch" + resource caps
+    RITUALS.md         recurring behaviors + tempo targets
+    WORKSPACE.md       stable facts about the world
+    TOOLS.md           which tools they may use
+    RELATIONSHIPS.md   who they work with
+  state/
+    events.db          structured log (SQLite + FTS5)
+    memory/MEMORY.md   semantic memory (2 KB cap)
+    entities/          per-person + per-project notes
+    inbox.md           notes from the human operator
+    questions.md       questions the coworker is asking back
+    stream.log         everything, chronological
+    highlights.log     actions + thoughts + escalations only
+```
+
+The `role/` docs are the whole config. Edit markdown → restart → new behavior.
+No YAML, no code changes for behavior tuning.
+
+Run it:
+
+```bash
+node --experimental-strip-types --no-warnings src/index.ts alex-triage
+# Add --live to allow write actions to actually execute.
+```
+
+Default is **dry-run**. Every write returns `{dryRun: true, would: {...}}` so
+you can watch the coworker for a day before granting it live access.
+
+---
+
+## Watch it think
+
+Real excerpt from `highlights.log`:
+
+```
+[22:57:51] 📬 note from manager: The linear.set_labels tool is fixed.
+                                Please retry AIC-36.
+[22:57:54] 💭 Dan confirmed linear.set_labels is fixed. AIC-36 (webhook
+             adapter) needs 'Feature' label. I have the UUID and label ID
+             from previous failed attempts. Retrying now.
+[22:57:54] → linear.set_labels: {"issueId":"e6ce...","labelIds":["98d9..."]}
+[22:57:56] 💭 AIC-36 labeled 'Feature' successfully. Backlog catch-up
+             continues, but this specific task is done.
+```
+
+The `💭` lines are the coworker's private thoughts — a running notebook that
+threads across ticks. The `→` lines are actions. Both interleave in one file
+the human can skim.
+
+---
+
+## The tick loop
+
+Each coworker is a long-running process that repeats:
+
+1. **Sense** — read-only sensors (Linear, GitHub, Slack, self-status). Cached.
+2. **Perceive** — assemble world-state, tempo (self-awareness), budget usage, operator notes, own recent thoughts.
+3. **Quiet gate** — if nothing changed *and* no work sensed *and* no ritual/promise due, skip the LLM call entirely. Zero cost.
+4. **Deliberate + chain** — model returns `{thoughts, action, reason, pace}`. Multiple tool calls per tick (Hermes/Eliza-style), until it says `noop "done"` or hits `MAX_TOOLS_PER_TICK`.
+5. **Boundaries** — every action checked against `BOUNDARIES.md` before executing.
+6. **Record** — structured event log + narrative `highlights.log` for humans + `MEMORY.md` for the coworker.
+7. **Adaptive interval** — after quiet/noop ticks, sleep doubles up to a cap. Any activity or `/wake` resets. Model may set `pace: faster/slower` to override.
+
+Details: [docs/tick-loop.md](docs/tick-loop.md) (TODO).
+
+---
+
+## Boundaries + dry-run
+
+Every action is checked against the coworker's own `BOUNDARIES.md` before it
+runs. Boundaries look like:
+
+```md
+## Must not touch
+- Any ticket in team CS (client data)
+- Any code, repository, or PR
+- Do not invent new labels — only apply labels that already exist
+
+## Resource limits
+- Max concurrent worktrees: 0
+- Max LLM calls per day: 500
+- Max LLM calls per 5h window: 200
+```
+
+Rejected calls log `boundary.block` events (visible in `highlights.log`) and
+never reach the target system. Dry-run is on until you pass `--live`, and
+individual coworkers can be promoted independently.
+
+---
+
+## Humans ↔ coworker
+
+**You → coworker** (leave a note that surfaces in the next tick's prompt):
+
+```bash
+bin/note-to.sh alex-triage "Prioritise ILO parser bugs today"
+```
+
+**Coworker → you** (persistent question log they see until answered):
+
+```
+Alex called `ask` with to="manager": "Is `perf` the right label for
+memory-usage tickets, or should we split into `perf-mem` and `perf-cpu`?"
+```
+
+Answer in-place:
+
+```bash
+bin/answer.sh alex-triage "Keep it as perf, don't split yet."
+```
+
+**Coworker → coworker** (peer inbox): `ask` with `to="coworker:sam"`.
+**Coworker → Slack / Linear / GitHub**: `ask` with `to="slack:#triage"` /
+`to="linear:ILO-42"` / `to="github:owner/repo#123"`. The channel of
+reply is contextual — the coworker picks the surface that fits.
+
+---
+
+## Adapters
+
+| Ecosystem | How | File |
+|---|---|---|
+| **MCP servers** | `MCP_SERVERS='[{"name":"github","command":"npx","args":["-y","@modelcontextprotocol/server-github"]}]'` | `src/adapters/mcp.ts` |
+| **Hermes / OpenClaw / Anthropic skills** | Drop under `~/.hermes/skills/`; add name to `ACTIVE_SKILLS=` to inline the full body | `src/adapters/hermes.ts` |
+| **Vercel Eve `agent/` folder** | Point loader at Eve-shaped directory | `src/adapters/eve.ts` |
+| **Native tools** | New `src/tools/<name>.ts` exporting `ToolDef[]` | `src/tools/linear.ts` for reference |
+
+More: [docs/webhooks.md](docs/webhooks.md), [docs/systemd.md](docs/systemd.md).
+
+---
+
+## Coworker templates
+
+Ready to `cp -r examples/<name> coworkers/<yourname>`:
+
+- **generic-triage** — Linear triage engineer
+- **pr-reviewer** — reviews open PRs on a set of GitHub repos
+- **project-manager** — project health summaries, aging tickets
+
+Generate from scratch:
+```bash
+bin/new-coworker.sh <name>              # blank template
+bin/new-coworker-interview.sh <name>    # JD-style Q&A → writes role docs
+```
+
+---
 
 ## Operating a coworker
 
-### Leave a note
-
-Anytime, from any terminal:
-
-```
-bin/note-to.sh alex-triage "Please prioritise ILO parser bugs today"
-bin/note-to.sh alex-triage "New label 'security' created — use it for auth"
-bin/note-to.sh alex-triage "Weekend — take it easy, low tempo"
+```bash
+tail -f coworkers/<name>/state/highlights.log   # actions + thoughts + escalations
+tail -f coworkers/<name>/state/stream.log       # everything, one line per tick
+sqlite3 coworkers/<name>/state/events.db "SELECT ts, kind, substr(payload,1,150) \
+  FROM events ORDER BY id DESC LIMIT 20"
 ```
 
-Notes appear prominently in the coworker's next tick under `📬 UNREAD NOTES
-FROM YOUR MANAGER (read and consider FIRST — these override recent
-inferences)`. Marked as read after that tick.
-
-### Read what they've been doing
-
-```
-tail -f coworkers/<name>/state/stream.log      # everything, one line per tick
-tail -f coworkers/<name>/state/highlights.log  # actions, thoughts, notes
-```
-
-Or query the structured event log:
-
-```
-sqlite3 coworkers/<name>/state/events.db \
-  "SELECT ts, kind, substr(payload,1,150) FROM events ORDER BY id DESC LIMIT 20"
-```
-
-Or run the fleet dashboard:
-
-```
-node --experimental-strip-types --no-warnings src/dashboard.ts
+Fleet dashboard for multiple coworkers:
+```bash
+node --experimental-strip-types src/dashboard.ts
 # http://localhost:7777
 ```
 
-### Wake them up (event-driven)
+systemd deployment: [docs/systemd.md](docs/systemd.md).
 
-The coworker listens on `WAKE_PORT` for external events. Any POST triggers
-an immediate tick that bypasses the quiet gate.
+---
 
-```
-curl -X POST http://127.0.0.1:7778/wake
-```
+## Design lineage
 
-Point Linear/Slack/GitHub webhooks at that URL (via smee.io for local dev
-or a tunnel for production — see `docs/webhooks.md`).
+Ideas borrowed from:
 
-## Extending: skills, MCP tools, plugins
+- **Hermes / OpenClaw** — `SOUL.md`/`USER.md`/`MEMORY.md` file convention, skills as procedural memory, dreaming ritual
+- **ElizaOS** — providers-as-sensors, actions, evaluators-as-reflection
+- **Generative Agents (Stanford)** — sense → reflect → plan → act → memory stream
+- **MemGPT / Letta** — tiered memory, scheduled compaction
+- **Vercel Eve** — filesystem-first configuration, `agent/` layout
+- **Claude Code / Pi** — multi-step tool-use loops within a turn
+- **CoALA (arXiv:2309.02427)** — working / episodic / semantic / entity / procedural / reflective memory taxonomy
 
-All three drop in without editing runtime code. Pick whichever matches the
-capability you're adding.
+CoALA vocabulary maps to modules in [`docs/adr/0001-coala-memory-taxonomy.md`](docs/adr/0001-coala-memory-taxonomy.md).
 
-### Anthropic-style skills (Hermes / OpenClaw / Claude Code compatible)
+---
 
-These are folders holding a `SKILL.md` — instructions/playbooks the *model
-reads in context*, not APIs to call. Great for style ("caveman"), procedures
-("systematic-debugging"), or domain knowledge ("research-paper-writing").
+## Tests
 
-```
-# Drop the skill folder in
-cp -r some-skill ~/.hermes/skills/some-skill
-
-# Or clone a repo full of them
-git clone https://github.com/... ~/.hermes/skills-extra
+```bash
+npm test              # 170 tests
+npm run test:cov      # coverage report (90%+ on lines/statements/functions)
 ```
 
-In `.env`:
+Fake LLM + fake API fixtures in `test/fixtures.ts` let you exercise the tick
+pipeline without touching real services.
 
-```
-SKILLS_DIR=/home/you/.hermes/skills            # default; supports Anthropic Agent Skills layout
-ACTIVE_SKILLS=caveman,systematic-debugging     # skills whose FULL body is inlined into the prompt
-```
+---
 
-Skills not in `ACTIVE_SKILLS` still appear in the prompt as a one-line index
-the model can consult. Anthropic Agent Skills, Hermes skills, and OpenClaw
-skills all use the same shape, so any one drops into any of these locations.
+## Status
 
-### MCP tools (Model Context Protocol servers — the biggest ecosystem)
-
-Any MCP server becomes a set of callable tools automatically. The runtime
-spawns the server as a subprocess over stdio and registers each of its
-tools as `mcp.<name>.<tool>`.
-
-In `.env`:
-
-```
-MCP_SERVERS='[
-  {"name":"github","command":"npx","args":["-y","@modelcontextprotocol/server-github"],
-   "env":{"GITHUB_PERSONAL_ACCESS_TOKEN":"ghp_..."}},
-  {"name":"slack","command":"npx","args":["-y","@modelcontextprotocol/server-slack"],
-   "env":{"SLACK_BOT_TOKEN":"xoxb-...","SLACK_TEAM_ID":"T..."}},
-  {"name":"filesystem","command":"npx","args":["-y","@modelcontextprotocol/server-filesystem","/some/allowed/path"]}
-]'
-```
-
-Auth is per-server, via each server's own env vars. The coworker sees the
-tools in its `TOOLS.md` allowlist by prefix:
-
-```md
-- mcp.github          # all github tools
-- mcp.slack.post_message   # only this one
-```
-
-Dry-run gating (`--live` off) blocks writes for MCP tools too.
-
-### Vercel Eve `agent/` folders
-
-Any Eve-shaped folder loads via `src/adapters/eve.ts` — instructions become
-role, `skills/*` become procedural memory, `tools/*.ts` are surfaced by name
-(need porting to our `ToolDef` shape for callability).
-
-### Native tools (write your own)
-
-For anything without an MCP server or where you want no subprocess overhead:
-
-```ts
-// src/tools/mything.ts
-import type { ToolDef } from "../runtime/tools.ts";
-
-export const mySensor: ToolDef = {
-  name: "mything.status",
-  kind: "sensor",                // or "action"
-  description: "What this does — shown to the model",
-  inputSchema: { type: "object", properties: {} },
-  handler: async (input, ctx) => {
-    if (ctx.dryRun && this.kind === "action") return { dryRun: true, would: input };
-    // ...
-  },
-};
-
-export const myTools: ToolDef[] = [mySensor];
-```
-
-Then one line in `src/index.ts`:
-
-```ts
-import { myTools } from "./tools/mything.ts";
-for (const t of myTools) tools.register(t);
-```
-
-Grant per-coworker access by mentioning `mything` in that coworker's `TOOLS.md`.
-
-## Layout
-
-```
-src/
-  runtime/     tick, sensors, deliberate, actions, memory, boundaries,
-               hygiene, log, tempo, semantic, injection
-  tools/       linear, slack, gdocs, ... (adapters)
-  delegates/   coder (future: pi / claude code / claude agent sdk)
-examples/      sanitised coworker templates (committed)
-  generic-triage/
-    role/      ROLE, RESPONSIBILITIES, AUTHORITY, BOUNDARIES, RITUALS,
-               RELATIONSHIPS, TOOLS, WORKSPACE
-coworkers/     real instances — GITIGNORED
-  <name>/
-    role/      per-instance role docs (workspace facts, style prefs)
-    state/     sqlite: events, memory, promises, resources + memory/MEMORY.md
-templates/     systemd unit template
-bin/           new-coworker generator
-```
+Early. Runtime is stable and battle-tested against real Linear. Coding
+coworker (`code.delegate`) is scaffolded but not yet wired to a real coding
+harness. See open tickets: [linear.app/ilo-lang/team/AIC](https://linear.app/ilo-lang/team/AIC).
 
 MIT.
