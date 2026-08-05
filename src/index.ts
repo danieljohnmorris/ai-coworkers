@@ -53,7 +53,10 @@ async function main() {
   const hygiene = openHygiene(join(stateDir, "hygiene.db"));
   const semantic = openSemantic(join(stateDir, "memory", "MEMORY.md"));
   const entities = openEntities(join(stateDir, "entities"));
-  const log = new Log(events, name);
+  const log = new Log(events, name, {
+    streamPath: join(stateDir, "stream.log"),
+    highlightPath: join(stateDir, "highlights.log"),
+  });
 
   const tools = new ToolRegistry();
   for (const t of linearTools) tools.register(t);

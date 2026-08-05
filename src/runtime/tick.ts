@@ -22,6 +22,7 @@ import type { SemanticMemory } from "./semantic.ts";
 import { runDue, type RitualDef } from "./rituals.ts";
 import { dreamOnce } from "./reflect.ts";
 import { writeJournal } from "./journal.ts";
+import { tailHighlights } from "./log.ts";
 import { join } from "node:path";
 import type { EntityStore } from "./entities.ts";
 import { checkBudget, extractCallCap } from "./budget.ts";
@@ -55,7 +56,7 @@ export async function tick(ctx: TickContext): Promise<TickOutcome> {
   const budgetGate = checkBudget(ctx.events, cap);
   if (budgetGate.overBudget) {
     ctx.log.event("note", { message: "over_budget", ...budgetGate });
-    ctx.log.stream(`over budget (${budgetGate.callsToday}/${budgetGate.cap}) — sleeping ${budgetGate.minutesUntilReset}m until reset`);
+    ctx.log.highlight(`OVER BUDGET (${budgetGate.callsToday}/${budgetGate.cap}) — sleeping ${budgetGate.minutesUntilReset}m until reset`);
     await finish(ctx, tStart);
     return { quiet: true };
   }
@@ -162,6 +163,9 @@ export async function tick(ctx: TickContext): Promise<TickOutcome> {
   // Working-memory trim: bound the recent-actions blob.
   const { compact: compactActions } = compactRecentActions(recentActions);
 
+  const highlightsPath = join(ctx.role.dir, "..", "state", "highlights.log");
+  const highlightsTail = tailHighlights(highlightsPath, 20);
+
   const perception: Perception = {
     now: new Date().toISOString(),
     sensors: trimmedSensors,
@@ -172,6 +176,7 @@ export async function tick(ctx: TickContext): Promise<TickOutcome> {
     tempo,
     budget,
     tempoGuidance,
+    highlightsTail,
   };
 
   // 3. deliberate
@@ -204,7 +209,7 @@ export async function tick(ctx: TickContext): Promise<TickOutcome> {
     }
   } catch (err) {
     ctx.log.event("deliberate.error", { error: String(err) });
-    ctx.log.stream(`deliberate error: ${err}`);
+    ctx.log.highlight(`deliberate error: ${err}`);
     await finish(ctx, tStart);
     return { quiet: false };
   }
@@ -216,13 +221,13 @@ export async function tick(ctx: TickContext): Promise<TickOutcome> {
     const tool = ctx.tools.get(decision.tool);
     if (!tool) {
       ctx.log.event("action.error", { tool: decision.tool, error: "not registered" });
-      ctx.log.stream(`✗ ${decision.tool} not registered`);
+      ctx.log.highlight(`✗ ${decision.tool} not registered`);
     } else {
       const decisionCtx = { coworker: ctx.role.name, dryRun: ctx.dryRun, env: process.env };
       const b = checkAction(ctx.role, tool, decision.input, decisionCtx);
       if (!b.allowed) {
         ctx.log.event("boundary.block", { tool: tool.name, reason: b.reason, input: decision.input });
-        ctx.log.stream(`✗ boundary: ${b.reason}`);
+        ctx.log.highlight(`✗ boundary: ${b.reason}`);
       } else {
         ctx.log.event("action", {
           tool: tool.name,
@@ -232,11 +237,11 @@ export async function tick(ctx: TickContext): Promise<TickOutcome> {
         });
         try {
           const outcome = await tool.handler(decision.input, decisionCtx);
-          ctx.log.stream(`→ ${tool.name} ${ctx.dryRun ? "(dry-run)" : ""}`);
+          ctx.log.highlight(`→ ${tool.name}${ctx.dryRun ? " (dry-run)" : ""}: ${JSON.stringify(decision.input).slice(0, 120)}`);
           ctx.log.event("note", { tool: tool.name, outcome });
         } catch (err) {
           ctx.log.event("action.error", { tool: tool.name, error: String(err) });
-          ctx.log.stream(`✗ ${tool.name} failed: ${err}`);
+          ctx.log.highlight(`✗ ${tool.name} failed: ${err}`);
         }
       }
     }
@@ -285,7 +290,7 @@ export async function tick(ctx: TickContext): Promise<TickOutcome> {
     },
   ];
   const fired = await runDue(rituals, ctx.events, ctx.role.name);
-  if (fired.length) ctx.log.stream(`ritual: ${fired.map((f) => f.name).join(", ")}`);
+  if (fired.length) ctx.log.highlight(`ritual: ${fired.map((f) => f.name).join(", ")}`);
 
   await finish(ctx, tStart);
   // Tick was NOT quiet if we got this far — we ran deliberation.

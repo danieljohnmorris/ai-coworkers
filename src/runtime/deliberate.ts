@@ -17,6 +17,7 @@ export interface Perception {
   tempo: TempoSnapshot;
   budget: BudgetSnapshot;
   tempoGuidance: string;         // extracted from RITUALS.md "Tempo" section
+  highlightsTail: string;         // condensed narrative of recent notable events
 }
 
 export type Decision =
@@ -53,8 +54,8 @@ export async function deliberate(
     `# Sensors (what's happening in the world)`,
     JSON.stringify(perception.sensors, null, 2),
     ``,
-    `# Your recent actions`,
-    JSON.stringify(perception.recentActions.slice(-10), null, 2),
+    `# Your recent notable events (highlights — condensed)`,
+    perception.highlightsTail || "(nothing recent)",
     ``,
     `# Your pending promises`,
     JSON.stringify(perception.pendingPromises, null, 2),

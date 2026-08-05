@@ -86,6 +86,84 @@ export const linearComment: ToolDef = {
   },
 };
 
+export const linearIssueDetail: ToolDef = {
+  name: "linear.issue_detail",
+  kind: "sensor",
+  description: "Fetch full detail of a Linear issue including current labels and description. Use before deciding what labels to set.",
+  inputSchema: {
+    type: "object",
+    required: ["identifier"],
+    properties: { identifier: { type: "string", description: "e.g. ILO-509 or the UUID" } },
+  },
+  handler: async (input: { identifier: string }, ctx: ToolCtx) => {
+    const key = ctx.env.LINEAR_API_KEY;
+    if (!key) return { warning: "LINEAR_API_KEY not set" };
+    const q = `
+      query ($id: String!) {
+        issue(id: $id) {
+          id identifier title description priority updatedAt
+          team { key name }
+          state { name type }
+          labels { nodes { id name } }
+          creator { name }
+        }
+      }`;
+    const data = await gql<{ issue: unknown }>(q, { id: input.identifier }, key);
+    return { issue: data.issue };
+  },
+};
+
+export const linearTeamLabels: ToolDef = {
+  name: "linear.team_labels",
+  kind: "sensor",
+  description: "List all label ids and names available in a team. Cached daily. Use to know which labels exist before proposing.",
+  inputSchema: {
+    type: "object",
+    required: ["teamKey"],
+    properties: { teamKey: { type: "string", description: "team key e.g. ILO" } },
+  },
+  handler: async (input: { teamKey: string }, ctx: ToolCtx) => {
+    const key = ctx.env.LINEAR_API_KEY;
+    if (!key) return { warning: "LINEAR_API_KEY not set" };
+    const q = `
+      query ($k: String!) {
+        team(id: $k) { id name labels(first: 100) { nodes { id name color } } }
+      }`;
+    const data = await gql<{ team: { id: string; labels: { nodes: { id: string; name: string }[] } } | null }>(
+      q, { k: input.teamKey }, key
+    );
+    if (!data.team) return { warning: `team ${input.teamKey} not found` };
+    return { teamId: data.team.id, labels: data.team.labels.nodes };
+  },
+};
+
+export const linearSetLabels: ToolDef = {
+  name: "linear.set_labels",
+  kind: "action",
+  description: "Set the labels on a Linear issue (replaces existing set). Pass label IDs, not names — resolve names via linear.team_labels first.",
+  inputSchema: {
+    type: "object",
+    required: ["issueId", "labelIds"],
+    properties: {
+      issueId: { type: "string", description: "Linear issue id (uuid) or identifier like ILO-509" },
+      labelIds: { type: "array", items: { type: "string" }, description: "Full set of label IDs to apply" },
+    },
+  },
+  handler: async (input: { issueId: string; labelIds: string[] }, ctx: ToolCtx) => {
+    if (ctx.dryRun) return { dryRun: true, wouldSet: input };
+    const key = ctx.env.LINEAR_API_KEY;
+    if (!key) throw new Error("LINEAR_API_KEY not set");
+    const m = `
+      mutation ($id: String!, $labelIds: [String!]!) {
+        issueUpdate(id: $id, input: { labelIds: $labelIds }) {
+          success issue { identifier url labels { nodes { name } } }
+        }
+      }`;
+    const data = await gql<{ issueUpdate: { success: boolean; issue: unknown } }>(m, input, key);
+    return data.issueUpdate;
+  },
+};
+
 export const linearWorkspaceSnapshot: ToolDef = {
   name: "linear.workspace_snapshot",
   kind: "sensor",
@@ -117,4 +195,11 @@ export const linearWorkspaceSnapshot: ToolDef = {
   },
 };
 
-export const linearTools: ToolDef[] = [linearNewIssues, linearComment, linearWorkspaceSnapshot];
+export const linearTools: ToolDef[] = [
+  linearNewIssues,
+  linearComment,
+  linearWorkspaceSnapshot,
+  linearIssueDetail,
+  linearTeamLabels,
+  linearSetLabels,
+];
