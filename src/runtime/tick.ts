@@ -145,15 +145,15 @@ export async function tick(ctx: TickContext): Promise<TickOutcome> {
   ctx.log.event("perception.hash", { hash: changeHash, ts: perceptionUnchanged ? prev.ts : new Date().toISOString() });
   tempo.secondsSinceLastPerceptionChange = secSinceChange;
 
-  // Quiet shortcut — no perception change, no promises due, no due
-  // ritual → skip deliberation entirely. Zero LLM cost. This is the big
-  // idle-cost win.
+  // Quiet shortcut — skip deliberation ONLY when there is genuinely nothing
+  // to do. "Nothing changed" is not the same as "no work" — a stable backlog
+  // of untagged issues is unchanged perception but real work pending.
   const promisesDue = promises.length > 0;
   const anyRitualDue = ctx.events
-    .prepare(
-      `SELECT ts FROM events WHERE kind = 'ritual.run' ORDER BY id DESC LIMIT 1`
-    ).get() ? false : true;  // conservative: if we've never run a ritual, fall through
-  if (perceptionUnchanged && !promisesDue && !anyRitualDue && !ctx.forceDeliberate) {
+    .prepare(`SELECT ts FROM events WHERE kind = 'ritual.run' ORDER BY id DESC LIMIT 1`)
+    .get() ? false : true;
+  const hasWork = sensors.some((s) => sensorSuggestsWork(s.result));
+  if (perceptionUnchanged && !promisesDue && !anyRitualDue && !hasWork && !ctx.forceDeliberate) {
     ctx.log.event("note", { quiet: true, secSinceChange });
     ctx.log.stream(`quiet — nothing new for ${secSinceChange}s, no LLM call`);
     sweep(ctx.hygiene, ctx.role.limits, ctx.log);
@@ -347,6 +347,18 @@ async function finish(ctx: TickContext, tStart: number): Promise<void> {
 function allowedNamespace(allowed: Set<string>, toolName: string): boolean {
   for (const a of allowed) {
     if (toolName === a || toolName.startsWith(a + ".")) return true;
+  }
+  return false;
+}
+
+// Heuristic: does a sensor's result look like it contains actionable work?
+// True if it's an object with any non-empty array field (issues, mentions,
+// prs, replies, etc.). Deliberately conservative — false positives cost one
+// LLM call; false negatives silently strand backlogs.
+function sensorSuggestsWork(result: unknown): boolean {
+  if (!result || typeof result !== "object") return false;
+  for (const v of Object.values(result as Record<string, unknown>)) {
+    if (Array.isArray(v) && v.length > 0) return true;
   }
   return false;
 }
