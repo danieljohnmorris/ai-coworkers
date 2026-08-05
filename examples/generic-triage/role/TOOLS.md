@@ -1,3 +1,3 @@
 - linear: read new/untriaged issues; comment on issues (dry-run until promoted).
+- memory: search your own past events (memory.search) — use before commenting to avoid repeating yourself.
 - clock: current time.
-- memory: read/write own working memory and promises.

@@ -9,9 +9,11 @@ import { openEvents, Log } from "./runtime/log.ts";
 import { openMemory } from "./runtime/memory.ts";
 import { openHygiene } from "./runtime/hygiene.ts";
 import { openSemantic } from "./runtime/semantic.ts";
+import { initEpisodic, search as episodicSearch } from "./runtime/episodic.ts";
 import { ToolRegistry } from "./runtime/tools.ts";
 import { tick } from "./runtime/tick.ts";
 import { linearTools } from "./tools/linear.ts";
+import { memoryTools } from "./tools/memory.ts";
 
 async function main() {
   const args = process.argv.slice(2);
@@ -40,6 +42,7 @@ async function main() {
 
   const role = loadRole(coworkersDir, name);
   const events = openEvents(join(stateDir, "events.db"));
+  initEpisodic(events);
   const memory = openMemory(join(stateDir, "memory.db"));
   const hygiene = openHygiene(join(stateDir, "hygiene.db"));
   const semantic = openSemantic(join(stateDir, "memory", "MEMORY.md"));
@@ -47,6 +50,7 @@ async function main() {
 
   const tools = new ToolRegistry();
   for (const t of linearTools) tools.register(t);
+  for (const t of memoryTools) tools.register(t);
 
   const llm = {
     baseUrl: process.env.OLLAMA_HOST ?? "https://ollama.com",
