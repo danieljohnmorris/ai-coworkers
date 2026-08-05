@@ -134,8 +134,8 @@ export const linearIssueDetail: ToolDef = {
     const key = ctx.env.LINEAR_API_KEY;
     if (!key) return { warning: "LINEAR_API_KEY not set" };
     const q = `
-      query ($id: String!) {
-        issue(id: $id) {
+      query ($identifier: String!) {
+        issue(id: $identifier) {
           id identifier title description priority updatedAt
           team { key name }
           state { name type }
@@ -143,7 +143,7 @@ export const linearIssueDetail: ToolDef = {
           creator { name }
         }
       }`;
-    const data = await gql<{ issue: unknown }>(q, { id: input.identifier }, key);
+    const data = await gql<{ issue: unknown }>(q, input, key);
     return { issue: data.issue };
   },
 };
@@ -163,11 +163,11 @@ export const linearTeamLabels: ToolDef = {
     const key = ctx.env.LINEAR_API_KEY;
     if (!key) return { warning: "LINEAR_API_KEY not set" };
     const q = `
-      query ($k: String!) {
-        team(id: $k) { id name labels(first: 100) { nodes { id name color } } }
+      query ($teamKey: String!) {
+        team(id: $teamKey) { id name labels(first: 100) { nodes { id name color } } }
       }`;
     const data = await gql<{ team: { id: string; labels: { nodes: { id: string; name: string }[] } } | null }>(
-      q, { k: input.teamKey }, key
+      q, input, key
     );
     if (!data.team) return { warning: `team ${input.teamKey} not found` };
     return { teamId: data.team.id, labels: data.team.labels.nodes };
@@ -190,9 +190,11 @@ export const linearSetLabels: ToolDef = {
     if (ctx.dryRun) return { dryRun: true, wouldSet: input };
     const key = ctx.env.LINEAR_API_KEY;
     if (!key) throw new Error("LINEAR_API_KEY not set");
+    // GraphQL variable names must match the object keys we pass to gql().
+    // We pass `input` as-is → declare $issueId and $labelIds accordingly.
     const m = `
-      mutation ($id: String!, $labelIds: [String!]!) {
-        issueUpdate(id: $id, input: { labelIds: $labelIds }) {
+      mutation ($issueId: String!, $labelIds: [String!]!) {
+        issueUpdate(id: $issueId, input: { labelIds: $labelIds }) {
           success issue { identifier url labels { nodes { name } } }
         }
       }`;
