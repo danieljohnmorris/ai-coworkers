@@ -86,4 +86,35 @@ export const linearComment: ToolDef = {
   },
 };
 
-export const linearTools: ToolDef[] = [linearNewIssues, linearComment];
+export const linearWorkspaceSnapshot: ToolDef = {
+  name: "linear.workspace_snapshot",
+  kind: "sensor",
+  description:
+    "Once/day snapshot of workspace shape: teams, active projects, label frequency, priority distribution. Gives the coworker structural awareness without hand-authored WORKSPACE.md having to enumerate everything.",
+  inputSchema: { type: "object", properties: {} },
+  handler: async (_input, ctx) => {
+    const key = ctx.env.LINEAR_API_KEY;
+    if (!key) return { warning: "LINEAR_API_KEY not set" };
+    const q = `
+      query {
+        organization { name urlKey }
+        teams(first: 25) { nodes { key name description } }
+        projects(first: 25) { nodes { name state url teams { nodes { key } } } }
+        issueLabels(first: 50) { nodes { name color } }
+      }`;
+    const data = await gql<{
+      organization: { name: string; urlKey: string };
+      teams: { nodes: unknown[] };
+      projects: { nodes: unknown[] };
+      issueLabels: { nodes: { name: string; color: string }[] };
+    }>(q, {}, key);
+    return {
+      organization: data.organization,
+      teams: data.teams.nodes,
+      projects: data.projects.nodes,
+      labels: data.issueLabels.nodes.map((l) => l.name),
+    };
+  },
+};
+
+export const linearTools: ToolDef[] = [linearNewIssues, linearComment, linearWorkspaceSnapshot];

@@ -19,6 +19,9 @@ import type { ToolRegistry } from "./tools.ts";
 import { readTempo, readBudget, extractTempoGuidance } from "./tempo.ts";
 import { getCached, setCached, minInterval } from "./sensor-cache.ts";
 import type { SemanticMemory } from "./semantic.ts";
+import { runDue, type RitualDef } from "./rituals.ts";
+import { dreamOnce } from "./reflect.ts";
+import type { EntityStore } from "./entities.ts";
 
 export interface TickContext {
   role: Role;
@@ -26,6 +29,7 @@ export interface TickContext {
   memory: DatabaseSync;
   hygiene: DatabaseSync;
   semantic: SemanticMemory;
+  entities: EntityStore;
   tools: ToolRegistry;
   llm: LLMConfig;
   dryRun: boolean;
@@ -127,12 +131,20 @@ export async function tick(ctx: TickContext): Promise<void> {
     .actions()
     .filter((a) => allowedTools.has(a.name) || allowedNamespace(allowedTools, a.name));
 
-  // Augment the cached role prompt with the current semantic memory. This
-  // is the small (<= 2KB) MEMORY.md the coworker maintains for itself.
+  // Augment the cached role prompt with the current semantic memory + any
+  // entity cards mentioned in this tick's perception.
   const semanticBody = ctx.semantic.read().trim();
-  const augmentedRole = semanticBody
-    ? { ...ctx.role, systemPrompt: `${ctx.role.systemPrompt}\n\n---\n\n# MEMORY (what you have learned)\n\n${semanticBody}` }
-    : ctx.role;
+  const perceptionBlob = JSON.stringify({ sensors, promises });
+  const { people, projects } = ctx.entities.detect(perceptionBlob);
+  const entityCards = [
+    ...people.map((h) => `## person: ${h}\n${ctx.entities.readPerson(h).trim()}`),
+    ...projects.map((k) => `## project: ${k}\n${ctx.entities.readProject(k).trim()}`),
+  ].filter((s) => s.split("\n").length > 1).join("\n\n");
+
+  let augmentedPrompt = ctx.role.systemPrompt;
+  if (semanticBody) augmentedPrompt += `\n\n---\n\n# MEMORY (what you have learned)\n\n${semanticBody}`;
+  if (entityCards) augmentedPrompt += `\n\n---\n\n# ENTITIES (mentioned in current perception)\n\n${entityCards}`;
+  const augmentedRole = augmentedPrompt === ctx.role.systemPrompt ? ctx.role : { ...ctx.role, systemPrompt: augmentedPrompt };
 
   let decision: any;
   try {
@@ -184,6 +196,26 @@ export async function tick(ctx: TickContext): Promise<void> {
 
   // 5. record + hygiene
   sweep(ctx.hygiene, ctx.role.limits, ctx.log);
+
+  // 6. rituals — cheap check; only fires when due, at most one per tick.
+  const rituals: RitualDef[] = [
+    {
+      name: "reflect.weekly",
+      cadence: { kind: "weekly", weekdayUTC: 0, hourUTC: 3 }, // Sun 03:00 UTC
+      run: async () => {
+        await dreamOnce({
+          role: ctx.role,
+          events: ctx.events,
+          memory: ctx.memory,
+          semantic: ctx.semantic,
+          llm: ctx.llm,
+          log: ctx.log,
+        });
+      },
+    },
+  ];
+  const fired = await runDue(rituals, ctx.events, ctx.role.name);
+  if (fired.length) ctx.log.stream(`ritual: ${fired.map((f) => f.name).join(", ")}`);
 
   await finish(ctx, tStart);
 }

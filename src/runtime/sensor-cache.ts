@@ -4,7 +4,8 @@
 // For v1 we use a name-based default table — trivially editable.
 
 const DEFAULTS: Record<string, number> = {
-  "linear.": 5 * 60_000,     // 5 min between Linear polls
+  "linear.workspace_snapshot": 24 * 3600_000,  // once/day is plenty
+  "linear.": 5 * 60_000,                       // other linear sensors: 5 min
   "slack.": 60_000,
   "github.": 5 * 60_000,
   "gmail.": 5 * 60_000,

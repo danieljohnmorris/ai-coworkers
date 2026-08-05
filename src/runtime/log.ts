@@ -15,6 +15,7 @@ export type EventKind =
   | "promise.add" | "promise.fire" | "promise.expire"
   | "memory.compact"
   | "perception.hash"
+  | "ritual.run"
   | "note";
 
 export interface EventRow {

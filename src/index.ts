@@ -9,7 +9,8 @@ import { openEvents, Log } from "./runtime/log.ts";
 import { openMemory } from "./runtime/memory.ts";
 import { openHygiene } from "./runtime/hygiene.ts";
 import { openSemantic } from "./runtime/semantic.ts";
-import { initEpisodic, search as episodicSearch } from "./runtime/episodic.ts";
+import { initEpisodic } from "./runtime/episodic.ts";
+import { openEntities } from "./runtime/entities.ts";
 import { ToolRegistry } from "./runtime/tools.ts";
 import { tick } from "./runtime/tick.ts";
 import { linearTools } from "./tools/linear.ts";
@@ -46,6 +47,7 @@ async function main() {
   const memory = openMemory(join(stateDir, "memory.db"));
   const hygiene = openHygiene(join(stateDir, "hygiene.db"));
   const semantic = openSemantic(join(stateDir, "memory", "MEMORY.md"));
+  const entities = openEntities(join(stateDir, "entities"));
   const log = new Log(events, name);
 
   const tools = new ToolRegistry();
@@ -79,6 +81,7 @@ async function main() {
         memory,
         hygiene,
         semantic,
+        entities,
         tools,
         llm,
         dryRun: !live,
