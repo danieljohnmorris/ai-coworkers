@@ -7,12 +7,18 @@ export default defineConfig({
     coverage: {
       provider: "v8",
       include: ["src/**/*.ts"],
-      exclude: ["src/**/*.test.ts", "src/index.ts"],
+      // index.ts and dashboard.ts are process entry-points — exercised via
+      // integration/manual runs, not unit tests. Excluding them from the
+      // gate prevents padding coverage with tests that assert little.
+      exclude: ["src/**/*.test.ts", "src/index.ts", "src/dashboard.ts"],
       thresholds: {
-        lines: 60,
-        functions: 60,
-        branches: 60,
-        statements: 60,
+        lines: 90,
+        functions: 90,
+        // Branches deliberately lower — many are defensive/JSON.parse fallback
+        // arms exercised only in production. 75 keeps the gate honest without
+        // rewarding branch-padding tests.
+        branches: 75,
+        statements: 90,
       },
     },
   },

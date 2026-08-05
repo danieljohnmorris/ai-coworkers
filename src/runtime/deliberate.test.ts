@@ -37,6 +37,20 @@ describe("parseDecision", () => {
     if (r.action === "call") expect((r.input as any).a.b).toBe(1);
   });
 
+  it("accepts lenient form: action is tool name", () => {
+    const r = parseDecision('{"action":"linear.comment","input":{"issueId":"X"},"reason":"r"}') as any;
+    expect(r.action).toBe("call");
+    expect(r.tool).toBe("linear.comment");
+    expect(r.input.issueId).toBe("X");
+  });
+
+  it("accepts lenient form: tool + arguments", () => {
+    const r = parseDecision('{"tool":"github.pr_comment","arguments":{"body":"hi"},"reason":"r"}') as any;
+    expect(r.action).toBe("call");
+    expect(r.tool).toBe("github.pr_comment");
+    expect(r.input.body).toBe("hi");
+  });
+
   it("returns noop + rawOutput on truly unparseable text", () => {
     const raw = "I refuse to output JSON, sorry.";
     const r = parseDecision(raw) as any;

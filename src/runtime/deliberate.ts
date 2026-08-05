@@ -108,13 +108,29 @@ export function parseDecision(raw: string): Decision & { rawOutput?: string } {
     try {
       const obj = JSON.parse(candidate);
       if (obj.action === "noop") return { action: "noop", reason: String(obj.reason ?? "") };
-      if (obj.action === "call")
+      // Explicit call form
+      if (obj.action === "call" && obj.tool) {
         return {
           action: "call",
           tool: String(obj.tool),
           input: obj.input ?? {},
           reason: String(obj.reason ?? ""),
         };
+      }
+      // Lenient forms models often produce:
+      //   { action: "<toolname>", input: {...} }
+      //   { tool: "<toolname>", input: {...} }
+      const toolName = typeof obj.tool === "string" ? obj.tool
+        : (typeof obj.action === "string" && obj.action !== "noop" && obj.action.includes(".")) ? obj.action
+        : null;
+      if (toolName) {
+        return {
+          action: "call",
+          tool: toolName,
+          input: obj.input ?? obj.arguments ?? obj.args ?? {},
+          reason: String(obj.reason ?? ""),
+        };
+      }
     } catch {
       // try next candidate
     }
