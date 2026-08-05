@@ -27,3 +27,21 @@ describe("sensor-cache", () => {
     expect(getCached("clock.now", 1_000_000 + 10)).toBeUndefined();
   });
 });
+
+import { invalidatePrefix } from "./sensor-cache.ts";
+
+describe("invalidatePrefix", () => {
+  it("clears cached entries under a prefix and returns count", () => {
+    setCached("linear.new_issues", ["x"], 1);
+    setCached("linear.untagged_issues", ["y"], 1);
+    setCached("slack.mentions", ["z"], 1);
+    const n = invalidatePrefix("linear.");
+    expect(n).toBe(2);
+    expect(getCached("linear.new_issues", 2)).toBeUndefined();
+    expect(getCached("slack.mentions", 2)).toEqual(["z"]);
+  });
+
+  it("returns 0 when nothing matches", () => {
+    expect(invalidatePrefix("nonexistent.")).toBe(0);
+  });
+});

@@ -10,7 +10,12 @@ export default defineConfig({
       // index.ts and dashboard.ts are process entry-points — exercised via
       // integration/manual runs, not unit tests. Excluding them from the
       // gate prevents padding coverage with tests that assert little.
-      exclude: ["src/**/*.test.ts", "src/index.ts", "src/dashboard.ts"],
+      exclude: [
+        "src/**/*.test.ts",
+        "src/index.ts",             // process entry-point
+        "src/dashboard.ts",          // http server — manual
+        "src/adapters/mcp.ts",       // spawns MCP subprocess; parseMcpEnv only
+      ],
       thresholds: {
         lines: 90,
         functions: 90,
