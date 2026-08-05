@@ -21,6 +21,8 @@ import { getCached, setCached, minInterval } from "./sensor-cache.ts";
 import type { SemanticMemory } from "./semantic.ts";
 import { runDue, type RitualDef } from "./rituals.ts";
 import { dreamOnce } from "./reflect.ts";
+import { writeJournal } from "./journal.ts";
+import { join } from "node:path";
 import type { EntityStore } from "./entities.ts";
 import { checkBudget, extractCallCap } from "./budget.ts";
 import { shouldSkip as circuitShouldSkip, recordError as circuitError, recordSuccess as circuitOk } from "./circuit.ts";
@@ -237,6 +239,14 @@ export async function tick(ctx: TickContext): Promise<void> {
           llm: ctx.llm,
           log: ctx.log,
         });
+      },
+    },
+    {
+      name: "journal.daily",
+      cadence: { kind: "daily", hourUTC: 9 },
+      run: async () => {
+        const journalDir = join(ctx.role.dir, "..", "state", "journal");
+        await writeJournal({ role: ctx.role, events: ctx.events, journalDir, llm: ctx.llm, log: ctx.log });
       },
     },
     {

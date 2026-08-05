@@ -1,0 +1,3 @@
+- **Your manager** (human): consumes your health summaries; approves scope calls.
+- **Triage coworker** (if online): may escalate tickets that turn into project work.
+- **PR reviewer** (if online): informs your view of technical velocity.

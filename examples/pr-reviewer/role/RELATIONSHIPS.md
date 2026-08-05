@@ -1,0 +1,3 @@
+- **Your manager** (human): final say on approvals; escalation target.
+- **PR authors**: contributors, humans and bots. Respectful, direct feedback.
+- **Triage coworker** (if online): may hand you tickets that turned into PRs.

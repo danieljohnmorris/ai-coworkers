@@ -15,6 +15,7 @@ import { ToolRegistry } from "./runtime/tools.ts";
 import { tick } from "./runtime/tick.ts";
 import { linearTools } from "./tools/linear.ts";
 import { memoryTools } from "./tools/memory.ts";
+import { githubTools } from "./tools/github.ts";
 import { connectMcp, parseMcpEnv, type McpConnection } from "./adapters/mcp.ts";
 import { loadHermesSkills, renderSkillsIndex } from "./adapters/hermes.ts";
 
@@ -55,6 +56,7 @@ async function main() {
   const tools = new ToolRegistry();
   for (const t of linearTools) tools.register(t);
   for (const t of memoryTools) tools.register(t);
+  for (const t of githubTools) tools.register(t);
 
   // Optional MCP servers via MCP_SERVERS env var.
   const mcpConnections: McpConnection[] = [];

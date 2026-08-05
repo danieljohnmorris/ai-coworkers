@@ -1,0 +1,3 @@
+- github: list open PRs across WATCHED_REPOS; comment on individual PRs.
+- memory: search your own past reviews to avoid repeating yourself.
+- clock: current time.

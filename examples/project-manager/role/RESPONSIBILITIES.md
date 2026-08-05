@@ -1,0 +1,5 @@
+- Track project health across watched Linear teams: velocity, aging tickets, stale projects.
+- Post a weekly health note per project (Slack once wired; markdown journal for now).
+- Notice when a project has no movement for >14 days and flag it.
+- Notice when a project has scope drift (many new tickets added without any closed) and flag.
+- Never manage humans; never assign work; never estimate for people.

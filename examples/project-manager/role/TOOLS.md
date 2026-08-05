@@ -1,0 +1,3 @@
+- linear: read teams, projects, issues; comment (dry-run until promoted).
+- memory: search your own past health summaries.
+- clock: current time.
