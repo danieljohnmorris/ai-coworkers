@@ -9,6 +9,7 @@ import { openMemory } from "../src/runtime/memory.ts";
 import { openHygiene } from "../src/runtime/hygiene.ts";
 import { openSemantic } from "../src/runtime/semantic.ts";
 import { openEntities } from "../src/runtime/entities.ts";
+import { openInbox } from "../src/runtime/inbox.ts";
 import { initEpisodic } from "../src/runtime/episodic.ts";
 import { ToolRegistry, type ToolDef } from "../src/runtime/tools.ts";
 import { loadRole } from "../src/runtime/role.ts";
@@ -71,6 +72,7 @@ function ctx(role: any, tr: ToolRegistry) {
     hygiene: openHygiene(join(stateDir, "hygiene.db")),
     semantic: openSemantic(join(stateDir, "memory", "MEMORY.md")),
     entities: openEntities(join(stateDir, "entities")),
+    inbox: openInbox(join(stateDir, "inbox.md")),
     tools: tr,
     llm: llm.llm,
     dryRun: true,

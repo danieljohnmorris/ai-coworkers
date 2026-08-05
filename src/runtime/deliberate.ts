@@ -19,6 +19,7 @@ export interface Perception {
   tempoGuidance: string;         // extracted from RITUALS.md "Tempo" section
   highlightsTail: string;         // condensed narrative of recent notable events
   recentThoughts: string;         // your last few thoughts-to-self, in order
+  inboxUnread: string;             // messages from your manager (human) since last read
 }
 
 export type Decision =
@@ -77,6 +78,10 @@ export async function deliberate(
     `# Available actions`,
     JSON.stringify(toolCatalog, null, 2),
     ``,
+    perception.inboxUnread
+      ? `# 📬 UNREAD NOTES FROM YOUR MANAGER (read and consider FIRST — these override recent inferences)\n\n${perception.inboxUnread}`
+      : ``,
+    perception.inboxUnread ? `` : ``,
     `# Your recent thoughts to yourself`,
     perception.recentThoughts || "(no recent thoughts logged)",
     ``,
