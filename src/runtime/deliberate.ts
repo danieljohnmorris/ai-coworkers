@@ -23,9 +23,11 @@ export interface Perception {
   inboxUnread: string;             // messages from your manager (human) since last read
 }
 
+export type Pace = "faster" | "hold" | "slower";
+
 export type Decision =
-  | { action: "noop"; reason: string; thoughts?: string }
-  | { action: "call"; tool: string; input: unknown; reason: string; thoughts?: string };
+  | { action: "noop"; reason: string; thoughts?: string; pace?: Pace }
+  | { action: "call"; tool: string; input: unknown; reason: string; thoughts?: string; pace?: Pace };
 
 export interface PriorStep {
   tool: string;
@@ -57,6 +59,8 @@ export async function deliberate(
     `seconds_since_last_action: ${perception.tempo.secondsSinceLastAction ?? "never"}`,
     `seconds_since_perception_changed: ${perception.tempo.secondsSinceLastPerceptionChange ?? "unknown"}`,
     `llm_calls_today: ${perception.budget.llmCallsToday}`,
+    // Rolling window (matches provider quota — Ollama Cloud resets every 5h)
+    `llm_calls_in_${(perception.budget as any).windowMinutes ?? 300}min_window: ${(perception.budget as any).callsInWindow ?? 0} / ${(perception.budget as any).windowCap ?? "?"} (${(perception.budget as any).pctWindowUsed ?? 0}% used)`,
     ``,
     `# Your expected tempo (from RITUALS.md)`,
     perception.tempoGuidance || "(no explicit tempo section in RITUALS.md — infer from responsibilities)",
@@ -117,9 +121,15 @@ export async function deliberate(
     `that lets you continue trains of thought across ticks. Reference and`,
     `build on your earlier thoughts above where relevant.`,
     ``,
+    `You may also include an optional "pace" field to hint how soon you should tick again:`,
+    `  "faster" — halve the next interval (use when actively working, budget healthy)`,
+    `  "hold"   — keep the current interval`,
+    `  "slower" — double the next interval (use when idle, or approaching a budget limit)`,
+    `The runtime clamps your choice to safe bounds and falls back to adaptive backoff if omitted. Use it especially to conserve LLM budget as you approach the window cap.`,
+    ``,
     `Respond with a single JSON object, no prose, no code fences, matching one of:`,
-    `  {"thoughts":"...","action":"noop","reason":"..."}`,
-    `  {"thoughts":"...","action":"call","tool":"<name>","input":{...},"reason":"..."}`,
+    `  {"thoughts":"...","action":"noop","reason":"...","pace":"slower"}`,
+    `  {"thoughts":"...","action":"call","tool":"<name>","input":{...},"reason":"...","pace":"faster"}`,
   ].join("\n");
 
   const res = await chat(
@@ -148,7 +158,8 @@ export function parseDecision(raw: string): Decision & { rawOutput?: string } {
     try {
       const obj = JSON.parse(candidate);
       const thoughts = typeof obj.thoughts === "string" ? obj.thoughts : undefined;
-      if (obj.action === "noop") return { action: "noop", reason: String(obj.reason ?? ""), thoughts };
+      const pace = (["faster", "hold", "slower"] as const).includes(obj.pace) ? obj.pace as Pace : undefined;
+      if (obj.action === "noop") return { action: "noop", reason: String(obj.reason ?? ""), thoughts, pace };
       // Explicit call form
       if (obj.action === "call" && obj.tool) {
         return {
@@ -157,6 +168,7 @@ export function parseDecision(raw: string): Decision & { rawOutput?: string } {
           input: obj.input ?? {},
           reason: String(obj.reason ?? ""),
           thoughts,
+          pace,
         };
       }
       // Lenient forms models often produce:
@@ -172,6 +184,7 @@ export function parseDecision(raw: string): Decision & { rawOutput?: string } {
           input: obj.input ?? obj.arguments ?? obj.args ?? {},
           reason: String(obj.reason ?? ""),
           thoughts,
+          pace,
         };
       }
     } catch {

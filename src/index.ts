@@ -138,7 +138,19 @@ async function main() {
       log.event("note", { fatal: false, error: String(err) });
       log.stream(`tick error: ${err}`);
     }
-    if (outcome.quiet) {
+    // Coworker-chosen pacing hint (bounded by env limits). Overrides the
+    // adaptive quiet/reset rule when explicit — the model owns the wheel.
+    const minMs = Number(process.env.MIN_TICK_INTERVAL_MS ?? 15_000);
+    if (outcome.pace === "faster") {
+      intervalMs = Math.max(minMs, Math.floor(intervalMs / 2));
+      consecutiveQuiet = 0;
+      log.stream(`pace=faster — next tick in ${Math.round(intervalMs / 1000)}s`);
+    } else if (outcome.pace === "slower") {
+      intervalMs = Math.min(maxIntervalMs, intervalMs * 2);
+      log.stream(`pace=slower — next tick in ${Math.round(intervalMs / 1000)}s`);
+    } else if (outcome.pace === "hold") {
+      log.stream(`pace=hold — next tick in ${Math.round(intervalMs / 1000)}s`);
+    } else if (outcome.quiet) {
       consecutiveQuiet++;
       intervalMs = Math.min(intervalMs * 2, maxIntervalMs);
       log.stream(`quiet x${consecutiveQuiet} — next tick in ${Math.round(intervalMs / 1000)}s`);

@@ -25,10 +25,10 @@ describe("checkBudget", () => {
       db.prepare(`INSERT INTO events (ts, coworker, kind, payload) VALUES (?, ?, ?, ?)`)
         .run(new Date().toISOString(), "t", "deliberate", "{}");
     }
-    const g = checkBudget(db, 100, now);
+    const g = checkBudget(db, 100, null, 300, now);
     expect(g.callsToday).toBe(3);
-    expect(g.overBudget).toBe(false);
-    expect(g.minutesUntilReset).toBeGreaterThan(0);
+    expect(g.overDailyBudget).toBe(false);
+    expect(g.minutesUntilDailyReset).toBeGreaterThan(0);
     rmSync(dir, { recursive: true, force: true });
   });
 
@@ -37,8 +37,8 @@ describe("checkBudget", () => {
     for (let i = 0; i < 5; i++)
       db.prepare(`INSERT INTO events (ts, coworker, kind, payload) VALUES (?, ?, ?, ?)`)
         .run(new Date().toISOString(), "t", "deliberate.error", "{}");
-    const g = checkBudget(db, 5);
-    expect(g.overBudget).toBe(true);
+    const g = checkBudget(db, 5, null, 300);
+    expect(g.overDailyBudget).toBe(true);
     rmSync(dir, { recursive: true, force: true });
   });
 
@@ -47,7 +47,7 @@ describe("checkBudget", () => {
     const yesterday = new Date(Date.now() - 25 * 3600_000).toISOString();
     db.prepare(`INSERT INTO events (ts, coworker, kind, payload) VALUES (?, ?, ?, ?)`)
       .run(yesterday, "t", "deliberate", "{}");
-    const g = checkBudget(db, 100);
+    const g = checkBudget(db, 100, null, 300);
     expect(g.callsToday).toBe(0);
     rmSync(dir, { recursive: true, force: true });
   });

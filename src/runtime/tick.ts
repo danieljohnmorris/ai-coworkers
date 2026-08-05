@@ -26,7 +26,7 @@ import { tailHighlights } from "./log.ts";
 import { join } from "node:path";
 import type { EntityStore } from "./entities.ts";
 import type { Inbox } from "./inbox.ts";
-import { checkBudget, extractCallCap } from "./budget.ts";
+import { checkBudget, extractCallCap, extractWindowCap, extractWindowMinutes } from "./budget.ts";
 import { shouldSkip as circuitShouldSkip, recordError as circuitError, recordSuccess as circuitOk } from "./circuit.ts";
 import { compactRecentActions, truncateSensorPayloads } from "./working.ts";
 
@@ -47,6 +47,7 @@ export interface TickContext {
 
 export interface TickOutcome {
   quiet: boolean;   // perception unchanged, no promise/ritual due, no LLM call made
+  pace?: "faster" | "hold" | "slower";  // optional model-chosen hint the loop respects within bounds
 }
 
 export async function tick(ctx: TickContext): Promise<TickOutcome> {
@@ -56,12 +57,18 @@ export async function tick(ctx: TickContext): Promise<TickOutcome> {
 
   // 0. budget gate — cheap check, cut expensive LLM call if we're over cap
   const cap = extractCallCap(ctx.role.docs.BOUNDARIES);
-  const budgetGate = checkBudget(ctx.events, cap);
-  if (budgetGate.overBudget) {
-    ctx.log.event("note", { message: "over_budget", ...budgetGate });
-    ctx.log.highlight(`OVER BUDGET (${budgetGate.callsToday}/${budgetGate.cap}) — sleeping ${budgetGate.minutesUntilReset}m until reset`);
+  const windowCap = extractWindowCap(ctx.role.docs.BOUNDARIES);
+  const windowMinutes = extractWindowMinutes(ctx.role.docs.BOUNDARIES);
+  const budgetGate = checkBudget(ctx.events, cap, windowCap, windowMinutes);
+  if (budgetGate.overDailyBudget || budgetGate.overWindowBudget) {
+    const which = budgetGate.overWindowBudget ? "WINDOW" : "DAILY";
+    const detail = budgetGate.overWindowBudget
+      ? `${budgetGate.callsInWindow}/${budgetGate.windowCap} in ${budgetGate.windowMinutes}min window`
+      : `${budgetGate.callsToday}/${budgetGate.dailyCap} today`;
+    ctx.log.event("note", { message: "over_budget", which, ...budgetGate });
+    ctx.log.highlight(`OVER ${which} BUDGET (${detail}) — sleeping`);
     await finish(ctx, tStart);
-    return { quiet: true };
+    return { quiet: true, pace: "slower" };
   }
 
   // 1. sense (with per-sensor min-interval caching + circuit breaker)
@@ -233,15 +240,18 @@ export async function tick(ctx: TickContext): Promise<TickOutcome> {
   const maxToolsPerTick = Number(process.env.MAX_TOOLS_PER_TICK ?? 8);
   const priorSteps: { tool: string; input: unknown; outcome: unknown }[] = [];
   let ranAnyAction = false;
+  let lastPace: "faster" | "hold" | "slower" | undefined;
 
   for (let step = 0; step < maxToolsPerTick; step++) {
     let decision: any;
     try {
       decision = await deliberate(augmentedRole, perception, availableActions, ctx.llm, priorSteps);
+      lastPace = decision.pace ?? lastPace;
       ctx.log.event("deliberate", {
         choice: decision.action,
         reason: decision.reason,
         thoughts: decision.thoughts ?? null,
+        pace: decision.pace ?? null,
         step,
       });
       if (decision.thoughts) {
@@ -362,7 +372,7 @@ export async function tick(ctx: TickContext): Promise<TickOutcome> {
 
   await finish(ctx, tStart);
   // Tick was NOT quiet if we got this far — we ran deliberation.
-  return { quiet: false };
+  return { quiet: false, pace: lastPace };
 }
 
 async function finish(ctx: TickContext, tStart: number): Promise<void> {
