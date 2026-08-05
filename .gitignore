@@ -1,0 +1,13 @@
+node_modules/
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+coworkers/*/state/*.db
+coworkers/*/state/journal/
+coworkers/*/state/worktrees/
+.env
+.env.local
+*.log
+.DS_Store
+dist/

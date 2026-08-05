@@ -1,0 +1,17 @@
+[Unit]
+Description=AI coworker: %i
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/ai-coworkers
+EnvironmentFile=-%h/ai-coworkers/.env
+ExecStart=/usr/bin/node --experimental-strip-types --no-warnings src/index.ts %i
+Restart=on-failure
+RestartSec=10s
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=default.target

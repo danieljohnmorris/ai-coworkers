@@ -1,0 +1,3 @@
+- linear: read new/untriaged issues; comment on issues (dry-run until promoted).
+- clock: current time.
+- memory: read/write own working memory and promises.

@@ -1,0 +1,12 @@
+{
+  "name": "ai-coworkers",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Long-running AI coworkers with role docs, tick loop, sensors, boundaries, hygiene.",
+  "scripts": {
+    "coworker": "node --experimental-strip-types --no-warnings src/index.ts",
+    "new-coworker": "bash bin/new-coworker.sh"
+  },
+  "engines": { "node": ">=22" },
+  "license": "MIT"
+}
