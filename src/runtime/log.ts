@@ -71,8 +71,7 @@ export class Log {
 
   // Full stream — every tick, quiet or not. High volume; use for debugging.
   stream(line: string): void {
-    const t = new Date().toISOString().slice(11, 19);
-    const formatted = `[${t}] ${this.coworker} ${line}\n`;
+    const formatted = this.formatLine(line, "stream");
     process.stdout.write(formatted);
     if (this.streamPath) { try { appendFileSync(this.streamPath, formatted); } catch {} }
   }
@@ -81,11 +80,25 @@ export class Log {
   // rituals. Skips per-tick noise. Written to BOTH stream and highlights so
   // one file gives you the full story.
   highlight(line: string): void {
-    const t = new Date().toISOString().slice(11, 19);
-    const formatted = `[${t}] ${this.coworker} ${line}\n`;
+    const formatted = this.formatLine(line, "highlight");
     process.stdout.write(formatted);
     if (this.highlightPath) { try { appendFileSync(this.highlightPath, formatted); } catch {} }
     if (this.streamPath)    { try { appendFileSync(this.streamPath, formatted); } catch {} }
+  }
+
+  // AIC-61 — respect LOG_FORMAT=json for ingestion into Loki/Grafana/Datadog.
+  // Default remains human-readable text so `tail -f` is still pleasant.
+  private formatLine(line: string, level: "stream" | "highlight"): string {
+    if (process.env.LOG_FORMAT === "json") {
+      return JSON.stringify({
+        ts: new Date().toISOString(),
+        coworker: this.coworker,
+        level,
+        msg: line,
+      }) + "\n";
+    }
+    const t = new Date().toISOString().slice(11, 19);
+    return `[${t}] ${this.coworker} ${line}\n`;
   }
 }
 
