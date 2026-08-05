@@ -30,6 +30,8 @@ import type { Inbox } from "./inbox.ts";
 import { checkBudget, extractCallCap, extractWindowCap, extractWindowMinutes } from "./budget.ts";
 import { shouldSkip as circuitShouldSkip, recordError as circuitError, recordSuccess as circuitOk } from "./circuit.ts";
 import { compactRecentActions, truncateSensorPayloads } from "./working.ts";
+import { retryAsync } from "./retry.ts";
+import { validateInput } from "./validate.ts";
 
 export interface TickContext {
   role: Role;
@@ -249,12 +251,17 @@ export async function tick(ctx: TickContext): Promise<TickOutcome> {
     try {
       decision = await deliberate(augmentedRole, perception, availableActions, ctx.llm, priorSteps);
       lastPace = decision.pace ?? lastPace;
+      // AIC-45 — capture token usage per deliberate call.
+      const usage = (decision as any).usage as { prompt_tokens?: number; completion_tokens?: number } | undefined;
       ctx.log.event("deliberate", {
         choice: decision.action,
         reason: decision.reason,
         thoughts: decision.thoughts ?? null,
         pace: decision.pace ?? null,
         step,
+        model: ctx.llm.model,
+        prompt_tokens: usage?.prompt_tokens ?? null,
+        completion_tokens: usage?.completion_tokens ?? null,
       });
       if (decision.thoughts) {
         ctx.log.highlight(`💭 ${decision.thoughts.slice(0, 400)}`);
@@ -280,6 +287,16 @@ export async function tick(ctx: TickContext): Promise<TickOutcome> {
       break;
     }
     const decisionCtx = { coworker: ctx.role.name, dryRun: ctx.dryRun, env: process.env };
+    // AIC-43 — validate input against the tool's declared schema. Failure
+    // is fed back as a chained-step outcome (not fatal) so the model can
+    // correct itself on the next step.
+    const v = validateInput(tool.inputSchema, decision.input);
+    if (!v.ok) {
+      ctx.log.event("action.error", { tool: tool.name, error: `schema: ${v.errors.join("; ")}`, input: decision.input });
+      ctx.log.highlight(`✗ ${tool.name} bad input: ${v.errors[0]}`);
+      priorSteps.push({ tool: tool.name, input: decision.input, outcome: { error: `input failed schema validation: ${v.errors.join("; ")}` } });
+      continue;
+    }
     const b = checkAction(ctx.role, tool, decision.input, decisionCtx);
     if (!b.allowed) {
       ctx.log.event("boundary.block", { tool: tool.name, reason: b.reason, input: decision.input });
@@ -306,7 +323,8 @@ export async function tick(ctx: TickContext): Promise<TickOutcome> {
 
     let outcome: unknown;
     try {
-      outcome = await tool.handler(decision.input, decisionCtx);
+      // AIC-46 — retry transient failures (5xx, 429, ECONNRESET) before giving up.
+      outcome = await retryAsync(() => tool.handler(decision.input, decisionCtx));
       ctx.log.highlight(`→ ${tool.name}${ctx.dryRun ? " (dry-run)" : ""}: ${JSON.stringify(decision.input).slice(0, 120)}`);
       ctx.log.event("note", { tool: tool.name, outcome, step });
       ranAnyAction = true;

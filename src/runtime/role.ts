@@ -82,17 +82,33 @@ function parseCadence(ritualsMd: string): Cadence {
 }
 
 // Very small parser: reads "- Max concurrent worktrees: 5" style lines from
-// BOUNDARIES.md. Missing values fall back to defaults.
+// BOUNDARIES.md. Missing values fall back to defaults. AIC-59 — collect
+// warnings for lines that LOOK like limit declarations but don't parse, so
+// typos like "Max LLM callz per day: 500" don't silently revert to default.
 function parseLimits(text: string): ResourceLimits | null {
   if (!text) return null;
-  const num = (re: RegExp): number | undefined => {
+  const warnings: string[] = [];
+  const num = (re: RegExp, name: string): number | undefined => {
     const m = text.match(re);
-    return m ? Number(m[1]) : undefined;
+    if (m) return Number(m[1]);
+    // Detect near-misses: a line beginning with "max " under "Resource limits"
+    // that mentions our concept but didn't match the regex.
+    const near = new RegExp(`(max\\s+\\w[\\w\\s]*|kill\\s+\\w[\\w\\s]*)\\s*:\\s*\\d+.*?${name}?`, "i");
+    if (near.test(text) && !text.match(re)) {
+      warnings.push(`possible typo in BOUNDARIES.md near "${name}" — falling back to default`);
+    }
+    return undefined;
   };
-  return {
-    maxWorktrees: num(/max concurrent worktrees:\s*(\d+)/i) ?? DEFAULT_LIMITS.maxWorktrees,
-    maxWorktreeAgeHours: num(/max worktree age:\s*(\d+)\s*h/i) ?? DEFAULT_LIMITS.maxWorktreeAgeHours,
-    maxDiskMB: num(/max disk usage:\s*(\d+)\s*(?:mb|gb)/i) ?? DEFAULT_LIMITS.maxDiskMB,
-    killSubprocessIdleMin: num(/kill subprocesses idle\s*>\s*(\d+)\s*min/i) ?? DEFAULT_LIMITS.killSubprocessIdleMin,
+  const limits = {
+    maxWorktrees: num(/max concurrent worktrees:\s*(\d+)/i, "worktrees") ?? DEFAULT_LIMITS.maxWorktrees,
+    maxWorktreeAgeHours: num(/max worktree age:\s*(\d+)\s*h/i, "worktree age") ?? DEFAULT_LIMITS.maxWorktreeAgeHours,
+    maxDiskMB: num(/max disk usage:\s*(\d+)\s*(?:mb|gb)/i, "disk") ?? DEFAULT_LIMITS.maxDiskMB,
+    killSubprocessIdleMin: num(/kill subprocesses idle\s*>\s*(\d+)\s*min/i, "subprocess") ?? DEFAULT_LIMITS.killSubprocessIdleMin,
   };
+  if (warnings.length) {
+    // Emit to stderr so it's visible at startup; runtime tick logs its own
+    // warnings via log.event elsewhere.
+    for (const w of warnings) process.stderr.write(`WARN role.parseLimits: ${w}\n`);
+  }
+  return limits;
 }

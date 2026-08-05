@@ -29,13 +29,18 @@ export function checkAction(
     return { allowed: false, reason: `${tool.name} not declared in TOOLS.md` };
   }
 
-  // String denylist scan against BOUNDARIES.md "must not touch" phrases.
-  // If any forbidden token appears in the JSON of input, block.
+  // AIC-49 — Word-boundary denylist scan (was naive substring; "billing"
+  // used to match "billion"). Skip tokens shorter than 3 chars to avoid
+  // over-blocking on common English fragments.
   const forbidden = mustNotTouch(role.docs.BOUNDARIES);
   if (forbidden.length) {
     const blob = JSON.stringify(input).toLowerCase();
-    for (const f of forbidden) {
-      if (f && blob.includes(f.toLowerCase())) {
+    for (const raw of forbidden) {
+      const f = raw?.trim();
+      if (!f || f.length < 3) continue;
+      const escaped = f.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const re = new RegExp(`(^|[^a-z0-9_])${escaped}([^a-z0-9_]|$)`, "i");
+      if (re.test(blob)) {
         return { allowed: false, reason: `input mentions forbidden target: ${f}` };
       }
     }

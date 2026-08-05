@@ -131,11 +131,22 @@ export async function dreamOnce(args: {
         });
         saveVersion(memory, dreamId + "-candidate", learnings);
       } else {
-        // Snapshot the current body before overwriting.
-        saveVersion(memory, dreamId + "-before", priorBody);
-        const r = semantic.propose(learnings, dreamId);
-        promoted = r.accepted;
-        log.event("memory.compact", { step: "propose", accepted: r.accepted, reason: r.reason });
+        // AIC-60 — snapshot + propose must be atomic to avoid split-brain
+        // (before-snapshot saved but new memory never written on crash).
+        memory.exec("BEGIN");
+        let r: { accepted: boolean; reason: string };
+        try {
+          saveVersion(memory, dreamId + "-before", priorBody);
+          r = semantic.propose(learnings, dreamId);
+          if (!r.accepted) throw new Error(`semantic rejected: ${r.reason}`);
+          memory.exec("COMMIT");
+          promoted = true;
+        } catch (err) {
+          memory.exec("ROLLBACK");
+          promoted = false;
+          r = { accepted: false, reason: String(err) };
+        }
+        log.event("memory.compact", { step: "propose", accepted: promoted, reason: r.reason });
         if (promoted) {
           appendDreamDiary(args, dreamId, {
             added: diffBullets(priorBody, learnings),

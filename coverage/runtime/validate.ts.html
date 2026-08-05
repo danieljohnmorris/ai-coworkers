@@ -3,7 +3,7 @@
 <html lang="en">
 
 <head>
-    <title>Code coverage report for runtime/sqlite-retry.ts</title>
+    <title>Code coverage report for runtime/validate.ts</title>
     <meta charset="utf-8" />
     <link rel="stylesheet" href="../prettify.css" />
     <link rel="stylesheet" href="../base.css" />
@@ -19,34 +19,34 @@
 <body>
 <div class='wrapper'>
     <div class='pad1'>
-        <h1><a href="../index.html">All files</a> / <a href="index.html">runtime</a> sqlite-retry.ts</h1>
+        <h1><a href="../index.html">All files</a> / <a href="index.html">runtime</a> validate.ts</h1>
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">100% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>15/15</span>
+                <span class='fraction'>14/14</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">100% </span>
+                <span class="strong">80% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>3/3</span>
+                <span class='fraction'>8/10</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">100% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>1/1</span>
+                <span class='fraction'>2/2</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">100% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>13/13</span>
+                <span class='fraction'>11/11</span>
             </div>
         
             
@@ -90,47 +90,47 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">16x</span>
-<span class="cline-any cline-yes">16x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">69x</span>
-<span class="cline-any cline-yes">69x</span>
-<span class="cline-any cline-yes">72x</span>
-<span class="cline-any cline-yes">72x</span>
+<span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">5x</span>
-<span class="cline-any cline-yes">5x</span>
-<span class="cline-any cline-yes">5x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">26x</span>
+<span class="cline-any cline-yes">26x</span>
 <span class="cline-any cline-yes">4x</span>
-<span class="cline-any cline-yes">4x</span>
-<span class="cline-any cline-yes">4x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">// Tiny retry helper for SQLite writes that occasionally lose to a "database
-// is locked" race — e.g. when the reflective ritual is compacting while the
-// tick tries to log an event. Exponential backoff, bounded.
+<span class="cline-any cline-yes">25x</span>
+<span class="cline-any cline-yes">25x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">26x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">// AIC-43 — validate tool input against its declared JSON schema before the
+// handler runs. Prevents the model from crashing tools by passing garbage.
+// Returns { ok: true } or { ok: false, errors: string[] } — never throws.
 &nbsp;
-const DEFAULT_ATTEMPTS = 5;
-const BASE_MS = 25;
+import Ajv, { type ErrorObject } from "ajv";
 &nbsp;
-export function retrySync&lt;T&gt;(fn: () =&gt; T, attempts = DEFAULT_ATTEMPTS): T {
-  let lastErr: unknown = null;
-  for (let i = 0; i &lt; attempts; i++) {
-    try {
-      return fn();
-    } catch (err) {
-      lastErr = err;
-      const msg = String(err);
-      if (!/(SQLITE_BUSY|SQLITE_LOCKED|database is locked)/i.test(msg)) throw err;
-      const wait = BASE_MS * 2 ** i;
-      const end = Date.now() + wait;
-      while (Date.now() &lt; end) { /* busy sleep — Node has no sync setTimeout */ }
-    }
+const ajv = new Ajv({ allErrors: true, strict: false, coerceTypes: true });
+&nbsp;
+const compiled = new WeakMap&lt;object, (data: unknown) =&gt; boolean&gt;();
+&nbsp;
+export function validateInput(schema: object, input: unknown): { ok: true } | { ok: false; errors: string[] } {
+  let validator = compiled.get(schema);
+  if (!validator) {
+    try { validator = ajv.compile(schema); compiled.set(schema, validator); }
+    catch (err) { return { ok: false, errors: [`bad schema: ${err}`] }; }
   }
-  throw lastErr;
+  const valid = validator(input);
+  if (valid) return { ok: true };
+  const errors = ((validator as any).errors as ErrorObject[] | null | undefined)?.map(
+    (e) =&gt; `${e.instancePath || "(root)"}: ${e.message ?? <span class="branch-1 cbranch-no" title="branch not covered" >"invalid"}`</span>
+  ) ?? <span class="branch-1 cbranch-no" title="branch not covered" >[];</span>
+  return { ok: false, errors };
 }
 &nbsp;</pre></td></tr></table></pre>
 

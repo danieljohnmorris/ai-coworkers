@@ -72,7 +72,7 @@ async function main() {
   const mcpConnections: McpConnection[] = [];
   for (const serverCfg of parseMcpEnv(process.env)) {
     try {
-      const conn = await connectMcp(serverCfg);
+      const conn = await connectMcp(serverCfg, hygiene);
       for (const t of conn.tools) tools.register(t);
       mcpConnections.push(conn);
       log.stream(`mcp: connected ${serverCfg.name} (${conn.tools.length} tools)`);
@@ -176,6 +176,8 @@ async function main() {
     }
   }
   log.event("note", { message: "shutdown" });
+  // AIC-44 — cleanly close all MCP subprocesses before exiting.
+  for (const c of mcpConnections) await c.close();
   process.exit(0);
 }
 

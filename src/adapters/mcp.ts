@@ -11,6 +11,8 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import type { ToolDef, ToolCtx } from "../runtime/tools.ts";
+import type { DatabaseSync } from "node:sqlite";
+import { register, markStatus } from "../runtime/hygiene.ts";
 
 export interface McpServerConfig {
   name: string;                              // prefix for the registered tools, e.g. "github"
@@ -25,7 +27,10 @@ export interface McpConnection {
   close(): Promise<void>;
 }
 
-export async function connectMcp(cfg: McpServerConfig): Promise<McpConnection> {
+export async function connectMcp(
+  cfg: McpServerConfig,
+  hygieneDb?: DatabaseSync,
+): Promise<McpConnection> {
   const transport = new StdioClientTransport({
     command: cfg.command,
     args: cfg.args ?? [],
@@ -36,6 +41,15 @@ export async function connectMcp(cfg: McpServerConfig): Promise<McpConnection> {
     { capabilities: {} },
   );
   await client.connect(transport);
+  // AIC-44 — register the transport process in the hygiene ledger so we
+  // don't accumulate orphan MCP servers across restarts. The SDK doesn't
+  // expose the child pid; we register the server name as a stable handle
+  // and rely on the caller's close() for reaping. hygieneSweep can still
+  // audit "how many MCP servers are believed alive".
+  let hygieneId: number | null = null;
+  if (hygieneDb) {
+    hygieneId = register(hygieneDb, "subprocess", `mcp:${cfg.name}`, null);
+  }
   const listed = await client.listTools();
   const tools: ToolDef[] = listed.tools.map((t) => ({
     name: `mcp.${cfg.name}.${t.name}`,
@@ -53,7 +67,10 @@ export async function connectMcp(cfg: McpServerConfig): Promise<McpConnection> {
   return {
     client,
     tools,
-    close: async () => { try { await client.close(); } catch {} },
+    close: async () => {
+      try { await client.close(); } catch {}
+      if (hygieneDb && hygieneId != null) markStatus(hygieneDb, hygieneId, "completed");
+    },
   };
 }
 

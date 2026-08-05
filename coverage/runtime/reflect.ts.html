@@ -23,16 +23,16 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">98.48% </span>
+                <span class="strong">93.24% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>65/66</span>
+                <span class='fraction'>69/74</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">80% </span>
+                <span class="strong">78.37% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>28/35</span>
+                <span class='fraction'>29/37</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">98.38% </span>
+                <span class="strong">94.2% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>61/62</span>
+                <span class='fraction'>65/69</span>
             </div>
         
             
@@ -269,7 +269,18 @@
 <a name='L204'></a><a href='#L204'>204</a>
 <a name='L205'></a><a href='#L205'>205</a>
 <a name='L206'></a><a href='#L206'>206</a>
-<a name='L207'></a><a href='#L207'>207</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L207'></a><a href='#L207'>207</a>
+<a name='L208'></a><a href='#L208'>208</a>
+<a name='L209'></a><a href='#L209'>209</a>
+<a name='L210'></a><a href='#L210'>210</a>
+<a name='L211'></a><a href='#L211'>211</a>
+<a name='L212'></a><a href='#L212'>212</a>
+<a name='L213'></a><a href='#L213'>213</a>
+<a name='L214'></a><a href='#L214'>214</a>
+<a name='L215'></a><a href='#L215'>215</a>
+<a name='L216'></a><a href='#L216'>216</a>
+<a name='L217'></a><a href='#L217'>217</a>
+<a name='L218'></a><a href='#L218'>218</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -403,9 +414,20 @@
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">4x</span>
 <span class="cline-any cline-yes">4x</span>
 <span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">4x</span>
 <span class="cline-any cline-yes">4x</span>
 <span class="cline-any cline-yes">4x</span>
@@ -608,11 +630,22 @@ export async function dreamOnce(args: {
         });
         saveVersion(memory, dreamId + "-candidate", learnings);
       } else {
-        // Snapshot the current body before overwriting.
-        saveVersion(memory, dreamId + "-before", priorBody);
-        const r = semantic.propose(learnings, dreamId);
-        promoted = r.accepted;
-        log.event("memory.compact", { step: "propose", accepted: r.accepted, reason: r.reason });
+        // AIC-60 — snapshot + propose must be atomic to avoid split-brain
+        // (before-snapshot saved but new memory never written on crash).
+        memory.exec("BEGIN");
+        let r: { accepted: boolean; reason: string };
+        try {
+          saveVersion(memory, dreamId + "-before", priorBody);
+          r = semantic.propose(learnings, dreamId);
+          <span class="missing-if-branch" title="if path not taken" >I</span>if (!r.accepted) <span class="cstat-no" title="statement not covered" >throw new Error(`semantic rejected: ${r.reason}`);</span>
+          memory.exec("COMMIT");
+          promoted = true;
+        } catch (err) {
+<span class="cstat-no" title="statement not covered" >          memory.exec("ROLLBACK");</span>
+<span class="cstat-no" title="statement not covered" >          promoted = false;</span>
+<span class="cstat-no" title="statement not covered" >          r = { accepted: false, reason: String(err) };</span>
+        }
+        log.event("memory.compact", { step: "propose", accepted: promoted, reason: r.reason });
         <span class="missing-if-branch" title="else path not taken" >E</span>if (promoted) {
           appendDreamDiary(args, dreamId, {
             added: diffBullets(priorBody, learnings),
@@ -688,7 +721,7 @@ function stripFences(s: string): string {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-08-05T23:34:48.345Z
+                at 2026-08-05T23:50:04.205Z
             </div>
         <script src="../prettify.js"></script>
         <script>

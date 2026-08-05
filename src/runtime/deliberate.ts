@@ -141,7 +141,10 @@ export async function deliberate(
     { json: true, temperature: 0.2, maxTokens: 800 }
   );
 
-  return parseDecision(res.content);
+  const decision = parseDecision(res.content);
+  // AIC-45 — attach token usage so the tick can log it.
+  (decision as any).usage = res.usage;
+  return decision;
 }
 
 export function parseDecision(raw: string): Decision & { rawOutput?: string } {
