@@ -18,11 +18,12 @@ export interface Perception {
   budget: BudgetSnapshot;
   tempoGuidance: string;         // extracted from RITUALS.md "Tempo" section
   highlightsTail: string;         // condensed narrative of recent notable events
+  recentThoughts: string;         // your last few thoughts-to-self, in order
 }
 
 export type Decision =
-  | { action: "noop"; reason: string }
-  | { action: "call"; tool: string; input: unknown; reason: string };
+  | { action: "noop"; reason: string; thoughts?: string }
+  | { action: "call"; tool: string; input: unknown; reason: string; thoughts?: string };
 
 export async function deliberate(
   role: Role,
@@ -69,6 +70,9 @@ export async function deliberate(
     `# Available actions`,
     JSON.stringify(toolCatalog, null, 2),
     ``,
+    `# Your recent thoughts to yourself`,
+    perception.recentThoughts || "(no recent thoughts logged)",
+    ``,
     `# Task`,
     `Given your role, responsibilities, authority, boundaries, rituals, AND`,
     `the tempo section above, decide whether to take ONE action this tick`,
@@ -78,9 +82,15 @@ export async function deliberate(
     `nothing has meaningfully changed since your last action, prefer noop.`,
     `A well-paced coworker is more valuable than a busy one.`,
     ``,
+    `Also, keep a running notebook to yourself. Include a "thoughts" field —`,
+    `short, private, working-notes-to-future-self. This is NOT for the reason`,
+    `field (which is public and terse); it's the ongoing internal monologue`,
+    `that lets you continue trains of thought across ticks. Reference and`,
+    `build on your earlier thoughts above where relevant.`,
+    ``,
     `Respond with a single JSON object, no prose, no code fences, matching one of:`,
-    `  {"action":"noop","reason":"..."}`,
-    `  {"action":"call","tool":"<name>","input":{...},"reason":"..."}`,
+    `  {"thoughts":"...","action":"noop","reason":"..."}`,
+    `  {"thoughts":"...","action":"call","tool":"<name>","input":{...},"reason":"..."}`,
   ].join("\n");
 
   const res = await chat(
@@ -108,7 +118,8 @@ export function parseDecision(raw: string): Decision & { rawOutput?: string } {
   for (const candidate of attempts) {
     try {
       const obj = JSON.parse(candidate);
-      if (obj.action === "noop") return { action: "noop", reason: String(obj.reason ?? "") };
+      const thoughts = typeof obj.thoughts === "string" ? obj.thoughts : undefined;
+      if (obj.action === "noop") return { action: "noop", reason: String(obj.reason ?? ""), thoughts };
       // Explicit call form
       if (obj.action === "call" && obj.tool) {
         return {
@@ -116,6 +127,7 @@ export function parseDecision(raw: string): Decision & { rawOutput?: string } {
           tool: String(obj.tool),
           input: obj.input ?? {},
           reason: String(obj.reason ?? ""),
+          thoughts,
         };
       }
       // Lenient forms models often produce:
@@ -130,6 +142,7 @@ export function parseDecision(raw: string): Decision & { rawOutput?: string } {
           tool: toolName,
           input: obj.input ?? obj.arguments ?? obj.args ?? {},
           reason: String(obj.reason ?? ""),
+          thoughts,
         };
       }
     } catch {

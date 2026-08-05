@@ -166,6 +166,22 @@ export async function tick(ctx: TickContext): Promise<TickOutcome> {
   const highlightsPath = join(ctx.role.dir, "..", "state", "highlights.log");
   const highlightsTail = tailHighlights(highlightsPath, 20);
 
+  const thoughtRows = ctx.events
+    .prepare(
+      `SELECT ts, payload FROM events WHERE kind = 'deliberate' ORDER BY id DESC LIMIT 8`
+    )
+    .all() as { ts: string; payload: string }[];
+  const recentThoughts = thoughtRows
+    .reverse()
+    .map((r) => {
+      try {
+        const p = JSON.parse(r.payload);
+        return p.thoughts ? `[${r.ts.slice(11, 16)}] ${p.thoughts}` : "";
+      } catch { return ""; }
+    })
+    .filter(Boolean)
+    .join("\n");
+
   const perception: Perception = {
     now: new Date().toISOString(),
     sensors: trimmedSensors,
@@ -177,6 +193,7 @@ export async function tick(ctx: TickContext): Promise<TickOutcome> {
     budget,
     tempoGuidance,
     highlightsTail,
+    recentThoughts,
   };
 
   // 3. deliberate
@@ -202,7 +219,17 @@ export async function tick(ctx: TickContext): Promise<TickOutcome> {
   let decision: any;
   try {
     decision = await deliberate(augmentedRole, perception, availableActions, ctx.llm);
-    ctx.log.event("deliberate", { choice: decision.action, reason: decision.reason });
+    ctx.log.event("deliberate", {
+      choice: decision.action,
+      reason: decision.reason,
+      thoughts: decision.thoughts ?? null,
+    });
+    if (decision.thoughts) {
+      // Surface Alex's private working notes on the visible live stream so
+      // humans (and Alex himself via the highlights tail) can follow the
+      // train of thought alongside actions.
+      ctx.log.highlight(`💭 ${decision.thoughts.slice(0, 400)}`);
+    }
     if (decision.rawOutput) {
       // Parse fail — persist the full raw output for debugging.
       ctx.log.event("deliberate.rawoutput", { raw: String(decision.rawOutput).slice(0, 4000) });
