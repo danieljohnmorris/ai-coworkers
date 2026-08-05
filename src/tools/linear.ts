@@ -88,7 +88,11 @@ export const linearComment: ToolDef = {
 
 export const linearIssueDetail: ToolDef = {
   name: "linear.issue_detail",
-  kind: "sensor",
+  // Read-only but requires input; sensors are called with no args by the
+  // tick loop, so this is exposed as an "action" the model calls when it
+  // needs context on a specific issue. Never side-effects — safe under
+  // dry-run.
+  kind: "action",
   description: "Fetch full detail of a Linear issue including current labels and description. Use before deciding what labels to set.",
   inputSchema: {
     type: "object",
@@ -115,7 +119,9 @@ export const linearIssueDetail: ToolDef = {
 
 export const linearTeamLabels: ToolDef = {
   name: "linear.team_labels",
-  kind: "sensor",
+  // Read-only but takes input; see note on linearIssueDetail. Exposed as an
+  // action so the model can call it with a team key.
+  kind: "action",
   description: "List all label ids and names available in a team. Cached daily. Use to know which labels exist before proposing.",
   inputSchema: {
     type: "object",

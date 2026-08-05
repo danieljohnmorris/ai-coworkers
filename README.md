@@ -66,6 +66,101 @@ node --experimental-strip-types --no-warnings src/index.ts my-triager
 
 Add `--live` to allow write actions to actually execute; default is dry-run.
 
+## Extending: skills, MCP tools, plugins
+
+All three drop in without editing runtime code. Pick whichever matches the
+capability you're adding.
+
+### Anthropic-style skills (Hermes / OpenClaw / Claude Code compatible)
+
+These are folders holding a `SKILL.md` — instructions/playbooks the *model
+reads in context*, not APIs to call. Great for style ("caveman"), procedures
+("systematic-debugging"), or domain knowledge ("research-paper-writing").
+
+```
+# Drop the skill folder in
+cp -r some-skill ~/.hermes/skills/some-skill
+
+# Or clone a repo full of them
+git clone https://github.com/... ~/.hermes/skills-extra
+```
+
+In `.env`:
+
+```
+SKILLS_DIR=/home/you/.hermes/skills            # default; supports Anthropic Agent Skills layout
+ACTIVE_SKILLS=caveman,systematic-debugging     # skills whose FULL body is inlined into the prompt
+```
+
+Skills not in `ACTIVE_SKILLS` still appear in the prompt as a one-line index
+the model can consult. Anthropic Agent Skills, Hermes skills, and OpenClaw
+skills all use the same shape, so any one drops into any of these locations.
+
+### MCP tools (Model Context Protocol servers — the biggest ecosystem)
+
+Any MCP server becomes a set of callable tools automatically. The runtime
+spawns the server as a subprocess over stdio and registers each of its
+tools as `mcp.<name>.<tool>`.
+
+In `.env`:
+
+```
+MCP_SERVERS='[
+  {"name":"github","command":"npx","args":["-y","@modelcontextprotocol/server-github"],
+   "env":{"GITHUB_PERSONAL_ACCESS_TOKEN":"ghp_..."}},
+  {"name":"slack","command":"npx","args":["-y","@modelcontextprotocol/server-slack"],
+   "env":{"SLACK_BOT_TOKEN":"xoxb-...","SLACK_TEAM_ID":"T..."}},
+  {"name":"filesystem","command":"npx","args":["-y","@modelcontextprotocol/server-filesystem","/some/allowed/path"]}
+]'
+```
+
+Auth is per-server, via each server's own env vars. The coworker sees the
+tools in its `TOOLS.md` allowlist by prefix:
+
+```md
+- mcp.github          # all github tools
+- mcp.slack.post_message   # only this one
+```
+
+Dry-run gating (`--live` off) blocks writes for MCP tools too.
+
+### Vercel Eve `agent/` folders
+
+Any Eve-shaped folder loads via `src/adapters/eve.ts` — instructions become
+role, `skills/*` become procedural memory, `tools/*.ts` are surfaced by name
+(need porting to our `ToolDef` shape for callability).
+
+### Native tools (write your own)
+
+For anything without an MCP server or where you want no subprocess overhead:
+
+```ts
+// src/tools/mything.ts
+import type { ToolDef } from "../runtime/tools.ts";
+
+export const mySensor: ToolDef = {
+  name: "mything.status",
+  kind: "sensor",                // or "action"
+  description: "What this does — shown to the model",
+  inputSchema: { type: "object", properties: {} },
+  handler: async (input, ctx) => {
+    if (ctx.dryRun && this.kind === "action") return { dryRun: true, would: input };
+    // ...
+  },
+};
+
+export const myTools: ToolDef[] = [mySensor];
+```
+
+Then one line in `src/index.ts`:
+
+```ts
+import { myTools } from "./tools/mything.ts";
+for (const t of myTools) tools.register(t);
+```
+
+Grant per-coworker access by mentioning `mything` in that coworker's `TOOLS.md`.
+
 ## Layout
 
 ```
