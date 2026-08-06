@@ -22,6 +22,7 @@ import { slackTools } from "./tools/slack.ts";
 import { askTools } from "./tools/ask.ts";
 import { roleTools } from "./tools/role.ts";
 import { codeDelegateTools } from "./tools/code_delegate.ts";
+import { branchRoomTools } from "./tools/branch_room.ts";
 import { connectMcp, parseMcpEnv, type McpConnection } from "./adapters/mcp.ts";
 import { loadHermesSkills, renderSkillsIndex } from "./adapters/hermes.ts";
 import { startWakeServer } from "./runtime/wake.ts";
@@ -73,6 +74,7 @@ async function main() {
   for (const t of askTools) tools.register(t);
   for (const t of roleTools) tools.register(t);
   for (const t of codeDelegateTools) tools.register(t);
+  for (const t of branchRoomTools) tools.register(t);
 
   // Optional MCP servers via MCP_SERVERS env var.
   const mcpConnections: McpConnection[] = [];
