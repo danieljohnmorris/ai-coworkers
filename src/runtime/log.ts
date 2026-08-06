@@ -115,6 +115,41 @@ export class Log {
   }
 }
 
+// Render the startup mode banner — three-line ASCII box, no colors, no emojis.
+// Deliberately loud so an operator (or agent) glancing at stream.log cannot
+// miss whether writes are LIVE or DRY-RUN. The banner is the *primary* signal;
+// per-action [LIVE]/[dry] prefixes and the terminal title reinforce it.
+export function renderModeBanner(coworker: string, live: boolean): string {
+  const rule = "──────────────────────────────────────────────";
+  if (live) {
+    return [
+      rule,
+      `  ${coworker} — LIVE`,
+      `  Writes WILL hit Linear / Slack / GitHub / etc.`,
+      rule,
+    ].join("\n");
+  }
+  return [
+    rule,
+    `  ${coworker} — DRY-RUN`,
+    `  Every write returns {dryRun:true, would:{...}}`,
+    rule,
+  ].join("\n");
+}
+
+// ANSI OSC-0 sets both window and tab title. Most terminals (Ghostty, xterm,
+// iTerm2, gnome-terminal, Konsole, kitty, alacritty) honour it. Not
+// unit-testable without a real TTY — no test covers this function directly.
+export function terminalTitleEscape(coworker: string, live: boolean): string {
+  return `\x1b]0;${coworker} [${live ? "LIVE" : "dry"}]\x07`;
+}
+
+// Per-action mode prefix used by highlights.log lines. Bright enough that a
+// grep of highlights makes the mode obvious for every write.
+export function modeTag(live: boolean): string {
+  return live ? "[LIVE]" : "[dry]";
+}
+
 // Tail the last N lines of the highlights file (or empty if missing). Cheap
 // bounded read — used by the tick to hand the agent a compact "what I did
 // recently" summary instead of raw event JSON.

@@ -5,7 +5,7 @@
 import { mkdirSync, appendFileSync, watch } from "node:fs";
 import { join } from "node:path";
 import { loadRole } from "./runtime/role.ts";
-import { openEvents, Log } from "./runtime/log.ts";
+import { openEvents, Log, renderModeBanner, terminalTitleEscape } from "./runtime/log.ts";
 import { openMemory } from "./runtime/memory.ts";
 import { openHygiene } from "./runtime/hygiene.ts";
 import { openSemantic } from "./runtime/semantic.ts";
@@ -139,6 +139,11 @@ async function main() {
     ? { baseUrl: coworkerEnv.OLLAMA_HOST ?? "https://ollama.com", apiKey: coworkerEnv.OLLAMA_API_KEY, model: coworkerEnv.TRIAGE_MODEL }
     : undefined;
 
+  // AIC — impossible-to-miss LIVE/DRY-RUN banner. Emitted before the
+  // usual start line so operators (and tailing agents) see the mode first.
+  // Also sets the terminal title so a glance at the tab confirms mode.
+  try { process.stdout.write(terminalTitleEscape(name, live)); } catch { /* noop */ }
+  for (const line of renderModeBanner(name, live).split("\n")) log.stream(line);
   log.stream(`start coworker=${name} model=${llm.model} live=${live}`);
   log.event("note", { message: "startup", model: llm.model, live });
 
