@@ -72,7 +72,8 @@ Every variable actually read by `src/`:
 | `MIN_TICK_INTERVAL_MS` | no | `15000` | Floor when the model asks to `pace: faster`. |
 | `MAX_TICK_INTERVAL_MS` | no | `1800000` | Cap for adaptive backoff (30 min). Ignored when the role sets `Cadence: constant`. |
 | `MAX_TOOLS_PER_TICK` | no | runtime default | Max tool calls chained per tick. |
-| `WAKE_PORT` | no | unset | Port for HTTP wake endpoint. Required if you want webhooks. |
+| `WAKE_MODE` | no | `both` | Activity source. `tick` = periodic tick loop only; `webhook` = wake HTTP server only (no scheduled ticks); `both` = both. See [Activity modes](#activity-modes). Unknown values fall back to `both` with a warning. |
+| `WAKE_PORT` | no | unset | Port for HTTP wake endpoint. Required if you want webhooks or `WAKE_MODE=webhook`. |
 | `WAKE_SECRET` | no | unset | Shared secret for `/wake`; presence flips bind to `0.0.0.0`. |
 | `METRICS_ENABLED` | no | unset | Set to `1` to expose Prometheus `/metrics` on `WAKE_PORT`. |
 | `MCP_SERVERS` | no | unset | JSON array of MCP servers to spawn (see MCP section). |
@@ -539,6 +540,23 @@ Long-running deployment (unit files, log rotation, restart policy):
 [docs/systemd.md](docs/systemd.md).
 
 Multi-machine fleets: [docs/multi-machine.md](docs/multi-machine.md).
+
+### Activity modes
+
+`WAKE_MODE` decides how a coworker learns there's work to do. Read once at
+startup; unknown values fall back to `both` with a warning.
+
+| Mode | Periodic tick loop | Wake HTTP server | When to pick it |
+|---|---|---|---|
+| `tick` | yes | no | Headless-safe polling. Host has no inbound reachability, or you never want to run an HTTP listener. Pays the polling cost every `TICK_INTERVAL_MS`. |
+| `webhook` | no (pinned to 24h idle) | yes | Cheapest steady state. Coworker sleeps until a webhook or `/wake` fires; rituals and promises only fire on the resulting tick, so a webhook outage is a liveness outage. Requires `WAKE_PORT`. |
+| `both` (default) | yes | yes | Belt-and-suspenders. Webhooks give sub-second reaction, the tick loop is the safety net if webhook delivery breaks. Pick this unless you have a specific reason not to. |
+
+In `webhook` mode the base tick interval is pinned to 24 hours as a
+shortcut — the loop still exists, it just doesn't fire on its own. That
+means scheduled `rituals/*.json` and pending promises will not fire on
+time in `webhook` mode; they fire on the next wake-driven tick. If you
+need on-schedule rituals, use `both`.
 
 ---
 
