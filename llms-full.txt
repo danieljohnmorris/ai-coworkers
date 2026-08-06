@@ -15,6 +15,8 @@ The distinctive thesis: agents live in a filesystem directory (role docs + state
 - [systemd deployment](https://github.com/danieljohnmorris/ai-coworkers/blob/main/docs/systemd.md): running coworkers as user services.
 - [Dedicated Linear identity for your coworker](https://github.com/danieljohnmorris/ai-coworkers/blob/main/docs/dedicated-linear-user.md): setting up a service account or OAuth app so the coworker posts under its own name, not yours (AIC-28).
 - [Tool cookbook — Hermes / MCP / native](https://github.com/danieljohnmorris/ai-coworkers/blob/main/docs/tool-cookbook.md): decision tree for adding a new capability. Hermes first (best setup UX), MCP next (widest coverage), native last. Verified Hermes google-workspace skill loads via our adapter (AIC-16/17).
+- [CONTRIBUTING.md](https://github.com/danieljohnmorris/ai-coworkers/blob/main/CONTRIBUTING.md): dev setup, PR flow, coding conventions, what we won't merge, security-issue reporting.
+- [Release process + semver stance](https://github.com/danieljohnmorris/ai-coworkers/blob/main/docs/release-process.md): what MAJOR/MINOR/PATCH mean here, cut steps, deprecation policy, migration scripts.
 - [Webhooks + external wakes](https://github.com/danieljohnmorris/ai-coworkers/blob/main/docs/webhooks.md): using the /wake endpoint to trigger ticks from Linear/Slack/GitHub webhooks.
 - [Migration from Hermes / OpenClaw / Eve](https://github.com/danieljohnmorris/ai-coworkers/blob/main/docs/migration.md): exact source-format → destination-file matrix + what needs manual authoring after `bin/import-*.sh`.
 
@@ -329,6 +331,125 @@ coworker (`code.delegate`) is scaffolded but not yet wired to a real coding
 harness. Open work: [linear.app/ilo-lang/team/AIC](https://linear.app/ilo-lang/team/AIC).
 
 MIT.
+
+---
+
+## Source: CONTRIBUTING.md
+
+# Contributing
+
+Thanks for looking. Two guiding rules before you start:
+
+1. **The tick loop's job is deciding when NOT to act.** Every feature
+   proposal should have a clear answer to "does this make the coworker
+   quieter, or louder?" We accept louder-in-service-of-a-real-need; we
+   reject louder-for-its-own-sake.
+2. **The filesystem is the API.** Config goes in `role/*.md`, state in
+   `state/`. If your feature needs a new runtime concept, prefer a new
+   markdown file or json file over a new env var; prefer a new env var
+   over a new runtime flag; prefer a new runtime flag over changing
+   the tool interface.
+
+## Development setup
+
+Requires Node ≥ 22 (uses native `node:sqlite`, `--experimental-strip-types`).
+
+```bash
+git clone https://github.com/danieljohnmorris/ai-coworkers
+cd ai-coworkers
+npm install
+npm test              # 376 tests, ~2s
+npm run test:cov      # ~97% line coverage
+```
+
+## Running a coworker locally
+
+```bash
+# Blank template
+bin/new-coworker.sh myworker
+
+# Edit myworker/role/*.md — at minimum ROLE.md, RESPONSIBILITIES.md,
+# BOUNDARIES.md. See examples/generic-triage/role/ for a working set.
+
+# Dry-run first (default): writes return {dryRun: true, would: {...}}
+node --experimental-strip-types --no-warnings src/index.ts myworker
+
+# When you trust it, add --live
+```
+
+## Making a change
+
+### Small — bugfix, doc tweak, one obvious feature
+
+1. Branch from `main`, one topic per branch.
+2. Add or update tests. Fix ratio: at least one new test per new
+   behaviour; failing test-first is preferred for bugfixes so we know
+   the regression stays fixed.
+3. Run the full suite: `npm test`. Coverage must not drop.
+4. Commit with a message that explains the *why* in the body, not just
+   the *what*. See `git log --oneline` for house style — every commit
+   answers "why did this change need to happen?" not just "what did I
+   change?".
+5. Open a PR. Squash-merge when green.
+
+### Bigger — new subsystem, architectural change, protocol adoption
+
+1. Open an issue OR draft a PR first — tell us what you're building.
+2. If the change deserves a design artifact, add an ADR under
+   `docs/adr/000N-my-change.md` following the existing shape (context,
+   options, decision, consequences).
+3. Land the ADR in a separate PR before the implementation. Reviewers
+   want to disagree with your design *before* you write 800 lines of
+   code around it.
+
+## Coding conventions
+
+Read a handful of existing files (`src/runtime/tick.ts`,
+`src/runtime/reflect.ts`, `src/tools/linear.ts`) and match that style.
+Notable choices:
+
+- **TypeScript, no build step** — `--experimental-strip-types` runs
+  `.ts` directly. No transpilation, no bundler, no webpack.
+- **Node built-ins first** — we ship `node:sqlite`, `node:crypto`,
+  `node:http`. Add a dependency only when the alternative is
+  substantially worse (we currently ship 3 runtime deps).
+- **Every module owns its own file** — no barrel imports, no
+  `src/index.ts` re-exports for internal boundaries. `import { x }
+  from "./thing.ts"` explicitly.
+- **Tests colocated** — `src/runtime/x.ts` has `src/runtime/x.test.ts`.
+  Integration scenarios live under `test/`.
+- **JSON schema for tool inputs** — every `ToolDef.inputSchema` is a
+  real schema. `validateInput` runs before boundary checks.
+- **Comments explain WHY not WHAT** — the code says what; the comment
+  says why *this* way over the obvious alternatives.
+- **No emoji in code / commits** unless it's a UI thing (stream
+  highlights, help output). Comments and identifiers stay plain.
+
+## What we won't merge
+
+- Silent behaviour changes to a running coworker (needs a boundary
+  check, a role-audit signal, or an ADR — depending on scope).
+- Anything that lowers coverage below 90% without an ADR justifying why.
+- A "clever" tool that could be a Hermes skill or an MCP server (see
+  `docs/tool-cookbook.md`).
+- Dependencies whose purpose we can't articulate in one sentence.
+
+## Reporting a bug
+
+Include:
+- Node version.
+- A minimal `role/*.md` set that reproduces.
+- Relevant slice of `state/highlights.log` (redact anything sensitive).
+- What you expected vs what happened.
+
+Do NOT paste API keys or `.env` contents into an issue. Same rule as
+your own memory: reference by env var name.
+
+## Security
+
+If you find a security issue (boundary bypass, injection scanner miss,
+subprocess escape), don't file a public issue. Email the maintainer
+at daniel.john.morris@gmail.com with steps to reproduce.
 
 ---
 
@@ -1236,6 +1357,86 @@ sensitive tokens inside the MCP block's own `env`:
 Hermes skills that run scripts inherit `HERMES_HOME` and any env the
 operator has set — same rule: don't put secrets in the coworker's own
 env if the skill can pick them up from its own config.
+
+---
+
+## Source: docs/release-process.md
+
+# Release process
+
+## Semver stance
+
+We follow semver on the **externally observable behaviour** of a
+coworker: role-doc file names + parseable syntax, tool interface
+(`ToolDef` shape), adapter contracts (MCP / Hermes / Eve / ACP), env-var
+names, on-disk file layout (`coworkers/<name>/state/*`).
+
+- **MAJOR** — break something a running coworker depends on. Renaming a
+  role doc, dropping a `ToolDef` field, changing the events.db schema,
+  removing an env var. Requires a migration script and an ADR.
+- **MINOR** — add a capability. New adapter, new tool primitive, new
+  ritual action, new field on an existing shape (with sensible default).
+  Backwards-compat is the acid test — an old coworker directory keeps
+  working after upgrade with zero edits.
+- **PATCH** — bug fix, doc update, test coverage, dep bump that doesn't
+  change behaviour.
+
+Internal refactors (module split, file rename in `src/runtime/`) don't
+count toward semver. Anyone importing our source directly is on the
+edge.
+
+## When to release
+
+Currently ad-hoc. There is no fixed cadence; we release when the
+change deserves a version bump. Typical triggers:
+
+- A MAJOR change is ready and stable on `main` for at least a week.
+- Enough MINOR changes have accumulated that operators would benefit
+  from a documented cut-over.
+- A PATCH addresses something broken enough that operators need to
+  know quickly (rare — we bias toward "just upgrade from main").
+
+## Cutting a release
+
+1. **Update `CHANGELOG.md`** — move everything under `## [Unreleased]`
+   into a new `## [X.Y.Z] - YYYY-MM-DD` section. Group by feat / fix /
+   chore / docs / test per the [Log coworker template](../examples/log/role/WORKSPACE.md#changelogmd-shape).
+2. **Bump the version in `package.json`.** Semver-appropriate.
+3. **Commit as `chore(release): X.Y.Z`.** No functional changes in this
+   commit — just the changelog cut + version bump.
+4. **Tag:** `git tag -a vX.Y.Z -m "vX.Y.Z"` then `git push --tags`.
+5. **Draft a GitHub release** with the same body as the CHANGELOG
+   entry. Publish once you've eyeballed it.
+6. Post-release, add a fresh `## [Unreleased]` header at the top of
+   CHANGELOG.md so the next PR has somewhere to write.
+
+Steps 1 and 5 are what the [Log](../examples/log/role/) coworker
+automates end-to-end if you deploy it against this repo.
+
+## Version 0.x
+
+Pre-1.0 semver is looser. During 0.x:
+
+- MINOR bumps may break things — we'll call it out in the changelog.
+- PATCH bumps still won't break anything.
+- We reach 1.0 when the runtime, tool interface, and adapter contracts
+  have all been stable for a full quarter with no MAJOR-shaped changes
+  landing.
+
+## Deprecation
+
+Two-step: mark deprecated with a runtime warning + doc note in one
+release; remove in the release after next (never the immediately
+following one — operators need a grace window). Deprecated items log
+`note` events with `{ deprecated: <name>, until: "vA.B.C" }` so a
+coworker's own health.snapshot ritual surfaces it.
+
+## Migration scripts
+
+Any MAJOR that changes on-disk layout ships a script under
+`bin/migrate-<version>.sh` that rewrites an existing coworker
+directory in place. Idempotent, backs up to `state/backup-<ts>/` first.
+The script's presence and use are documented in the release notes.
 
 ---
 
