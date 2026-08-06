@@ -1,0 +1,47 @@
+name: Feature request
+description: Propose a change or addition to ai-coworkers.
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Before you file:
+        - **Read CONTRIBUTING.md** — the two rules ("does this make the coworker quieter or louder?" + "the filesystem is the API") shape what we accept.
+        - **Search first** — the same idea may already be filed.
+        - **Bigger changes** should land as an ADR first (`docs/adr/000N-my-change.md`) before the implementation PR.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem are you solving?
+      description: One paragraph. What are you unable to do today, or what's clunky about how you're doing it?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: The shape of the change. Code sketches, new files, env vars, etc. Don't write a spec — write enough for a reviewer to agree or disagree with the direction.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: What else did you consider?
+      description: If the answer is "nothing," think harder. If MCP, Hermes, or a role-doc change would solve it without new code, say why they don't.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: quieter-or-louder
+    attributes:
+      label: Does this make the coworker quieter or louder?
+      description: (from CONTRIBUTING.md rule 1)
+      options:
+        - Quieter (better boundaries, fewer tokens, less noise)
+        - Louder in service of a real need (worth the cost, describe why)
+        - Neutral / structural / dev-experience
+    validations:
+      required: true

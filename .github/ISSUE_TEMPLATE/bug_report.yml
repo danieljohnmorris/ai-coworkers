@@ -1,0 +1,65 @@
+name: Bug report
+description: Report something that is broken in ai-coworkers.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for filing! Before you continue —
+        - **Security issue?** Do NOT file publicly. Email daniel.john.morris@gmail.com (see SECURITY.md).
+        - **Search first** — the same bug may already be filed.
+        - **API keys / tokens** — never paste them into the issue body. Reference the env var name.
+
+  - type: input
+    id: node
+    attributes:
+      label: Node version
+      description: Output of `node --version` (we require ≥ 22 for `node:sqlite`).
+      placeholder: v22.14.0
+    validations:
+      required: true
+
+  - type: input
+    id: ai-coworkers-commit
+    attributes:
+      label: ai-coworkers commit
+      description: Output of `git rev-parse --short HEAD` in your clone.
+      placeholder: abc1234
+    validations:
+      required: true
+
+  - type: textarea
+    id: role-docs
+    attributes:
+      label: Minimal role/*.md set that reproduces
+      description: |
+        The smallest `role/*.md` set that shows the problem. Paste the contents of `role/ROLE.md`, `role/BOUNDARIES.md`, and `role/TOOLS.md` at minimum. Redact any workspace-specific values.
+      render: markdown
+    validations:
+      required: true
+
+  - type: textarea
+    id: state
+    attributes:
+      label: Relevant slice of state/highlights.log
+      description: |
+        The last 20-50 lines of `coworkers/<name>/state/highlights.log` around the point of failure. Redact anything sensitive; secret_redaction should have already scrubbed obvious credentials.
+      render: shell
+    validations:
+      required: false
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected vs actual
+      description: What you expected to happen vs what happened.
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: A short numbered list — even better if it's a `bin/test-role.sh` invocation or a failing test.
+    validations:
+      required: true
