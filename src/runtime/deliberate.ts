@@ -7,6 +7,7 @@ import { chat, type LLMConfig } from "./llm.ts";
 import type { ToolDef } from "./tools.ts";
 import type { TempoSnapshot, BudgetSnapshot } from "./tempo.ts";
 import { cfg, truncated } from "./config.ts";
+import { compactOutcome } from "./compact.ts";
 
 export interface Perception {
   now: string;
@@ -48,6 +49,23 @@ export async function deliberate(
     description: a.description,
     inputSchema: a.inputSchema,
   }));
+
+  // AIC-56 — prompt-level compaction of prior-step outcomes. For outcomes
+  // that would otherwise be truncated (losing the middle), ask a cheap LLM
+  // pass to summarise them into a short paragraph that preserves identifiers
+  // verbatim. Smaller outcomes pass through unchanged. Cached by content
+  // hash inside compact.ts so repeated re-renders of the same step don't
+  // repeat the LLM call.
+  const priorStepStrings: string[] = await Promise.all(
+    priorSteps.map(async (s) => {
+      const raw = JSON.stringify(s.outcome);
+      const outcomeText = raw.length > cfg.priorStepOutcomeMaxChars
+        ? await compactOutcome(llm, s.outcome, cfg.priorStepOutcomeMaxChars)
+        : raw;
+      const inputText = truncated(JSON.stringify(s.input), cfg.priorStepInputMaxChars);
+      return `${s.tool} ${inputText}\n   → ${outcomeText}`;
+    }),
+  );
 
   const userMsg = [
     `# Now`,
@@ -97,12 +115,7 @@ export async function deliberate(
     ``,
     priorSteps.length ? `# Steps you have taken in THIS tick (chained tool calls so far)` : ``,
     priorSteps.length
-      ? priorSteps.map((s, i) =>
-          // 4000 chars is enough for a full team_labels payload or issue detail
-          // without wrecking the prompt budget. Bump if you routinely see the
-          // model complain about "truncated" outcomes.
-          `${i + 1}. ${s.tool} ${truncated(JSON.stringify(s.input), cfg.priorStepInputMaxChars)}\n   → ${truncated(JSON.stringify(s.outcome), cfg.priorStepOutcomeMaxChars)}`
-        ).join("\n")
+      ? priorStepStrings.map((s, i) => `${i + 1}. ${s}`).join("\n")
       : ``,
     priorSteps.length ? `` : ``,
     `# Task`,
