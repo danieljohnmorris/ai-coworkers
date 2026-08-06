@@ -11,6 +11,7 @@ The distinctive thesis: agents live in a filesystem directory (role docs + state
 - [ADR 0002 — code.delegate speaks ACP](https://github.com/danieljohnmorris/ai-coworkers/blob/main/docs/adr/0002-acp-code-delegate.md): why we adopt Zed's Agent Client Protocol (Goose / Codex / Claude Code plug in unmodified), permission model, sandbox scope.
 - [systemd deployment](https://github.com/danieljohnmorris/ai-coworkers/blob/main/docs/systemd.md): running coworkers as user services.
 - [Webhooks + external wakes](https://github.com/danieljohnmorris/ai-coworkers/blob/main/docs/webhooks.md): using the /wake endpoint to trigger ticks from Linear/Slack/GitHub webhooks.
+- [Migration from Hermes / OpenClaw / Eve](https://github.com/danieljohnmorris/ai-coworkers/blob/main/docs/migration.md): exact source-format → destination-file matrix + what needs manual authoring after `bin/import-*.sh`.
 
 ## Runtime (src/runtime/)
 
@@ -47,6 +48,7 @@ The distinctive thesis: agents live in a filesystem directory (role docs + state
 - `bin/why.sh <coworker> <event-id>[,...]`: walk from a `[ev:...]` citation in MEMORY.md back to the source events.
 - `bin/review-proposal.sh <coworker> [show|accept|reject <id>]`: handle role-doc change proposals.
 - `bin/new-coworker.sh <name>` / `bin/new-coworker-interview.sh <name>`: scaffold blank or JD-interview-driven coworker.
+- `bin/import-hermes.sh <src> <name>` / `bin/import-openclaw.sh` / `bin/import-eve.sh`: migrate an existing agent from Hermes / OpenClaw / Vercel Eve into an ai-coworker (see `docs/migration.md`).
 
 ## Optional
 
