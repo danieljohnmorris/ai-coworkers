@@ -60,6 +60,21 @@ describe("openEntities", () => {
     rmSync(dir, { recursive: true, force: true });
   });
 
+  it("read* returns empty string for invalid or missing keys", () => {
+    const e = openEntities(dir);
+    expect(e.readPerson("../evil")).toBe("");
+    expect(e.readProject("nobody-here")).toBe("");
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it("rejects bodies over the cap", () => {
+    const e = openEntities(dir);
+    const r = e.upsertPerson("dan", "x".repeat(5000), "test");
+    expect(r.accepted).toBe(false);
+    expect(r.reason).toMatch(/cap/);
+    rmSync(dir, { recursive: true, force: true });
+  });
+
   it("readProject returns the stored body", () => {
     const e = openEntities(dir);
     e.upsertProject("ILO", "the ilo project", "t");

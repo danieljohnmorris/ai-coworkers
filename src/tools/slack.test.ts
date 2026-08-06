@@ -57,6 +57,25 @@ describe("slackMentions", () => {
     expect((r.mentions[0] as any).user).toBe("UDAN");
   });
 
+  it("handles a channel with no messages field (nullish)", async () => {
+    globalThis.fetch = (async (url: string) => {
+      const u = String(url);
+      if (u.includes("auth.test")) return new Response(JSON.stringify({ ok: true, user_id: "UBOT" }));
+      if (u.includes("conversations.history")) return new Response(JSON.stringify({ ok: true })); // no messages field
+      return new Response("{}");
+    }) as typeof fetch;
+    const r = await slackMentions.handler({}, ctxLive({
+      SLACK_BOT_TOKEN: "x", SLACK_WATCHED_CHANNELS: "C1",
+    })) as any;
+    expect(r.mentions).toEqual([]);
+  });
+
+  it("falls back to HTTP status when Slack error field is missing", async () => {
+    globalThis.fetch = (async () => new Response(JSON.stringify({ ok: false }), { status: 418 })) as typeof fetch;
+    await expect(slackPost.handler({ channel: "C1", text: "hi" }, ctxLive({ SLACK_BOT_TOKEN: "x" })))
+      .rejects.toThrow(/418/);
+  });
+
   it("captures per-channel fetch errors instead of aborting", async () => {
     // Override history to fail for one specific channel.
     const prev = globalThis.fetch;
@@ -99,6 +118,10 @@ describe("slackDM", () => {
     expect(r.dryRun).toBe(true);
     expect(calls.length).toBe(0);
   });
+  it("throws without token when live", async () => {
+    await expect(slackDM.handler({ user: "U", text: "hi" }, ctxLive({}))).rejects.toThrow(/SLACK_BOT_TOKEN/);
+  });
+
   it("opens DM channel then posts when live", async () => {
     const r = await slackDM.handler({ user: "UDAN", text: "hi" }, ctxLive({ SLACK_BOT_TOKEN: "x" })) as any;
     expect(r.channel).toBe("D1");

@@ -104,6 +104,7 @@ function bwrapWrap(argv: string[], opts: SandboxOpts): string[] {
   return wrapped;
 }
 
+/* v8 ignore next 15 -- only exercised when firejail is installed on the host */
 function firejailWrap(argv: string[], opts: SandboxOpts): string[] {
   const cwd = resolve(opts.cwd);
   // firejail is more magical than bwrap; we ask for a minimal profile and

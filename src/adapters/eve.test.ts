@@ -12,6 +12,15 @@ describe("loadEveAgent", () => {
     expect(loadEveAgent("/nope-xyz")).toBeNull();
   });
 
+  it("handles dir with no subdirs / no instructions.md", () => {
+    const a = loadEveAgent(dir);
+    expect(a?.instructions).toBe("");
+    expect(a?.skills).toEqual([]);
+    expect(a?.toolFiles).toEqual([]);
+    expect(a?.channels).toEqual([]);
+    expect(a?.schedules).toEqual([]);
+  });
+
   it("loads instructions + skills + tools/channels/schedules listings", () => {
     writeFileSync(join(dir, "instructions.md"), "you are eve");
     mkdirSync(join(dir, "skills"), { recursive: true });

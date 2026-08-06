@@ -60,6 +60,14 @@ describe("renderMetrics", () => {
     expect(out).toContain('coworker="weird\\"name"');
   });
 
+  it("skips action events where payload.tool is not a string", () => {
+    insert("action", { tool: 42 });               // non-string tool → skipped
+    insert("action", { notTool: "x" });           // missing tool → skipped
+    insert("action", "not-json-object-string");   // JSON.parse yields a string → skipped
+    const out = renderMetrics(events, "alex");
+    expect(out).not.toMatch(/aicoworker_actions_by_tool_last_day.*tool=/);
+  });
+
   it("total events counter reflects the whole table", () => {
     for (let i = 0; i < 7; i++) insert("action", { tool: "x" });
     const out = renderMetrics(events, "alex");

@@ -68,6 +68,43 @@ describe("wake endpoint", () => {
     expect(body).toContain('coworker="alex"');
   });
 
+  it("returns 503 on /linear-webhook when LINEAR_WEBHOOK_SECRET unset", async () => {
+    const prev = process.env.LINEAR_WEBHOOK_SECRET;
+    delete process.env.LINEAR_WEBHOOK_SECRET;
+    try {
+      const port = await pick();
+      server = startWakeServer(port, { flag: false });
+      const res = await fetch(`http://127.0.0.1:${port}/linear-webhook`, { method: "POST", body: "{}" });
+      expect(res.status).toBe(503);
+    } finally {
+      if (prev === undefined) delete process.env.LINEAR_WEBHOOK_SECRET;
+      else process.env.LINEAR_WEBHOOK_SECRET = prev;
+    }
+  });
+
+  it("wakes on a signed Linear webhook via the HTTP wrapper", async () => {
+    const prev = process.env.LINEAR_WEBHOOK_SECRET;
+    process.env.LINEAR_WEBHOOK_SECRET = "wh-secret";
+    try {
+      const port = await pick();
+      const flag = { flag: false };
+      server = startWakeServer(port, flag);
+      const { createHmac } = await import("node:crypto");
+      const body = JSON.stringify({ action: "create", type: "Issue", data: { team: { key: "X" } } });
+      const sig = createHmac("sha256", "wh-secret").update(body).digest("hex");
+      const res = await fetch(`http://127.0.0.1:${port}/linear-webhook`, {
+        method: "POST",
+        headers: { "linear-signature": sig, "content-type": "application/json" },
+        body,
+      });
+      expect(res.status).toBe(200);
+      expect(flag.flag).toBe(true);
+    } finally {
+      if (prev === undefined) delete process.env.LINEAR_WEBHOOK_SECRET;
+      else process.env.LINEAR_WEBHOOK_SECRET = prev;
+    }
+  });
+
   it("returns 503 on /metrics when disabled", async () => {
     const port = await pick();
     server = startWakeServer(port, { flag: false });

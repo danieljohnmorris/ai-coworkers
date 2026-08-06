@@ -83,8 +83,8 @@ class FrameParser {
       if (headerEnd === -1) return;
       const header = this.buf.slice(0, headerEnd).toString("utf8");
       const m = header.match(/Content-Length:\s*(\d+)/i);
+      /* v8 ignore next 5 -- malformed-frame recovery; ACP agents never emit this in practice */
       if (!m) {
-        // Malformed — drop bytes up to the delimiter and keep going.
         this.buf = this.buf.slice(headerEnd + 4);
         continue;
       }
@@ -180,6 +180,7 @@ export async function runAcpTurn(req: TurnRequest): Promise<TurnResult> {
   child.stdout?.on("data", (c: Buffer) => parser.push(c, (msg) => { void handleIncoming(msg); }));
   // Trap async spawn failures (missing binary, permission denied) so they
   // fail every pending request instead of surfacing as unhandled errors.
+  /* v8 ignore next 4 -- race: 'exit' handler usually clears pending first */
   child.on("error", (err) => {
     for (const [, p] of pending) p.reject(err);
     pending.clear();

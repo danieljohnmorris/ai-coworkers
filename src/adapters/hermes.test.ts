@@ -58,6 +58,28 @@ describe("loadHermesSkills", () => {
     rmSync(dir, { recursive: true, force: true });
   });
 
+  it("skips regular files at top level and broken symlinks", () => {
+    // A stray file → not a directory, skipped.
+    writeFileSync(join(dir, "loose.md"), "not a skill");
+    // A broken symlink → statSync throws, caught silently.
+    const { symlinkSync } = require("node:fs");
+    try { symlinkSync(join(dir, "no-such-target"), join(dir, "broken-link")); } catch { /* ignore if not permitted */ }
+    // A real skill still loads.
+    seed("ok", "name: ok\ndescription: works", "body");
+    const s = loadHermesSkills(dir);
+    expect(s.map((x) => x.name)).toContain("ok");
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it("parseFrontMatter falls back cleanly when body is empty (firstLine)", () => {
+    // Frontmatter with no description → firstLine of empty body returns "".
+    seed("empty", "name: empty", "");
+    const s = loadHermesSkills(dir);
+    expect(s[0].name).toBe("empty");
+    expect(s[0].description).toBe("");
+    rmSync(dir, { recursive: true, force: true });
+  });
+
   it("does NOT recurse into a skill's own scripts/ or references/ subdirs", () => {
     // A skill's own subdirectories (scripts/, references/) are its
     // implementation, not nested skills. Stopping recursion at the first

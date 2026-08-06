@@ -159,6 +159,19 @@ describe("parseProposal round-trip", () => {
     expect(r.reason).toContain("sentinel");
   });
 
+  it("listProposals skips an unparseable proposal file", () => {
+    mkdirSync(proposalsDir, { recursive: true });
+    writeFileSync(join(proposalsDir, "junk.md"), "no frontmatter at all");
+    const { listProposals } = require("./role-proposals.ts");
+    expect(listProposals(proposalsDir)).toEqual([]);
+  });
+
+  it("listProposals sorts by ts (comparator runs when >=2 proposals)", () => {
+    file(); // AUTHORITY
+    file({ doc: "RITUALS", body: "Daily: summarize dogfood queue.", rationale: "Track daily ritual" });
+    expect(listProposals(proposalsDir).length).toBe(2);
+  });
+
   it("parseProposal rejects a doc value outside the whitelist (path-traversal guard)", () => {
     const evil = [
       "---",

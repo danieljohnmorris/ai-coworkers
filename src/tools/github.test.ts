@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { githubOpenPRs } from "./github.ts";
+import { githubOpenPRs, githubPRComment } from "./github.ts";
 import type { ToolCtx } from "../runtime/tools.ts";
 
 const ctxLive = (env: Record<string, string> = {}): ToolCtx => ({
@@ -19,6 +19,21 @@ describe("githubOpenPRs", () => {
   it("warns when WATCHED_REPOS is empty", async () => {
     const r = await githubOpenPRs.handler({}, ctxLive({ GITHUB_TOKEN: "t" })) as any;
     expect(r.warning).toMatch(/WATCHED_REPOS/);
+  });
+
+  it("pr_comment dry-run returns intended payload without fetch", async () => {
+    let fetched = false;
+    globalThis.fetch = (async () => { fetched = true; return new Response("{}"); }) as typeof fetch;
+    const r = await githubPRComment.handler({ repo: "o/r", number: 1, body: "hi" }, { coworker: "t", dryRun: true, env: {} as any }) as any;
+    expect(r.dryRun).toBe(true);
+    expect(fetched).toBe(false);
+  });
+
+  it("pr_comment throws without token when live", async () => {
+    await expect(githubPRComment.handler(
+      { repo: "o/r", number: 1, body: "hi" },
+      { coworker: "t", dryRun: false, env: {} as any },
+    )).rejects.toThrow(/GITHUB_TOKEN/);
   });
 
   it("aggregates PRs, skips drafts, and records per-repo errors", async () => {

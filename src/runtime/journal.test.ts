@@ -23,6 +23,17 @@ describe("writeJournal", () => {
     expect(readFileSync(r.path, "utf8")).toMatch(/Quiet day/);
   });
 
+  it("writes a fallback entry when the LLM call errors", async () => {
+    const events = openEvents(join(dir, "e.db"));
+    const log = new Log(events, "t");
+    const yesterday = new Date(Date.now() - 30 * 3600_000).toISOString();
+    events.prepare("INSERT INTO events (ts, coworker, kind, payload) VALUES (?, ?, ?, ?)")
+      .run(yesterday, "t", "action", "{}");
+    llm.respondWithError(500, "boom");
+    const r = await writeJournal({ role, events, journalDir: join(dir, "j-err"), llm: llm.llm, log });
+    expect(readFileSync(r.path, "utf8")).toMatch(/entry generation failed/);
+  });
+
   it("writes an LLM-generated entry when events exist", async () => {
     const events = openEvents(join(dir, "e.db"));
     const log = new Log(events, "t");

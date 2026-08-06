@@ -41,6 +41,18 @@ describe("episodic FTS5", () => {
     rmSync(dir, { recursive: true, force: true });
   });
 
+  it("passes already-quoted phrases through, escapes embedded quotes", () => {
+    const db = openEvents(join(dir, "e.db"));
+    initEpisodic(db);
+    db.prepare(`INSERT INTO events (ts, coworker, kind, payload) VALUES (?, ?, ?, ?)`)
+      .run(new Date().toISOString(), "t", "note", JSON.stringify({ msg: 'she said "hi"' }));
+    // Already-quoted → pass through the sanitizer branch.
+    expect(() => search(db, '"hi"')).not.toThrow();
+    // Embedded quotes get escaped ("" → ") — must not blow up the query.
+    expect(() => search(db, 'foo"bar')).not.toThrow();
+    rmSync(dir, { recursive: true, force: true });
+  });
+
   it("returns empty on empty query", () => {
     const db = openEvents(join(dir, "e.db"));
     initEpisodic(db);

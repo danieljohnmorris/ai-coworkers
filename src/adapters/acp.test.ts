@@ -120,6 +120,21 @@ describe("runAcpTurn", () => {
     expect(r.error).toBeUndefined();
   });
 
+  it("fs/read_text_file supports 1-based line + limit slicing", async () => {
+    mkdirSync(join(dir, "s"), { recursive: true });
+    writeFileSync(join(dir, "s", "big.txt"), "l1\nl2\nl3\nl4\nl5");
+    seedAgent([
+      { replyTo: { protocolVersion: 1 } },
+      { replyTo: { sessionId: "sl" } },
+      {
+        requestClient: { method: "fs/read_text_file", params: { path: join(dir, "s", "big.txt"), line: 2, limit: 2 } },
+        replyTo: { stopReason: "end_turn" },
+      },
+    ]);
+    const r = await runAcpTurn({ agentCmd: ["node", agentPath], prompt: "read slice", cwd: dir, timeoutMs: 10_000 });
+    expect(r.stopReason).toBe("end_turn");
+  });
+
   it("rejects fs/read_text_file that escapes cwd", async () => {
     seedAgent([
       { replyTo: { protocolVersion: 1 } },
@@ -132,6 +147,80 @@ describe("runAcpTurn", () => {
     // Handshake still completes — we return an error to the agent for the fs call.
     const r = await runAcpTurn({ agentCmd: ["node", agentPath], prompt: "read", cwd: dir, timeoutMs: 10_000 });
     expect(r.stopReason).toBe("end_turn");
+  });
+
+  it("serves fs/write_text_file requests scoped to cwd", async () => {
+    seedAgent([
+      { replyTo: { protocolVersion: 1 } },
+      { replyTo: { sessionId: "sw" } },
+      {
+        requestClient: { method: "fs/write_text_file", params: { path: join(dir, "out", "wrote.txt"), content: "hello-write" } },
+        replyTo: { stopReason: "end_turn" },
+      },
+    ]);
+    const r = await runAcpTurn({ agentCmd: ["node", agentPath], prompt: "write", cwd: dir, timeoutMs: 10_000 });
+    expect(r.stopReason).toBe("end_turn");
+    // Wait a beat for filesystem write to settle.
+    await new Promise((r) => setTimeout(r, 30));
+    expect(existsSync(join(dir, "out", "wrote.txt"))).toBe(true);
+    expect(readFileSync(join(dir, "out", "wrote.txt"), "utf8")).toBe("hello-write");
+  });
+
+  it("responds with error to unknown agent methods (MethodNotFound)", async () => {
+    seedAgent([
+      { replyTo: { protocolVersion: 1 } },
+      { replyTo: { sessionId: "sm" } },
+      {
+        requestClient: { method: "terminal/spawn", params: {} },
+        replyTo: { stopReason: "end_turn" },
+      },
+    ]);
+    const r = await runAcpTurn({ agentCmd: ["node", agentPath], prompt: "x", cwd: dir, timeoutMs: 10_000 });
+    // Handshake still completes; error goes back to the agent, not to us.
+    expect(r.stopReason).toBe("end_turn");
+  });
+
+  it("captures plan updates from session/update", async () => {
+    seedAgent([
+      { replyTo: { protocolVersion: 1 } },
+      { replyTo: { sessionId: "sp" } },
+      {
+        notifications: [
+          { jsonrpc: "2.0", method: "session/update", params: { sessionId: "sp", update: { sessionUpdate: "plan", entries: [{ content: "step 1", status: "pending", priority: "high" }] } } },
+        ],
+        replyTo: { stopReason: "end_turn" },
+      },
+    ]);
+    const r = await runAcpTurn({ agentCmd: ["node", agentPath], prompt: "plan", cwd: dir, timeoutMs: 10_000 });
+    expect(r.plan?.[0].content).toBe("step 1");
+  });
+
+  it("handles permission requests (allowed and rejected paths) mid-turn", async () => {
+    // The fake agent sends notifications → replyTo → requestClient per step.
+    // To fire the permission request BEFORE the prompt reply resolves, we
+    // slot the permission request into its own turn: initialize step first,
+    // session/new second, then the prompt step sends a tool_call + permission
+    // request as notifications, and the fake fires the response BEFORE the
+    // prompt reply lands. We rely on ACP allowing multiple client requests.
+    seedAgent([
+      { replyTo: { protocolVersion: 1 } },
+      { replyTo: { sessionId: "sperm" } },
+      {
+        notifications: [
+          { jsonrpc: "2.0", method: "session/update", params: { sessionId: "sperm", update: { sessionUpdate: "tool_call", toolCallId: "t1", title: "read foo", kind: "read", status: "in_progress" } } },
+          { jsonrpc: "2.0", method: "session/update", params: { sessionId: "sperm", update: { sessionUpdate: "tool_call", toolCallId: "t2", title: "exec", kind: "execute", status: "pending" } } },
+          { jsonrpc: "2.0", id: 9001, method: "session/request_permission", params: { toolCall: { toolCallId: "t1", kind: "read" }, options: [{ optionId: "yes", kind: "allow_once" }, { optionId: "no", kind: "reject_once" }] } },
+          { jsonrpc: "2.0", id: 9002, method: "session/request_permission", params: { toolCall: { toolCallId: "t2", kind: "execute" }, options: [{ optionId: "yes", kind: "allow_once" }, { optionId: "no", kind: "reject_once" }] } },
+        ],
+        replyTo: { stopReason: "end_turn" },
+      },
+    ]);
+    const r = await runAcpTurn({ agentCmd: ["node", agentPath], prompt: "p", cwd: dir, timeoutMs: 10_000, allowKinds: ["read"] });
+    expect(r.stopReason).toBe("end_turn");
+    const t1 = r.toolCalls.find((t) => t.toolCallId === "t1");
+    const t2 = r.toolCalls.find((t) => t.toolCallId === "t2");
+    expect(t1?.permission).toBe("allowed");
+    expect(t2?.permission).toBe("rejected");
   });
 
   it("times out and returns stopReason='timeout' when the agent hangs", async () => {

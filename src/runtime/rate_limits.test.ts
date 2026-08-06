@@ -62,6 +62,17 @@ describe("retryAfterFrom", () => {
     expect(s).toBeLessThanOrEqual(31);
   });
 
+  it("returns undefined when Retry-After is unparseable garbage", () => {
+    const h = new Headers({ "retry-after": "not a date and not a number" });
+    expect(retryAfterFrom(h)).toBeUndefined();
+  });
+
+  it("accepts a plain object header map", () => {
+    expect(retryAfterFrom({ "retry-after": "17" })).toBe(17);
+    expect(retryAfterFrom({ "Retry-After": "9" })).toBe(9);
+    expect(retryAfterFrom({})).toBeUndefined();
+  });
+
   it("returns undefined when header is missing", () => {
     expect(retryAfterFrom(new Headers())).toBeUndefined();
   });
