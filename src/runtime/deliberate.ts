@@ -23,6 +23,7 @@ export interface Perception {
   recentThoughts: string;         // your last few thoughts-to-self, in order
   inboxUnread: string;             // messages from your manager (human) since last read
   reactionsUnread: string;         // 👍 / 👎 reactions from your manager since last read
+  rateLimits: { prefix: string; untilIso: string; reason: string }[];  // AIC-62 — services currently backed off
 }
 
 export type Pace = "faster" | "hold" | "slower";
@@ -110,6 +111,10 @@ export async function deliberate(
       ? `# 🫱 UNREAD REACTIONS FROM YOUR MANAGER (👍 = keep doing this; 👎 = stop / correct course)\n\n${perception.reactionsUnread}`
       : ``,
     perception.reactionsUnread ? `` : ``,
+    perception.rateLimits.length
+      ? `# ⏳ EXTERNAL SERVICES BACKED OFF (do not call these until the 'until' time)\n${perception.rateLimits.map((r) => `- ${r.prefix} until ${r.untilIso} — ${r.reason.slice(0, 100)}`).join("\n")}`
+      : ``,
+    perception.rateLimits.length ? `` : ``,
     `# Your recent thoughts to yourself`,
     perception.recentThoughts || "(no recent thoughts logged)",
     ``,

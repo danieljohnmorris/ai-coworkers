@@ -25,6 +25,7 @@ import { dreamOnce } from "./reflect.ts";
 import { auditRoleDocs } from "./role_audit.ts";
 import { filterEnvForTool } from "./credentials.ts";
 import { triage } from "./triage.ts";
+import { rateLimitRemaining, recordRateLimit, retryAfterFrom, activeRateLimits } from "./rate_limits.ts";
 import { writeJournal } from "./journal.ts";
 import { matchIntents } from "./intents.ts";
 import { tailHighlights } from "./log.ts";
@@ -93,6 +94,13 @@ export async function tick(ctx: TickContext): Promise<TickOutcome> {
       ctx.log.event("sensor.error", { name: s.name, error: "quarantined" });
       continue;
     }
+    // AIC-62 — external rate-limit awareness. Skip sensors whose service
+    // told us to back off; ramming a 429'd service just deepens the hole.
+    const rlRemaining = rateLimitRemaining(s.name, nowMs);
+    if (rlRemaining > 0) {
+      ctx.log.event("sensor.error", { name: s.name, error: `rate-limited (${rlRemaining}s remaining)` });
+      continue;
+    }
     const cached = getCached(s.name, nowMs);
     if (cached !== undefined) {
       sensors.push({ name: s.name, result: cached });
@@ -112,6 +120,17 @@ export async function tick(ctx: TickContext): Promise<TickOutcome> {
     } catch (err) {
       sensors.push({ name: s.name, result: null, error: String(err) });
       ctx.log.event("sensor.error", { name: s.name, error: String(err) });
+      // AIC-62 — detect 429/rate-limit in the error and record the
+      // cooldown so subsequent sensor + action calls skip this prefix.
+      // Rely on the string form of the error since tools throw a mix of
+      // Error and plain-string; both include the HTTP status when it's
+      // an upstream response failure.
+      const msg = String(err);
+      if (/\b429\b|rate[- ]?limit/i.test(msg)) {
+        const secMatch = msg.match(/retry.after[^\d]*(\d+)/i);
+        recordRateLimit(s.name, secMatch ? Number(secMatch[1]) : undefined, msg.slice(0, 200));
+        ctx.log.event("note", { sensor: s.name, rate_limited: true });
+      }
       const c = circuitError(s.name, nowMs);
       if (c.quarantined) ctx.log.event("note", { sensor: s.name, quarantined: true });
     }
@@ -218,6 +237,7 @@ export async function tick(ctx: TickContext): Promise<TickOutcome> {
     recentThoughts,
     inboxUnread: ctx.inbox.unread(),
     reactionsUnread: renderReactions(ctx.reactions.unread()),
+    rateLimits: activeRateLimits(),
   };
   // Once perception is built the unread notes are marked as read so a note
   // is presented once (highlighted for the model that turn) and doesn't
@@ -350,6 +370,18 @@ export async function tick(ctx: TickContext): Promise<TickOutcome> {
       continue;
     }
 
+    // AIC-62 — refuse actions to a rate-limited service instead of racking
+    // up more 429s. Feed the block back as an outcome so the model can
+    // pick a different action.
+    const rlRemaining = rateLimitRemaining(tool.name);
+    if (rlRemaining > 0) {
+      const outcome = { error: `rate-limited: ${tool.name.split(".")[0]} is backed off for ${rlRemaining}s more; pick a different service or noop` };
+      ctx.log.event("action.error", { tool: tool.name, error: "rate-limited", step });
+      ctx.log.highlight(`✗ ${tool.name} skipped: rate-limited (${rlRemaining}s)`);
+      priorSteps.push({ tool: tool.name, input: decision.input, outcome });
+      continue;
+    }
+
     let outcome: unknown;
     try {
       // AIC-46 — retry transient failures (5xx, 429, ECONNRESET) before giving up.
@@ -365,6 +397,12 @@ export async function tick(ctx: TickContext): Promise<TickOutcome> {
       outcome = { error: String(err) };
       ctx.log.event("action.error", { tool: tool.name, error: String(err), step });
       ctx.log.highlight(`✗ ${tool.name} failed: ${err}`);
+      // AIC-62 — same 429 detection as the sensor path.
+      const msg = String(err);
+      if (/\b429\b|rate[- ]?limit/i.test(msg)) {
+        const secMatch = msg.match(/retry.after[^\d]*(\d+)/i);
+        recordRateLimit(tool.name, secMatch ? Number(secMatch[1]) : undefined, msg.slice(0, 200));
+      }
       // Let the model see the failure and decide whether to try again or bail.
     }
     priorSteps.push({ tool: tool.name, input: decision.input, outcome });
