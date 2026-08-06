@@ -2,7 +2,7 @@
 //   node --experimental-strip-types --no-warnings src/index.ts <coworker> [--live]
 // Default is dry-run. Pass --live to allow write actions to actually execute.
 
-import { mkdirSync, appendFileSync } from "node:fs";
+import { mkdirSync, appendFileSync, watch } from "node:fs";
 import { join } from "node:path";
 import { loadRole } from "./runtime/role.ts";
 import { openEvents, Log } from "./runtime/log.ts";
@@ -111,6 +111,44 @@ async function main() {
 
   log.stream(`start coworker=${name} model=${llm.model} live=${live}`);
   log.event("note", { message: "startup", model: llm.model, live });
+
+  // AIC-58 — hot-reload role docs on change. Watch role/ recursively;
+  // any .md or .json edit re-parses the role + re-applies the skills
+  // index. Debounced (300ms) because editors save-and-swap fires
+  // multiple events per save. rituals/*.json is already re-read every
+  // tick by rituals_loader, so we don't need to force a reload for that
+  // — but do log so an operator sees the change was noticed.
+  const roleDir = join(coworkersDir, name, "role");
+  let reloadTimer: NodeJS.Timeout | null = null;
+  const reload = (): void => {
+    if (reloadTimer) clearTimeout(reloadTimer);
+    reloadTimer = setTimeout(() => {
+      reloadTimer = null;
+      try {
+        const fresh = loadRole(coworkersDir, name);
+        role = skillsIndex ? { ...fresh, systemPrompt: `${fresh.systemPrompt}\n\n---\n\n${skillsIndex}` } : fresh;
+        log.event("role.reload", { ok: true });
+        log.highlight(`🔁 role reloaded (limits: max ${role.limits.maxLlmPerDay ?? "?"} LLM/day, ${role.limits.maxWorktrees} worktrees)`);
+      } catch (err) {
+        log.event("role.reload", { ok: false, error: String(err) });
+        log.highlight(`✗ role reload failed: ${err}`);
+      }
+    }, 300);
+  };
+  try {
+    const watcher = watch(roleDir, { recursive: true }, (_evt, filename) => {
+      if (!filename) return;
+      const f = String(filename);
+      if (f.endsWith(".md") || f.endsWith(".json")) reload();
+    });
+    log.stream(`role hot-reload: watching ${roleDir}`);
+    process.on("SIGINT", () => { try { watcher.close(); } catch { /* noop */ } });
+    process.on("SIGTERM", () => { try { watcher.close(); } catch { /* noop */ } });
+  } catch (err) {
+    // fs.watch is best-effort on some platforms (network mounts etc).
+    // Log and continue — worst case the operator has to restart.
+    log.event("note", { message: "role hot-reload unavailable", error: String(err) });
+  }
 
   const baseIntervalMs = Number(process.env.TICK_INTERVAL_MS ?? 5 * 60_000);
   const maxIntervalMs = role.cadence === "constant"
