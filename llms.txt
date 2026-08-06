@@ -13,6 +13,7 @@ The distinctive thesis: agents live in a filesystem directory (role docs + state
 - [ADR 0004 — keep events.db as one file](https://github.com/danieljohnmorris/ai-coworkers/blob/main/docs/adr/0004-events-db-single-file.md): bench result — no cross-writer contention on our topology, so the theorised inbound/outbound split isn't worth the schema complexity.
 - [ADR 0005 — evaluators + services (design spike)](https://github.com/danieljohnmorris/ai-coworkers/blob/main/docs/adr/0005-evaluators-services.md): proposed interfaces to close the ElizaOS gaps (per-action post-response hooks + long-lived push singletons). Design only; implementation staged.
 - [systemd deployment](https://github.com/danieljohnmorris/ai-coworkers/blob/main/docs/systemd.md): running coworkers as user services.
+- [Dedicated Linear identity for your coworker](https://github.com/danieljohnmorris/ai-coworkers/blob/main/docs/dedicated-linear-user.md): setting up a service account or OAuth app so the coworker posts under its own name, not yours (AIC-28).
 - [Webhooks + external wakes](https://github.com/danieljohnmorris/ai-coworkers/blob/main/docs/webhooks.md): using the /wake endpoint to trigger ticks from Linear/Slack/GitHub webhooks.
 - [Migration from Hermes / OpenClaw / Eve](https://github.com/danieljohnmorris/ai-coworkers/blob/main/docs/migration.md): exact source-format → destination-file matrix + what needs manual authoring after `bin/import-*.sh`.
 
