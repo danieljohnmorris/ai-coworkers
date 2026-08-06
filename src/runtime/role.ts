@@ -17,7 +17,14 @@
 // with bin/review-proposal.sh and accepting applies the change here.
 
 import { readFileSync, existsSync } from "node:fs";
-import { join } from "node:path";
+import { join, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const BASELINE_PATH = join(
+  dirname(fileURLToPath(import.meta.url)),
+  "prompts",
+  "coworker_baseline.md",
+);
 
 const DOCS = [
   "ROLE",
@@ -34,6 +41,7 @@ export type Role = {
   name: string;
   dir: string;
   docs: Record<(typeof DOCS)[number], string>;
+  baseline: string;
   systemPrompt: string;
   limits: ResourceLimits;
   cadence: Cadence;
@@ -62,19 +70,57 @@ export function loadRole(coworkersDir: string, name: string): Role {
     const p = join(dir, `${key}.md`);
     docs[key] = existsSync(p) ? readFileSync(p, "utf8").trim() : "";
   }
-  const systemPrompt = DOCS
+  const roleBody = DOCS
     .filter((k) => docs[k])
     .map((k) => `# ${k}\n\n${docs[k]}`)
     .join("\n\n---\n\n");
+
+  const baseline = loadBaseline(roleBody);
+  const systemPrompt = baseline
+    ? `# baseline\n\n${baseline}\n\n---\n\n${roleBody}`
+    : roleBody;
 
   return {
     name,
     dir,
     docs,
+    baseline,
     systemPrompt,
     limits: parseLimits(docs.BOUNDARIES) ?? DEFAULT_LIMITS,
     cadence: parseCadence(docs.RITUALS),
   };
+}
+
+// Read the framework-owned baseline, strip any `## <heading>` block whose
+// heading also appears in the concatenated role body. This lets a role
+// override a baseline section by naming the same header (kebab-case).
+// Escape hatch: COWORKER_SKIP_BASELINE=1 disables the baseline entirely.
+function loadBaseline(roleBody: string): string {
+  if (process.env.COWORKER_SKIP_BASELINE === "1") return "";
+  if (!existsSync(BASELINE_PATH)) return "";
+  const raw = readFileSync(BASELINE_PATH, "utf8").trim();
+  const roleHeadings = new Set(
+    Array.from(roleBody.matchAll(/^##\s+(\S.*?)\s*$/gm)).map((m) => m[1].trim().toLowerCase()),
+  );
+  if (roleHeadings.size === 0) return raw;
+
+  // Split baseline into (preamble)(## heading blocks)
+  const parts: string[] = [];
+  const headerRe = /^##\s+(\S.*?)\s*$/gm;
+  const marks: { name: string; start: number }[] = [];
+  let m: RegExpExecArray | null;
+  while ((m = headerRe.exec(raw)) !== null) {
+    marks.push({ name: m[1].trim().toLowerCase(), start: m.index });
+  }
+  if (marks.length === 0) return raw;
+
+  parts.push(raw.slice(0, marks[0].start).trimEnd());
+  for (let i = 0; i < marks.length; i++) {
+    const end = i + 1 < marks.length ? marks[i + 1].start : raw.length;
+    if (roleHeadings.has(marks[i].name)) continue; // role overrides
+    parts.push(raw.slice(marks[i].start, end).trimEnd());
+  }
+  return parts.filter(Boolean).join("\n\n").trim();
 }
 
 // Cadence is declared in RITUALS.md — a line like "Cadence: constant" opts

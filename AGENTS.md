@@ -72,6 +72,7 @@ Every variable actually read by `src/`:
 | `MIN_TICK_INTERVAL_MS` | no | `15000` | Floor when the model asks to `pace: faster`. |
 | `MAX_TICK_INTERVAL_MS` | no | `1800000` | Cap for adaptive backoff (30 min). Ignored when the role sets `Cadence: constant`. |
 | `MAX_TOOLS_PER_TICK` | no | runtime default | Max tool calls chained per tick. |
+| `COWORKER_SKIP_BASELINE` | no | unset | Set to `1` to disable the framework-owned baseline prompt (see [Baseline prompt](#baseline-prompt)). Otherwise the baseline is prepended to every coworker's system prompt. |
 | `WAKE_MODE` | no | `both` | Activity source. `tick` = periodic tick loop only; `webhook` = wake HTTP server only (no scheduled ticks); `both` = both. See [Activity modes](#activity-modes). Unknown values fall back to `both` with a warning. |
 | `WAKE_PORT` | no | unset | Port for HTTP wake endpoint. Required if you want webhooks or `WAKE_MODE=webhook`. |
 | `WAKE_SECRET` | no | unset | Shared secret for `/wake`; presence flips bind to `0.0.0.0`. |
@@ -142,6 +143,32 @@ Reference set: `examples/generic-triage/role/`.
 | `RELATIONSHIPS.md` | Named peers, managers, escalation targets. |
 | `WEBHOOKS.json` | Declarative inbound webhooks (see below). |
 | `rituals/*.json` | Structured recurring jobs; re-read every tick. |
+
+### Baseline prompt
+
+Every coworker's system prompt is prepended with a framework-owned
+**baseline** — a short "how you work" preamble covering universal
+coworker hygiene: tool categories (sensor / action / memory), escalation
+via `ask to="manager"`, memory hygiene (`memory.note` durable
+discoveries; `memory.notes_read` at the start of a tick), tool-failure
+discipline (retry once, then escalate — never loop), boundary respect
+(BOUNDARIES.md is non-negotiable; escalate for boundary changes), and
+dry-run-vs-live semantics.
+
+The authoritative content lives at
+[`src/runtime/prompts/coworker_baseline.md`](src/runtime/prompts/coworker_baseline.md).
+Read that file to see exactly what your coworkers get for free before
+their own role docs are read.
+
+Each baseline rule sits under a kebab-case `## <name>` heading
+(`## escalation`, `## memory-hygiene`, etc.). A role doc can **override**
+any section by including a `## <same-name>` heading — the baseline's
+version is stripped before concatenation, and the role's version wins.
+Add a role heading only when the default is wrong for that coworker;
+otherwise leave the baseline to speak for itself.
+
+Escape hatch: set `COWORKER_SKIP_BASELINE=1` to omit the baseline
+entirely (useful for tests or minimal harnesses).
 
 ---
 

@@ -8,6 +8,26 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## [Unreleased]
 
+### Added
+- **Framework-owned baseline prompt** prepended to every coworker's
+  system prompt. Covers universal hygiene (tool categories, escalation
+  via `ask to="manager"`, memory-note discipline, retry-once tool-failure
+  rule, boundary respect, dry-run vs live). Authoritative content at
+  `src/runtime/prompts/coworker_baseline.md`; role docs can override any
+  `## <kebab-case>` section by declaring the same heading. Existing
+  coworkers pick up the baseline on next restart; opt out with
+  `COWORKER_SKIP_BASELINE=1`.
+- `examples/generic-triage/` refreshed against lessons from live
+  triagers: full `ask` recipient list, full memory-tool enumeration,
+  post-Linear-MCP-migration tool names (`save_comment`, `save_issue`,
+  `list_issue_labels`), `save_issue: id, labels` field allowlist plus
+  destructive-labels warning, escalation-with-manager-channel guidance,
+  and a doesn't-watch-terminal-live caveat in RELATIONSHIPS.
+- `examples/project-manager/`, `examples/trace/`, `examples/watchtower/`
+  TOOLS.md top-level bullets updated from pre-migration `linear:` to
+  `mcp.linear:` so `BOUNDARIES.md` gating and TOOLS.md hints stay
+  aligned with the MCP tool namespace.
+
 ### Changed
 - **Linear integration migrated to the remote MCP server**
   (`https://mcp.linear.app/mcp`, OAuth 2.1 + DCR). The native
