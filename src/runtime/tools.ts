@@ -8,6 +8,11 @@ export interface ToolDef<TInput = unknown, TOutput = unknown> {
   description: string;                            // shown to the model
   inputSchema: object;                            // JSON schema for arguments
   handler: (input: TInput, ctx: ToolCtx) => Promise<TOutput>;
+  // AIC-74 — declare which credential env vars this tool needs. When set,
+  // the runtime filters ctx.env: non-credentials pass through unchanged,
+  // credentials are stripped unless listed here. Undefined = full env
+  // (backwards-compat for tools not yet migrated).
+  requiresCreds?: readonly string[];
 }
 
 export interface ToolCtx {

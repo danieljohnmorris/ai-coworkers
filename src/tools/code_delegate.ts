@@ -28,6 +28,11 @@ function parseAllowKinds(csv: string | undefined): PermissionKind[] {
 
 export const codeDelegate: ToolDef = {
   name: "code.delegate",
+  // Only needs ACP_AGENT_CMD (a command string, not a secret) and the
+  // ACP_* config vars. Deliberately does NOT declare any *_TOKEN — the
+  // delegated agent should authenticate to services through its own
+  // config, not by inheriting the coworker's process.env credentials.
+  requiresCreds: [],
   kind: "action",
   description:
     "Delegate a well-scoped coding task to an ACP-conformant coding agent (Goose / Codex / Claude Code / etc.). Use for changes you cannot make with a single tool call: multi-file edits, refactors, feature scaffolds, bug fixes with tests. Provide a clear, self-contained brief — the delegated agent has no memory of prior ticks. Returns the transcript, tool-call summary, and stop reason. This action can run for several minutes; only invoke when the task is genuinely worth a delegate turn.",
