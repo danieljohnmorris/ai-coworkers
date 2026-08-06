@@ -41,6 +41,7 @@ import { compactRecentActions, truncateSensorPayloads } from "./working.ts";
 import { retryAsync } from "./retry.ts";
 import { validateInput } from "./validate.ts";
 import type { McpSensorRunner } from "./mcp_sensor.ts";
+import { runEvaluator } from "./evaluator.ts";
 
 export interface TickContext {
   role: Role;
@@ -54,6 +55,10 @@ export interface TickContext {
   tools: ToolRegistry;
   llm: LLMConfig;
   triageLlm?: LLMConfig;       // AIC-47 — optional cheap-first preflight
+  // Optional post-deliberate entity+facts extractor. Present only when
+  // EXTRACT_ENTITIES=1 in the coworker env (wiring in src/index.ts).
+  // Model is TRIAGE_MODEL ?? COWORKER_MODEL. See src/runtime/evaluator.ts.
+  evaluatorLlm?: LLMConfig;
   dryRun: boolean;
   log: Log;
   forceDeliberate?: boolean;   // set by external wake — bypass quiet gate this tick
@@ -471,6 +476,26 @@ export async function tick(ctx: TickContext): Promise<TickOutcome> {
 
   if (priorSteps.length >= maxToolsPerTick) {
     ctx.log.highlight(`cap: ${maxToolsPerTick} tool calls reached this tick`);
+  }
+
+  // 4b. entity evaluator — post-deliberate hook that extracts people,
+  // projects, and durable workspace facts from this tick's perception,
+  // actions, and thoughts, writing them into the existing filesystem
+  // stores (entity markdown + notes.md). Opt-in via EXTRACT_ENTITIES=1;
+  // absent evaluatorLlm = no run. Errors are swallowed inside runEvaluator.
+  if (ctx.evaluatorLlm) {
+    const stateDir = join(ctx.role.dir, "..", "state");
+    await runEvaluator(
+      { perception, priorSteps, thoughts: recentThoughts },
+      {
+        llm: ctx.evaluatorLlm,
+        entities: ctx.entities,
+        entitiesDir: join(stateDir, "entities"),
+        notesPath: join(stateDir, "notes.md"),
+        log: ctx.log,
+        dryRun: ctx.dryRun,
+      },
+    );
   }
 
   // 5. record + hygiene + intent matcher

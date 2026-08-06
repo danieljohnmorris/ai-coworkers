@@ -138,6 +138,16 @@ async function main() {
   const triageLlm = coworkerEnv.TRIAGE_MODEL
     ? { baseUrl: coworkerEnv.OLLAMA_HOST ?? "https://ollama.com", apiKey: coworkerEnv.OLLAMA_API_KEY, model: coworkerEnv.TRIAGE_MODEL }
     : undefined;
+  // Entity evaluator (opt-in via EXTRACT_ENTITIES=1). Prefers the cheap
+  // TRIAGE_MODEL if set; falls back to COWORKER_MODEL. Never invents a
+  // new required env var — see docs/adr/0006-filesystem-first-storage.md.
+  const evaluatorLlm = coworkerEnv.EXTRACT_ENTITIES === "1"
+    ? {
+        baseUrl: coworkerEnv.OLLAMA_HOST ?? "https://ollama.com",
+        apiKey: coworkerEnv.OLLAMA_API_KEY,
+        model: coworkerEnv.TRIAGE_MODEL ?? llm.model,
+      }
+    : undefined;
 
   // AIC — impossible-to-miss LIVE/DRY-RUN banner. Emitted before the
   // usual start line so operators (and tailing agents) see the mode first.
@@ -257,6 +267,7 @@ async function main() {
       outcome = await tick({
         role, events, memory, hygiene, semantic, entities, inbox, reactions,
         tools, llm, triageLlm, dryRun: !live, log,
+        ...(evaluatorLlm ? { evaluatorLlm } : {}),
         forceDeliberate: forceNext,
         env: coworkerEnv,
         ...(mcpSensorRunner ? { mcpSensors: mcpSensorRunner } : {}),
