@@ -8,6 +8,7 @@ The distinctive thesis: agents live in a filesystem directory (role docs + state
 
 - [README](https://github.com/danieljohnmorris/ai-coworkers/blob/main/README.md): install, first coworker, tick loop overview, boundaries + dry-run, humans↔coworker messaging, adapter table, templates, operating notes.
 - [ADR 0001 — CoALA memory taxonomy mapping](https://github.com/danieljohnmorris/ai-coworkers/blob/main/docs/adr/0001-coala-memory-taxonomy.md): how working / episodic / semantic / entity / procedural / reflective memory map to modules in this repo.
+- [ADR 0002 — code.delegate speaks ACP](https://github.com/danieljohnmorris/ai-coworkers/blob/main/docs/adr/0002-acp-code-delegate.md): why we adopt Zed's Agent Client Protocol (Goose / Codex / Claude Code plug in unmodified), permission model, sandbox scope.
 - [systemd deployment](https://github.com/danieljohnmorris/ai-coworkers/blob/main/docs/systemd.md): running coworkers as user services.
 - [Webhooks + external wakes](https://github.com/danieljohnmorris/ai-coworkers/blob/main/docs/webhooks.md): using the /wake endpoint to trigger ticks from Linear/Slack/GitHub webhooks.
 
@@ -29,6 +30,7 @@ The distinctive thesis: agents live in a filesystem directory (role docs + state
 - [mcp.ts](https://github.com/danieljohnmorris/ai-coworkers/blob/main/src/adapters/mcp.ts): MCP servers via `MCP_SERVERS` env var.
 - [hermes.ts](https://github.com/danieljohnmorris/ai-coworkers/blob/main/src/adapters/hermes.ts): Hermes/OpenClaw/Anthropic-style skills folders → procedural memory.
 - [eve.ts](https://github.com/danieljohnmorris/ai-coworkers/blob/main/src/adapters/eve.ts): Vercel Eve `agent/` folder loader.
+- [acp.ts](https://github.com/danieljohnmorris/ai-coworkers/blob/main/src/adapters/acp.ts) + [code_delegate.ts](https://github.com/danieljohnmorris/ai-coworkers/blob/main/src/tools/code_delegate.ts): Agent Client Protocol client — spawns any ACP-conformant coding agent (Goose, Codex, Claude Code) as a subprocess and drives one prompt turn. Configured via `ACP_AGENT_CMD`.
 
 ## Coworker templates (examples/)
 
