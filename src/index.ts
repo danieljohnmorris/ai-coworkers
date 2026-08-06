@@ -25,6 +25,7 @@ import { branchRoomTools } from "./tools/branch_room.ts";
 import { gmailTools } from "./tools/gmail.ts";
 import { connectMcp, parseMcpEnv, type McpConnection } from "./adapters/mcp.ts";
 import { loadCoworkerEnv } from "./runtime/credentials.ts";
+import { loadCoworkerConfig } from "./runtime/coworker_config.ts";
 import { knownSecretsFrom } from "./runtime/secret_redaction.ts";
 import { loadHermesSkills, renderSkillsIndex } from "./adapters/hermes.ts";
 import { startWakeServer } from "./runtime/wake.ts";
@@ -63,6 +64,28 @@ async function main() {
   // coworker in the same repo uses a different key, without either polluting
   // process.env for the other. See src/runtime/credentials.ts.
   const coworkerEnv = loadCoworkerEnv(coworkersDir, name);
+
+  // Behavioural knobs (wake_mode, extract_entities, max_tools_per_tick,
+  // pii_mask, note_require_signed) resolve from coworkers/<name>/config.json
+  // first, then env fallback, then schema defaults. Env-fallback hits emit
+  // a one-time deprecation warning. See docs/adr/0007-config-file-vs-env-vars.md.
+  const coworkerConfig = loadCoworkerConfig(join(coworkersDir, name), coworkerEnv, {
+    warn: (m) => process.stderr.write(`${m}\n`),
+  });
+  // Reflect resolved config back into the env overlay so downstream code
+  // paths (tick.ts, inbox.ts, wake_mode.parseWakeMode) read the effective
+  // value regardless of whether the source was config.json or env.
+  coworkerEnv.WAKE_MODE = coworkerConfig.wake_mode;
+  coworkerEnv.EXTRACT_ENTITIES = coworkerConfig.extract_entities ? "1" : "";
+  coworkerEnv.MAX_TOOLS_PER_TICK = String(coworkerConfig.max_tools_per_tick);
+  coworkerEnv.PII_MASK = coworkerConfig.pii_mask ? "1" : "";
+  coworkerEnv.NOTE_REQUIRE_SIGNED = coworkerConfig.note_require_signed ? "1" : "";
+  // A few call sites still read process.env directly (inbox.ts, tick.ts).
+  // Mirror the config-resolved value there so config.json actually takes
+  // effect for those paths without a wider refactor.
+  process.env.MAX_TOOLS_PER_TICK = String(coworkerConfig.max_tools_per_tick);
+  if (coworkerConfig.note_require_signed) process.env.NOTE_REQUIRE_SIGNED = "1";
+  else delete process.env.NOTE_REQUIRE_SIGNED;
 
   let role = loadRole(coworkersDir, name);
   const events = openEvents(join(stateDir, "events.db"));

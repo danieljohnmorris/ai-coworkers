@@ -6,6 +6,8 @@ copy-pasteable, every env var is enumerated, every file path is relative to
 the repo root.
 
 For the human-facing pitch and design lineage, see [README.md](README.md).
+Non-technical operators building coworkers should read
+[docs/coworker-builder-guide.md](docs/coworker-builder-guide.md) first.
 
 ---
 
@@ -68,13 +70,13 @@ Every variable actually read by `src/`:
 | `OLLAMA_HOST` | no | `https://ollama.com` | LLM base URL (OpenAI-compatible). |
 | `COWORKER_MODEL` | no | `gemma4:cloud` | Main deliberation model. |
 | `TRIAGE_MODEL` | no | unset | If set, a cheap-first preflight model asked "act or skip?" before the expensive prompt each tick. |
-| `EXTRACT_ENTITIES` | no | unset | Set to `1` to enable the per-tick entity evaluator (extracts people, projects, workspace facts into the existing entity + notes files). Uses `TRIAGE_MODEL` if set, else `COWORKER_MODEL`. Default off. See [Entity evaluator](#entity-evaluator). |
+| `EXTRACT_ENTITIES` | no | unset | **Deprecated in env — use `extract_entities` in `config.json`.** Set to `1` to enable the per-tick entity evaluator (extracts people, projects, workspace facts into the existing entity + notes files). Uses `TRIAGE_MODEL` if set, else `COWORKER_MODEL`. Default off. See [Entity evaluator](#entity-evaluator). |
 | `TICK_INTERVAL_MS` | no | `300000` | Base tick interval (5 min). |
 | `MIN_TICK_INTERVAL_MS` | no | `15000` | Floor when the model asks to `pace: faster`. |
 | `MAX_TICK_INTERVAL_MS` | no | `1800000` | Cap for adaptive backoff (30 min). Ignored when the role sets `Cadence: constant`. |
-| `MAX_TOOLS_PER_TICK` | no | runtime default | Max tool calls chained per tick. |
+| `MAX_TOOLS_PER_TICK` | no | runtime default | **Deprecated in env — use `max_tools_per_tick` in `config.json`.** Max tool calls chained per tick. |
 | `COWORKER_SKIP_BASELINE` | no | unset | Set to `1` to disable the framework-owned baseline prompt (see [Baseline prompt](#baseline-prompt)). Otherwise the baseline is prepended to every coworker's system prompt. |
-| `WAKE_MODE` | no | `both` | Activity source. `tick` = periodic tick loop only; `webhook` = wake HTTP server only (no scheduled ticks); `both` = both. See [Activity modes](#activity-modes). Unknown values fall back to `both` with a warning. |
+| `WAKE_MODE` | no | `both` | **Deprecated in env — use `wake_mode` in `config.json`.** Activity source. `tick` = periodic tick loop only; `webhook` = wake HTTP server only (no scheduled ticks); `both` = both. See [Activity modes](#activity-modes). Unknown values fall back to `both` with a warning. |
 | `WAKE_PORT` | no | unset | Port for HTTP wake endpoint. Required if you want webhooks or `WAKE_MODE=webhook`. |
 | `WAKE_SECRET` | no | unset | Shared secret for `/wake`; presence flips bind to `0.0.0.0`. |
 | `METRICS_ENABLED` | no | unset | Set to `1` to expose Prometheus `/metrics` on `WAKE_PORT`. |
@@ -90,15 +92,50 @@ Every variable actually read by `src/`:
 | `SLACK_BOT_TOKEN` | no | — | For the Slack tools (`xoxb-…`). |
 | `SLACK_WATCHED_CHANNELS` | no | unset | Comma-separated channel names/IDs. |
 | `MANAGER_SLACK` | no | unset | Manager Slack handle for escalations. |
-| `PII_MASK` | no | unset | Set to `1` to enable reversible identifier masking in prompts. |
+| `PII_MASK` | no | unset | **Deprecated in env — use `pii_mask` in `config.json`.** Set to `1` to enable reversible identifier masking in prompts. |
 | `NOTE_HMAC_SECRET` | no | unset | Signs operator notes so `bin/note-to.sh` output is trusted. |
-| `NOTE_REQUIRE_SIGNED` | no | unset | If set, reject unsigned notes. |
+| `NOTE_REQUIRE_SIGNED` | no | unset | **Deprecated in env — use `note_require_signed` in `config.json`.** If set, reject unsigned notes. |
 | `LOG_FORMAT` | no | unset | Set to `json` for JSONL logs. |
 | `AICW_SANDBOX` | no | unset | Sandbox mode for tool execution. |
 | `DASHBOARD_PORT` | no | `7777` | `src/dashboard.ts` fleet view port. |
 
 If a variable you expected isn't here, do **not** invent it — grep
 `src/` first (`grep -rE 'env\.[A-Z_]+' src/`).
+
+## Configuration
+
+Behavioural knobs are moving from environment variables to a
+schema-validated JSON file at `coworkers/<name>/config.json`. Env stays
+for secrets, host binding, and development escape hatches; JSON is for
+anything a human or an agent would open the config to change. See
+[ADR 0007](docs/adr/0007-config-file-vs-env-vars.md) for the full
+rationale.
+
+Schema: [`src/runtime/config-schema.json`](src/runtime/config-schema.json)
+(JSON Schema draft 2020-12). Agents configuring a coworker should read
+this file rather than guessing: it enumerates every legal knob, its
+type, its default, and its description.
+
+Currently migrated (env still works as a deprecated fallback):
+
+| config.json key | Legacy env | Type | Default |
+|---|---|---|---|
+| `wake_mode` | `WAKE_MODE` | enum: `tick` \| `webhook` \| `both` | `both` |
+| `extract_entities` | `EXTRACT_ENTITIES` | boolean | `false` |
+| `max_tools_per_tick` | `MAX_TOOLS_PER_TICK` | integer 1–100 | `8` |
+| `pii_mask` | `PII_MASK` | boolean | `false` |
+| `note_require_signed` | `NOTE_REQUIRE_SIGNED` | boolean | `false` |
+
+Non-technical operators can walk the schema interactively:
+
+```
+bin/configure.sh <coworker>
+```
+
+Loader: `src/runtime/coworker_config.ts` — `config.json` wins when both
+sources set a key (warning logged); env-only wins log a one-time
+deprecation warning; unset in both falls to the schema default; schema
+violations throw at startup naming the offending key.
 
 ---
 
