@@ -48,17 +48,39 @@ Use Cloudflare Tunnel, Tailscale Funnel, or similar to expose the wake port.
 Always set `WAKE_SECRET` and configure the webhook provider to send it as an
 `x-wake-secret` header (or use their signing scheme + a small adapter).
 
-## Linear webhook example
+## Linear webhook — native adapter (AIC-36)
+
+Point Linear at `POST /linear-webhook` on the same `WAKE_PORT`; the runtime
+verifies the HMAC signature, filters by team, and wakes only on matching
+events.
+
+Env:
+
+```
+LINEAR_WEBHOOK_SECRET=<same secret Linear signs with>
+LINEAR_WATCHED_TEAMS=ILO,AIC    # optional; unset = accept every team
+```
 
 Linear settings → API → Webhooks → New:
-- URL: your tunnel URL
+- URL: `https://your-tunnel/linear-webhook`
 - Events: Issue create, Issue update, Comment create
-- Secret: (optional; Linear signs with HMAC-SHA256, header `linear-signature`)
+- Secret: whatever you set as `LINEAR_WEBHOOK_SECRET`
 
-The wake endpoint currently ignores payload — it just triggers a tick. The
-coworker will run its own sensors, notice the new perception hash, and act.
-If you want smarter routing (only wake if the event is in a watched team),
-add a small adapter script between the webhook and the wake endpoint.
+Return codes:
+- `200` — signature valid, team matched, coworker woken.
+- `202` — signature valid, team NOT in `LINEAR_WATCHED_TEAMS`; ack, no wake.
+- `401` — missing / bad signature.
+- `503` — `LINEAR_WEBHOOK_SECRET` not set on the coworker's side.
+
+Setting `LINEAR_WEBHOOK_SECRET` also binds the wake server to `0.0.0.0`
+so the tunnel can reach it, whether or not `WAKE_SECRET` is also set.
+
+## Generic wake fallback
+
+If you'd rather route webhooks yourself (Slack Events API, GitHub with a
+custom signature scheme, an internal event bus), keep using `POST /wake`
+— verify the signature in your intermediary and trigger a bare wake. The
+coworker's sensors will pick up whatever changed.
 
 ## Cadence override
 
