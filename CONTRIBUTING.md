@@ -114,6 +114,15 @@ Notable choices:
   `docs/tool-cookbook.md`).
 - Dependencies whose purpose we can't articulate in one sentence.
 
+## About `AIC-*` references in git history
+
+You'll see commit messages like `feat(AIC-82): …`. These are the
+maintainer's internal Linear ticket IDs and **are not clickable from
+GitHub**. Treat them as historical metadata — you don't need access
+to any Linear workspace to work on the repo. If you want an issue to
+work against, use [GitHub Issues](../../issues) (templates at
+`.github/ISSUE_TEMPLATE`).
+
 ## Reporting a bug
 
 Include:

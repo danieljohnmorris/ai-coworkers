@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security issue
+    url: https://github.com/danieljohnmorris/ai-coworkers/blob/main/SECURITY.md
+    about: Do NOT file security issues here. Email daniel.john.morris@gmail.com — see SECURITY.md for the disclosure process.
+  - name: Documentation
+    url: https://danieljohnmorris.github.io/ai-coworkers
+    about: Browse the full docs site (mkdocs Material, auto-deployed from docs/).

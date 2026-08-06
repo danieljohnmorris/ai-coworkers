@@ -22,8 +22,22 @@
     "type": "git",
     "url": "git+https://github.com/danieljohnmorris/ai-coworkers.git"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "ai-agents",
+    "agents",
+    "llm",
+    "coworker",
+    "sre",
+    "typescript",
+    "node",
+    "acp",
+    "mcp",
+    "hermes",
+    "boundaries",
+    "tick-loop",
+    "long-running-agent"
+  ],
+  "author": "Daniel John Morris <daniel.john.morris@gmail.com>",
   "bugs": {
     "url": "https://github.com/danieljohnmorris/ai-coworkers/issues"
   },
