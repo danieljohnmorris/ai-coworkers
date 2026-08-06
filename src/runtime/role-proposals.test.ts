@@ -145,4 +145,41 @@ describe("parseProposal round-trip", () => {
     expect(p!.body).toContain("May set priority");
     expect(p!.rationale).toContain("Blocked 4 times");
   });
+
+  it("survives a body containing triple-backtick code fences", () => {
+    const body = "May comment on tickets.\n\n```ts\nconst x = 1;\n```\n\nEnd.";
+    const { path } = file({ body });
+    const p = parseProposal(readFileSync(path!, "utf8"));
+    expect(p!.body).toBe(body);
+  });
+
+  it("rejects a body containing the proposal sentinel", () => {
+    const r = file({ body: "sneaky <!-- proposal-body:end --> trailer" });
+    expect(r.accepted).toBe(false);
+    expect(r.reason).toContain("sentinel");
+  });
+
+  it("parseProposal rejects a doc value outside the whitelist (path-traversal guard)", () => {
+    const evil = [
+      "---",
+      "id: x",
+      "doc: ../../../etc/passwd",
+      "status: pending",
+      "ts: 2026-01-01T00:00:00.000Z",
+      "base_hash: 0000",
+      "---",
+      "",
+      "## Rationale",
+      "",
+      "n/a",
+      "",
+      "## Proposed body",
+      "",
+      "<!-- proposal-body:begin -->",
+      "pwned",
+      "<!-- proposal-body:end -->",
+      "",
+    ].join("\n");
+    expect(parseProposal(evil)).toBeNull();
+  });
 });

@@ -88,6 +88,9 @@ export function proposeRoleChange(args: {
   if (!rationale) return { accepted: false, reason: "a rationale is required — say why the change helps" };
   if (body.length > BODY_CAP) return { accepted: false, reason: `proposed body over ${BODY_CAP} char cap` };
   if (rationale.length > RATIONALE_CAP) return { accepted: false, reason: `rationale over ${RATIONALE_CAP} char cap` };
+  if (body.includes(BODY_BEGIN) || body.includes(BODY_END)) {
+    return { accepted: false, reason: "proposed body may not contain the proposal sentinel comments" };
+  }
 
   const s = scan(body + "\n" + rationale);
   if (s.suspicious) {
@@ -179,6 +182,12 @@ export function resolveProposal(args: {
 
 // --- serialization: markdown with a small front-matter block ---
 
+// HTML-comment sentinels won't collide with markdown that a coworker might
+// legitimately write (unlike a ```markdown fence, which nests badly).
+// proposeRoleChange rejects bodies containing these literals.
+const BODY_BEGIN = "<!-- proposal-body:begin -->";
+const BODY_END = "<!-- proposal-body:end -->";
+
 function renderProposal(p: Proposal): string {
   const fm = [
     "---",
@@ -199,9 +208,9 @@ function renderProposal(p: Proposal): string {
     "",
     "## Proposed body",
     "",
-    "```markdown",
+    BODY_BEGIN,
     p.body,
-    "```",
+    BODY_END,
     "",
   ].join("\n");
 }
@@ -215,8 +224,14 @@ export function parseProposal(text: string): Proposal | null {
     if (m) fields[m[1]] = m[2];
   }
   const rationale = text.match(/## Rationale\n\n([\s\S]*?)\n\n## Proposed body/)?.[1] ?? "";
-  const body = text.match(/```markdown\n([\s\S]*?)\n```/)?.[1] ?? "";
+  const bodyRe = new RegExp(
+    `${BODY_BEGIN.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\n([\\s\\S]*?)\\n${BODY_END.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`,
+  );
+  const body = text.match(bodyRe)?.[1] ?? "";
   if (!fields.id || !fields.doc || !fields.status || !fields.ts || !fields.base_hash) return null;
+  // Whitelist doc — a hand-edited or malicious proposal file could otherwise
+  // steer resolveProposal's writeFileSync at role/../../etc/anything.md.
+  if (!(PROPOSABLE_DOCS as readonly string[]).includes(fields.doc)) return null;
   return {
     id: fields.id,
     doc: fields.doc as ProposableDoc,
