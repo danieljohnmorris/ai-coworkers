@@ -46,6 +46,19 @@ describe("isDue", () => {
     expect(isDue({ kind: "weekly", weekdayUTC: 0, hourUTC: 3 }, null, sun)).toBe(true);
     expect(isDue({ kind: "weekly", weekdayUTC: 0, hourUTC: 3 }, null, mon)).toBe(false);
   });
+
+  it("weekly: not due before scheduled hour; due again 24h+ after last run", () => {
+    const sunEarly = new Date("2026-01-04T02:00:00Z");
+    const sunLate = new Date("2026-01-04T03:30:00Z");
+    // Before the scheduled hour → not due.
+    expect(isDue({ kind: "weekly", weekdayUTC: 0, hourUTC: 3 }, null, sunEarly)).toBe(false);
+    // After scheduled hour with a recent run (<24h ago) → not due.
+    const recent = new Date("2026-01-04T03:15:00Z");
+    expect(isDue({ kind: "weekly", weekdayUTC: 0, hourUTC: 3 }, recent, sunLate)).toBe(false);
+    // After scheduled hour with the last run >24h ago → due.
+    const wayBack = new Date("2025-12-28T03:00:00Z");
+    expect(isDue({ kind: "weekly", weekdayUTC: 0, hourUTC: 3 }, wayBack, sunLate)).toBe(true);
+  });
 });
 
 describe("lastRun / markRun", () => {

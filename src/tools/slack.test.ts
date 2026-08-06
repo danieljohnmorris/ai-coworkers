@@ -56,6 +56,26 @@ describe("slackMentions", () => {
     expect(r.mentions.length).toBe(1);
     expect((r.mentions[0] as any).user).toBe("UDAN");
   });
+
+  it("captures per-channel fetch errors instead of aborting", async () => {
+    // Override history to fail for one specific channel.
+    const prev = globalThis.fetch;
+    globalThis.fetch = (async (url: string) => {
+      const u = String(url);
+      if (u.includes("auth.test")) return new Response(JSON.stringify({ ok: true, user_id: "UBOT" }));
+      if (u.includes("channel=BAD")) return new Response("nope", { status: 500 });
+      if (u.includes("conversations.history")) return new Response(JSON.stringify({ ok: true, messages: [] }));
+      return new Response("{}");
+    }) as typeof fetch;
+    try {
+      const r = await slackMentions.handler({}, ctxLive({
+        SLACK_BOT_TOKEN: "x", SLACK_WATCHED_CHANNELS: "GOOD,BAD",
+      })) as any;
+      expect(r.mentions.some((m: any) => m.error)).toBe(true);
+    } finally {
+      globalThis.fetch = prev;
+    }
+  });
 });
 
 describe("slackPost", () => {

@@ -59,4 +59,11 @@ describe("openEntities", () => {
     expect(hits.projects).not.toContain("CS");
     rmSync(dir, { recursive: true, force: true });
   });
+
+  it("readProject returns the stored body", () => {
+    const e = openEntities(dir);
+    e.upsertProject("ILO", "the ilo project", "t");
+    expect(e.readProject("ILO")).toContain("the ilo project");
+    rmSync(dir, { recursive: true, force: true });
+  });
 });
