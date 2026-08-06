@@ -1,0 +1,13 @@
+[
+  {
+    "name": "linear",
+    "path": "/webhook/linear",
+    "auth": {
+      "type": "hmac-sha256",
+      "header": "linear-signature",
+      "secretEnv": "LINEAR_WEBHOOK_SECRET"
+    },
+    "filter": { "jsonPath": "data.team.key", "allow": ["ILO"] },
+    "onEvent": { "wake": true, "invalidate": ["linear.new_issues", "linear.workspace_snapshot"] }
+  }
+]
