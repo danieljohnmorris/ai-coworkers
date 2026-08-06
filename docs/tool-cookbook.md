@@ -123,6 +123,18 @@ Existing native `src/tools/slack.ts` picks the tokens up on next
 restart. No new tool code needed — the setup step is what was
 missing.
 
+### Verifying setup landed
+
+```bash
+bin/verify-gmail.sh <coworker>   # one read call via Hermes google_api.py
+bin/verify-slack.sh <coworker>   # one Slack auth.test call
+```
+
+Both fail loudly on any problem (bad token, expired refresh, wrong
+scopes, missing skill). Prints workspace / bot name / message snippet
+when they pass, so you know it's actually reaching the right account
+before you flip a coworker to `--live`.
+
 ## Path B — MCP servers
 
 The [Model Context Protocol](https://modelcontextprotocol.io) ecosystem
