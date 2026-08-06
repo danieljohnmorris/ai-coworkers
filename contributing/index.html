@@ -1180,9 +1180,23 @@
 <div class="highlight"><pre><span></span><code>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/danieljohnmorris/ai-coworkers
 <span class="nb">cd</span><span class="w"> </span>ai-coworkers
 npm<span class="w"> </span>install
-npm<span class="w"> </span><span class="nb">test</span><span class="w">              </span><span class="c1"># 376 tests, ~2s</span>
-npm<span class="w"> </span>run<span class="w"> </span>test:cov<span class="w">      </span><span class="c1"># ~97% line coverage</span>
+npm<span class="w"> </span><span class="nb">test</span><span class="w">              </span><span class="c1"># ~480 tests, ~2s</span>
+npm<span class="w"> </span>run<span class="w"> </span>test:cov<span class="w">      </span><span class="c1"># ~99% line coverage</span>
+
+<span class="c1"># Enable the pre-commit hook that blocks accidental secret commits:</span>
+git<span class="w"> </span>config<span class="w"> </span>core.hooksPath<span class="w"> </span>.githooks
 </code></pre></div>
+<p>The pre-commit hook runs <code>bin/scan-secrets.mjs --staged</code> and blocks the
+commit if any staged file matches a credential-shape (Bearer tokens,
+Linear <code>lin_api_*</code>, Slack <code>xoxb-*</code>, GitHub <code>ghp_*</code>, Anthropic <code>sk-ant-*</code>,
+OpenAI <code>sk-*</code>, AWS <code>AKIA*</code>, Google <code>AIza*</code>, PEM private keys). You can
+also run it ad-hoc:</p>
+<div class="highlight"><pre><span></span><code>node<span class="w"> </span>--experimental-strip-types<span class="w"> </span>--no-warnings<span class="w"> </span>bin/scan-secrets.mjs<span class="w"> </span>--tree<span class="w">     </span><span class="c1"># all tracked files</span>
+node<span class="w"> </span>--experimental-strip-types<span class="w"> </span>--no-warnings<span class="w"> </span>bin/scan-secrets.mjs<span class="w"> </span>--history<span class="w">  </span><span class="c1"># every blob ever</span>
+</code></pre></div>
+<p>If a real secret ever lands in git: rotate at the source <em>first</em>, then
+purge from history with <a href="https://github.com/newren/git-filter-repo">git-filter-repo</a>.
+Never rely on <code>git rm</code> alone.</p>
 <h2 id="running-a-coworker-locally">Running a coworker locally<a class="headerlink" href="#running-a-coworker-locally" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><span class="c1"># Blank template</span>
 bin/new-coworker.sh<span class="w"> </span>myworker
