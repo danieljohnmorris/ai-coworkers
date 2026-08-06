@@ -81,9 +81,7 @@ Every variable actually read by `src/`:
 | `ACP_AGENT_CMD` | no | unset | If set, gives the coworker a `code.delegate` tool that spawns this ACP agent. |
 | `ACP_ALLOW_KINDS` | no | runtime default | Which tool kinds the ACP agent may call. |
 | `ACP_TIMEOUT_MS` | no | runtime default | Timeout for ACP agent delegations. |
-| `LINEAR_API_KEY` | no | — | Only the Linear tools need it. |
-| `LINEAR_IGNORE_TEAMS` | no | unset | Comma-separated team keys the Linear sensor filters out. |
-| `LINEAR_WEBHOOK_SECRET` | no | unset | HMAC secret referenced by `WEBHOOKS.json` `auth.secretEnv`. |
+| `LINEAR_WEBHOOK_SECRET` | no | unset | HMAC secret referenced by `WEBHOOKS.json` `auth.secretEnv`. Webhook auth is separate from tool auth (which is now OAuth via the Linear MCP server). |
 | `GITHUB_TOKEN` | no | — | For the GitHub tools. |
 | `WATCHED_REPOS` | no | unset | Comma-separated `owner/repo` list for the GitHub sensor. |
 | `SLACK_BOT_TOKEN` | no | — | For the Slack tools (`xoxb-…`). |
@@ -152,16 +150,34 @@ Each setup script writes tokens to `coworkers/<name>/.env` (gitignored).
 
 ### Linear
 
-```bash
-bin/setup-linear.sh <coworker>
-bin/verify-linear.sh <coworker>
-```
+Linear is wired through its remote MCP server
+(`https://mcp.linear.app/mcp`) — no native `src/tools/linear.ts`, no
+setup script, no `LINEAR_API_KEY`. Setup is three edits:
 
-Prompts for a personal or service-account API key
-(https://linear.app/settings/api), optional watched/ignored teams, and an
-optional `LINEAR_WEBHOOK_SECRET`. Verify runs a GraphQL `viewer +
-organization` call. Prefer a dedicated Linear user — see
-[docs/dedicated-linear-user.md](docs/dedicated-linear-user.md).
+1. Add the server to the coworker's env
+   (`coworkers/<name>/.env`):
+
+   ```
+   MCP_SERVERS='[{"name":"linear","url":"https://mcp.linear.app/mcp","oauth":{"scopes":["read","write"]}}]'
+   ```
+
+2. Declare the sensors you want in
+   `coworkers/<name>/role/SENSORS.json` (see
+   `examples/generic-triage/role/SENSORS.json` for the reference
+   `linear.new_issues` / `linear.untagged_issues` /
+   `linear.workspace_snapshot` entries). Sensor **names** are kept
+   stable so `WEBHOOKS.json` `onEvent.invalidate` targets still match;
+   the underlying **tool** field points at the MCP tool.
+
+3. Start the coworker. First tick prints an OAuth authorization URL to
+   stdout; open it in a browser (ideally as a dedicated Linear user —
+   see [docs/dedicated-linear-user.md](docs/dedicated-linear-user.md)),
+   consent, and the runtime captures the redirect and caches tokens at
+   `coworkers/<name>/state/mcp-tokens/linear.json`. Subsequent
+   restarts reuse the cached tokens.
+
+Webhook config (`LINEAR_WEBHOOK_SECRET`, `WEBHOOKS.json`) is
+unchanged — webhook signature auth is independent of tool auth.
 
 ### Slack
 
@@ -383,7 +399,7 @@ read vs write, so gate anything sensitive via `BOUNDARIES.md` /
 ## Sensors and the quiet gate
 
 **Sensors** are read-only tools declared with `kind: "sensor"`. They live
-in `src/tools/*.ts` (`linear.new_issues`, `github.open_prs`,
+in `src/tools/*.ts` (`github.open_prs`,
 `slack.mentions`, `gmail.inbox_check`, `branch_room.status`, etc.) and are
 the coworker's window on the world. Sensors are cached with a hygiene TTL
 and never mutate anything.
@@ -535,9 +551,11 @@ curl -v -X POST http://127.0.0.1:${WAKE_PORT:-7778}/webhook/linear \
 curl -s http://127.0.0.1:${WAKE_PORT:-7778}/metrics | head
 
 # 7. Service tokens land
-bin/verify-linear.sh <name>
 bin/verify-slack.sh  <name>
 bin/verify-gmail.sh  <name>
+# For Linear (MCP OAuth): stream.log should contain
+#   "mcp: connected linear (N tools)"
+# and coworkers/<name>/state/mcp-tokens/linear.json should exist.
 
 # 8. Tests still pass
 npm test

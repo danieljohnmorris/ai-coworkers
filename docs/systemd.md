@@ -18,10 +18,12 @@ Ensure it exports at minimum:
 
 ```
 OLLAMA_API_KEY=...
-LINEAR_API_KEY=...
 COWORKER_MODEL=gemma4:cloud
 TICK_INTERVAL_MS=300000   # 5min
 ```
+
+Linear is no longer a static API key — it's an OAuth-based MCP server.
+Add it to `MCP_SERVERS` (see below) and do the browser consent once.
 
 Add `MCP_SERVERS=...` and `SKILLS_DIR=...` if you're using adapters.
 

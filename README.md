@@ -40,7 +40,6 @@ COWORKER_MODEL=...    # optional — main model, defaults to gemma4:cloud
 TRIAGE_MODEL=...      # optional — cheap-first preflight; when set,
                       #   every tick asks this small model "act or
                       #   skip?" before spending the expensive prompt
-LINEAR_API_KEY=...    # optional — only the Linear coworker needs it
 METRICS_ENABLED=1     # optional — expose Prometheus /metrics on WAKE_PORT
 ```
 
@@ -85,10 +84,15 @@ Available: `generic-triage`, `pr-reviewer`, `project-manager`, `scribe`, `trace`
 Each script prompts for tokens and writes them to `coworkers/<name>/.env`:
 
 ```bash
-bin/setup-linear.sh my-triage    &&  bin/verify-linear.sh my-triage
 bin/setup-slack.sh  my-triage    &&  bin/verify-slack.sh  my-triage
 bin/setup-gmail.sh  my-triage    &&  bin/verify-gmail.sh  my-triage
 ```
+
+Linear no longer has a setup script — it's wired via its remote MCP
+server (OAuth 2.1). Add the server to `coworkers/<name>/.env` and let
+the first tick open a browser to consent. See
+[AGENTS.md](AGENTS.md#linear) and
+[docs/dedicated-linear-user.md](docs/dedicated-linear-user.md).
 
 ### 4. Optional: webhooks (sub-second reactions)
 
@@ -250,14 +254,15 @@ the surface that fits.
 | **ACP coding agents** (Goose / Codex / Claude Code / …) | `ACP_AGENT_CMD="goose acp"` → coworker gets `code.delegate` tool | `src/adapters/acp.ts` |
 | **Gmail + Google Workspace** (reuses Hermes) | `bin/setup-gmail.sh <coworker>` → OAuth flow, token scoped per-coworker at `state/hermes-home/`; then `gmail.*` tools available | `src/tools/gmail.ts` |
 | **Slack** | `bin/setup-slack.sh <coworker>` → generates app manifest via `hermes slack manifest`, walks you through workspace install, prompts for tokens → written to `coworkers/<name>/.env` | `src/tools/slack.ts` |
-| **Linear** | `bin/setup-linear.sh <coworker>` → prompts for personal / service-account API key, verifies against workspace, prompts for optional ignore list + webhook secret → written to `coworkers/<name>/.env` | `src/tools/linear.ts` |
-| **Native tools** | New `src/tools/<name>.ts` exporting `ToolDef[]` | `src/tools/linear.ts` |
+| **Linear** | Add Linear's remote MCP server (`https://mcp.linear.app/mcp`, OAuth 2.1 + DCR) to `MCP_SERVERS` in `coworkers/<name>/.env`; declare sensors in `role/SENSORS.json`. First tick opens a browser to consent. | `src/adapters/mcp.ts` + `examples/generic-triage/role/SENSORS.json` |
+| **Native tools** | New `src/tools/<name>.ts` exporting `ToolDef[]` | `src/tools/github.ts` |
 
 **Verify setup landed:**
 ```bash
 bin/verify-gmail.sh <coworker>    # runs one 'in:inbox' read via Hermes google_api.py
 bin/verify-slack.sh <coworker>    # calls Slack auth.test with the coworker's token
-bin/verify-linear.sh <coworker>   # calls Linear GraphQL viewer + organization
+# For Linear: check stream.log for "mcp: connected linear (N tools)"
+# and coworkers/<coworker>/state/mcp-tokens/linear.json existence.
 ```
 
 ---

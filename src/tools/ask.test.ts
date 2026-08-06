@@ -123,9 +123,10 @@ describe("ask routing to external channels", () => {
     expect(calls.some((u) => u.includes("chat.postMessage"))).toBe(true);
   });
 
-  it("linear:<issue> routes to linearComment", async () => {
-    const r = await ask.handler({ to: "linear:ILO-1", question: "hi" }, ctxLive({ LINEAR_API_KEY: "k" })) as any;
-    expect(r.success).toBe(true);
+  it("linear:<issue> returns a routing error pointing at mcp.linear.create_comment", async () => {
+    const r = await ask.handler({ to: "linear:ILO-1", question: "hi" }, ctxLive({})) as any;
+    expect(r.error).toMatch(/mcp\.linear\.create_comment/);
+    expect(r.error).toMatch(/ILO-1/);
   });
 
   it("github:owner/repo#123 routes to githubPRComment", async () => {

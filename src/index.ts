@@ -15,7 +15,6 @@ import { openInbox } from "./runtime/inbox.ts";
 import { openReactions } from "./runtime/reactions.ts";
 import { ToolRegistry } from "./runtime/tools.ts";
 import { tick } from "./runtime/tick.ts";
-import { linearTools } from "./tools/linear.ts";
 import { memoryTools } from "./tools/memory.ts";
 import { githubTools } from "./tools/github.ts";
 import { slackTools } from "./tools/slack.ts";
@@ -82,7 +81,6 @@ async function main() {
   });
 
   const tools = new ToolRegistry();
-  for (const t of linearTools) tools.register(t);
   for (const t of memoryTools) tools.register(t);
   for (const t of githubTools) tools.register(t);
   for (const t of slackTools) tools.register(t);
