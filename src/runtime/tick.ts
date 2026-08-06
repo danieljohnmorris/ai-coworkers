@@ -26,6 +26,7 @@ import { auditRoleDocs } from "./role_audit.ts";
 import { filterEnvForTool } from "./credentials.ts";
 import { triage } from "./triage.ts";
 import { rateLimitRemaining, recordRateLimit, retryAfterFrom, activeRateLimits } from "./rate_limits.ts";
+import { maskDeep, unmask, newMaskTable } from "./pii_mask.ts";
 import { writeJournal } from "./journal.ts";
 import { matchIntents } from "./intents.ts";
 import { tailHighlights } from "./log.ts";
@@ -142,7 +143,23 @@ export async function tick(ctx: TickContext): Promise<TickOutcome> {
   }
 
   // Working-memory trim: truncate any single verbose sensor result.
-  const trimmedSensors = truncateSensorPayloads(sensors);
+  let trimmedSensors = truncateSensorPayloads(sensors);
+
+  // AIC-82 — reversible identifier masking. Opt-in via PII_MASK=1 in the
+  // coworker env. When on, cloud identifiers (cluster names, pods, account
+  // IDs, IP addresses, UUIDs) get replaced with stable per-tick tokens
+  // before landing in the deliberate prompt; decision.input is unmasked
+  // before the tool handler runs. LLM sees <K8S_POD_1>, tool sees the
+  // real pod name — leak is scoped to one tick's worth of context.
+  const piiMaskOn = (ctx.env ?? process.env).PII_MASK === "1";
+  const maskTable = piiMaskOn ? newMaskTable() : null;
+  if (maskTable) {
+    trimmedSensors = trimmedSensors.map((s) => {
+      if (s.error) return s;
+      const { masked } = maskDeep(s.result, maskTable);
+      return { ...s, result: masked };
+    });
+  }
 
   // 2. perceive
   const recentActions = (
@@ -403,8 +420,14 @@ export async function tick(ctx: TickContext): Promise<TickOutcome> {
 
     let outcome: unknown;
     try {
+      // AIC-82 — unmask decision.input before it hits the tool handler.
+      // The LLM has been reasoning with masked tokens; the tool needs the
+      // real identifiers to make actual API calls.
+      const runInput = maskTable
+        ? JSON.parse(unmask(JSON.stringify(decision.input), maskTable))
+        : decision.input;
       // AIC-46 — retry transient failures (5xx, 429, ECONNRESET) before giving up.
-      outcome = await retryAsync(() => tool.handler(decision.input, decisionCtx));
+      outcome = await retryAsync(() => tool.handler(runInput, decisionCtx));
       ctx.log.highlight(`→ ${tool.name}${ctx.dryRun ? " (dry-run)" : ""}: ${JSON.stringify(decision.input).slice(0, 120)}`);
       ctx.log.event("note", { tool: tool.name, outcome, step });
       ranAnyAction = true;
