@@ -125,7 +125,7 @@ export function renderModeBanner(coworker: string, live: boolean): string {
     return [
       rule,
       `  ${coworker} — LIVE`,
-      `  Writes WILL hit Linear / Slack / GitHub / etc.`,
+      `  Writes WILL hit external services for real.`,
       rule,
     ].join("\n");
   }

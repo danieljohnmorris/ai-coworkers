@@ -69,7 +69,7 @@ describe("Log.highlight + tailHighlights", () => {
   it("renderModeBanner LIVE variant", () => {
     const s = renderModeBanner("alex-triage", true);
     expect(s).toContain("alex-triage — LIVE");
-    expect(s).toContain("Writes WILL hit Linear / Slack / GitHub / etc.");
+    expect(s).toContain("Writes WILL hit external services for real.");
     expect(s).not.toContain("DRY-RUN");
     // 3 content lines between 2 rules, no emojis, no ANSI colors.
     expect(s.split("\n").length).toBe(4);
