@@ -40,6 +40,7 @@ nav:
   - Concepts:
       - Tool cookbook (Hermes / MCP / native): tool-cookbook.md
       - Migration from other frameworks: migration.md
+      - Comparison with other harnesses: comparison.md
       - Dedicated Linear identity: dedicated-linear-user.md
   - Operations:
       - systemd deployment: systemd.md
