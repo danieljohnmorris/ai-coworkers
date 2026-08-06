@@ -17,6 +17,7 @@ import { join, dirname } from "node:path";
 import { slackPost, slackDM } from "./slack.ts";
 import { linearComment } from "./linear.ts";
 import { githubPRComment } from "./github.ts";
+import { redact, knownSecretsFrom } from "../runtime/secret_redaction.ts";
 
 const REPO_ROOT = new URL("../..", import.meta.url).pathname;
 
@@ -51,7 +52,21 @@ export const ask: ToolDef = {
   handler: async (input: { to: string; question: string; context?: string }, ctx: ToolCtx) => {
     if (ctx.dryRun) return { dryRun: true, would: input };
 
-    const body = input.context ? `${input.question}\n\n(context: ${input.context})` : input.question;
+    // Secret-scan every outbound piece BEFORE assembly. If any part looks
+    // like it contains a credential (either a pattern match or a literal
+    // env-derived secret), we redact and return a `redacted: true` flag so
+    // the coworker knows and can decide whether to try a different phrasing.
+    // Absolute refusal isn't right here — a legitimate error message might
+    // trip the pattern list (unlikely but possible); silent redaction gives
+    // us defence in depth without false-blocking real work.
+    const known = knownSecretsFrom(ctx.env);
+    const q = redact(input.question, known);
+    const c = input.context ? redact(input.context, known) : { text: "", redactionCount: 0 };
+    const redactionCount = q.redactionCount + c.redactionCount;
+    const question = q.text;
+    const context = c.text;
+    const body = context ? `${question}\n\n(context: ${context})` : question;
+    const redactionMeta = redactionCount > 0 ? { redacted: true, redactionCount } : {};
 
     // --- manager (default human) — persistent question log ---
     if (input.to === "manager") {
@@ -59,13 +74,13 @@ export const ask: ToolDef = {
       mkdirSync(dirname(path), { recursive: true });
       const block = [
         `## ${new Date().toISOString()}`,
-        `**Q:** ${input.question}`,
-        input.context ? `**Context:** ${input.context}` : "",
+        `**Q:** ${question}`,
+        context ? `**Context:** ${context}` : "",
         `**A:** _(unanswered)_`,
         ``,
       ].filter(Boolean).join("\n") + "\n";
       appendFileSync(path, block);
-      return { delivered: "manager", path };
+      return { delivered: "manager", path, ...redactionMeta };
     }
 
     // --- peer coworker — writes to their inbox ---
@@ -75,24 +90,24 @@ export const ask: ToolDef = {
       if (!existsSync(dirname(path))) return { error: `no coworker named ${peer}` };
       const entry = `## ${new Date().toISOString()} — from ${ctx.coworker}\n${body}\n\n`;
       appendFileSync(path, entry);
-      return { delivered: `coworker:${peer}`, path };
+      return { delivered: `coworker:${peer}`, path, ...redactionMeta };
     }
 
     // --- slack DM or channel ---
     if (input.to.startsWith("slack:")) {
       const target = input.to.slice("slack:".length);
       const framed = `${body}\n\n_— asked by ${ctx.coworker}_`;
-      if (target.startsWith("@")) {
-        return await slackDM.handler({ user: target.slice(1), text: framed }, ctx);
-      }
-      const channel = target.startsWith("#") ? target : target;
-      return await slackPost.handler({ channel, text: framed }, ctx);
+      const result = target.startsWith("@")
+        ? await slackDM.handler({ user: target.slice(1), text: framed }, ctx)
+        : await slackPost.handler({ channel: target, text: framed }, ctx);
+      return { ...(result as object), ...redactionMeta };
     }
 
     // --- linear ticket comment (reply where the ticket lives) ---
     if (input.to.startsWith("linear:")) {
       const issueId = input.to.slice("linear:".length);
-      return await linearComment.handler({ issueId, body }, ctx);
+      const result = await linearComment.handler({ issueId, body }, ctx);
+      return { ...(result as object), ...redactionMeta };
     }
 
     // --- github PR comment ---
@@ -101,7 +116,8 @@ export const ask: ToolDef = {
       const [repo, numStr] = spec.split("#");
       const number = Number(numStr);
       if (!repo || !Number.isFinite(number)) return { error: `bad github spec: ${input.to}` };
-      return await githubPRComment.handler({ repo, number, body }, ctx);
+      const result = await githubPRComment.handler({ repo, number, body }, ctx);
+      return { ...(result as object), ...redactionMeta };
     }
 
     return { error: `unknown recipient shape: ${input.to}` };

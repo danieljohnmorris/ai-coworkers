@@ -25,6 +25,7 @@ import { codeDelegateTools } from "./tools/code_delegate.ts";
 import { branchRoomTools } from "./tools/branch_room.ts";
 import { connectMcp, parseMcpEnv, type McpConnection } from "./adapters/mcp.ts";
 import { loadCoworkerEnv } from "./runtime/credentials.ts";
+import { knownSecretsFrom } from "./runtime/secret_redaction.ts";
 import { loadHermesSkills, renderSkillsIndex } from "./adapters/hermes.ts";
 import { startWakeServer } from "./runtime/wake.ts";
 
@@ -71,6 +72,9 @@ async function main() {
   const log = new Log(events, name, {
     streamPath: join(stateDir, "stream.log"),
     highlightPath: join(stateDir, "highlights.log"),
+    // Pass the coworker's env-derived secret set so anything about to
+    // land in events.db / stream.log / highlights.log is scrubbed.
+    knownSecrets: knownSecretsFrom(coworkerEnv),
   });
 
   const tools = new ToolRegistry();

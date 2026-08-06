@@ -9,6 +9,7 @@
 import { DatabaseSync } from "node:sqlite";
 import { retrySync } from "./sqlite-retry.ts";
 import { appendFileSync, existsSync, readFileSync } from "node:fs";
+import { redactString } from "./secret_redaction.ts";
 
 export type EventKind =
   | "tick.start" | "tick.end"
@@ -52,26 +53,37 @@ export class Log {
   private coworker: string;
   private streamPath: string | null;
   private highlightPath: string | null;
+  // Set of literal secret values to scrub verbatim from anything about to
+  // be persisted or printed. Typically the values of every env var whose
+  // name matches isCredentialName(); the constructor accepts a pre-built
+  // set (see knownSecretsFrom) so callers control what gets scrubbed.
+  private knownSecrets: ReadonlySet<string> | undefined;
 
-  constructor(db: DatabaseSync, coworker: string, opts: { streamPath?: string; highlightPath?: string } = {}) {
+  constructor(db: DatabaseSync, coworker: string, opts: { streamPath?: string; highlightPath?: string; knownSecrets?: ReadonlySet<string> } = {}) {
     this.db = db;
     this.coworker = coworker;
     this.streamPath = opts.streamPath ?? null;
     this.highlightPath = opts.highlightPath ?? null;
+    this.knownSecrets = opts.knownSecrets;
   }
 
   event(kind: EventKind, payload: unknown): void {
     const ts = new Date().toISOString();
+    // Redact secrets before persistence — a tool's error message might
+    // echo the API key that was rejected, and once it's in events.db
+    // every future reflect / metrics scrape / dashboard sees it.
+    const serialized = redactString(JSON.stringify(payload ?? null), this.knownSecrets);
     retrySync(() =>
       this.db
         .prepare(`INSERT INTO events (ts, coworker, kind, payload) VALUES (?, ?, ?, ?)`)
-        .run(ts, this.coworker, kind, JSON.stringify(payload ?? null))
+        .run(ts, this.coworker, kind, serialized)
     );
   }
 
   // Full stream — every tick, quiet or not. High volume; use for debugging.
   stream(line: string): void {
-    const formatted = this.formatLine(line, "stream");
+    const safe = redactString(line, this.knownSecrets);
+    const formatted = this.formatLine(safe, "stream");
     process.stdout.write(formatted);
     if (this.streamPath) { try { appendFileSync(this.streamPath, formatted); } catch {} }
   }
@@ -80,7 +92,8 @@ export class Log {
   // rituals. Skips per-tick noise. Written to BOTH stream and highlights so
   // one file gives you the full story.
   highlight(line: string): void {
-    const formatted = this.formatLine(line, "highlight");
+    const safe = redactString(line, this.knownSecrets);
+    const formatted = this.formatLine(safe, "highlight");
     process.stdout.write(formatted);
     if (this.highlightPath) { try { appendFileSync(this.highlightPath, formatted); } catch {} }
     if (this.streamPath)    { try { appendFileSync(this.streamPath, formatted); } catch {} }
