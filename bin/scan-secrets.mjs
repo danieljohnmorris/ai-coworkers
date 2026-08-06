@@ -119,18 +119,34 @@ function scanTree() {
 
 function scanHistory() {
   // Every blob that has ever been in the repo. Heavier — a few seconds
-  // on medium repos, tens on large ones.
-  const shas = gitLines("git rev-list --all --objects").map((l) => l.split(" ")[0]).filter(Boolean);
-  const unique = [...new Set(shas)];
+  // on medium repos, tens on large ones. `git rev-list --all --objects`
+  // gives us "<sha> <path>" pairs — we honour the SKIP list against the
+  // path so test fixtures and the pattern library itself don't false-
+  // positive here just because history mode can't see their filenames.
+  const lines = gitLines("git rev-list --all --objects");
+  const shaToPaths = new Map();               // sha → Set(paths)
+  for (const l of lines) {
+    const sp = l.indexOf(" ");
+    const sha = sp === -1 ? l : l.slice(0, sp);
+    const path = sp === -1 ? "" : l.slice(sp + 1);
+    if (!shaToPaths.has(sha)) shaToPaths.set(sha, new Set());
+    if (path) shaToPaths.get(sha).add(path);
+  }
   const findings = [];
-  for (const sha of unique) {
+  for (const [sha, paths] of shaToPaths) {
+    // If EVERY path this blob was seen at is in the SKIP list, skip it.
+    // A blob that ever existed under a non-skipped path still gets scanned.
+    if (paths.size > 0 && [...paths].every((p) => shouldSkip(p))) continue;
     try {
       const type = execSync(`git cat-file -t ${sha}`, { cwd: repoRoot }).toString().trim();
       if (type !== "blob") continue;
       const size = Number(execSync(`git cat-file -s ${sha}`, { cwd: repoRoot }).toString().trim());
       if (size > 5 * 1024 * 1024) continue;
       const content = execSync(`git cat-file -p ${sha}`, { cwd: repoRoot, maxBuffer: 20 * 1024 * 1024 }).toString();
-      findings.push(...scanContent(content, `blob:${sha.slice(0, 10)}`));
+      // Report using the first known path for the blob so operators can
+      // find it, falling back to the sha if it was never referenced.
+      const label = paths.size ? [...paths][0] : `blob:${sha.slice(0, 10)}`;
+      findings.push(...scanContent(content, `${label} (blob:${sha.slice(0, 10)})`));
     } catch { /* skip unreadable */ }
   }
   return findings;
