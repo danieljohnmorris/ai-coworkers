@@ -11,7 +11,7 @@ const emptyPerception = (over: Partial<Perception> = {}): Perception => ({
   sensors: [], recentActions: [], pendingPromises: [], resources: [], rollups: [],
   tempo: { callsToday: 0, callsPerHour: 0, noopRatioLast100: 1, secondsSinceLastPerceptionChange: 0 },
   budget: { callsToday: 0, dailyCap: 500, callsInWindow: 0, windowCap: 200, windowMinutes: 300 },
-  tempoGuidance: "", highlightsTail: "", recentThoughts: "", inboxUnread: "", reactionsUnread: "",
+  tempoGuidance: "", highlightsTail: "", recentThoughts: "", inboxUnread: "", reactionsUnread: "", rateLimits: [],
   ...over,
 });
 
