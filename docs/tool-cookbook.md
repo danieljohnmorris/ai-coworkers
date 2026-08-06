@@ -178,7 +178,9 @@ Only when:
   entities) in ways an external subprocess cannot.
 
 Add `src/tools/<name>.ts` exporting `ToolDef[]`; register in
-`src/index.ts`. See `src/tools/linear.ts` for the canonical shape.
+`src/index.ts`. See `src/tools/github.ts` for the canonical shape (the
+former `src/tools/linear.ts` was deleted in favour of the remote Linear
+MCP server — see AGENTS.md § Linear).
 
 ## Slack — the exception
 
