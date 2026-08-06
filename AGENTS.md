@@ -1,0 +1,464 @@
+# AGENTS.md — Setup guide for AI agents
+
+Audience: an AI coding agent (Claude Code, Cursor, GPT, etc.) reading this
+repo cold and being asked to bring up a coworker. Every command is
+copy-pasteable, every env var is enumerated, every file path is relative to
+the repo root.
+
+For the human-facing pitch and design lineage, see [README.md](README.md).
+
+---
+
+## What this repo is
+
+`ai-coworkers` runs long-running AI processes with **roles**, **hard
+boundaries**, and a **tick loop**. A coworker is a directory of markdown
+(role docs + state), not a chat session. Each tick reads the world through
+read-only sensors, passes a quiet gate (skip the LLM if nothing changed),
+deliberates, checks the proposed action against `BOUNDARIES.md`, then acts.
+Default is **dry-run** — every write returns `{dryRun: true, would: {...}}`
+until you pass `--live`.
+
+---
+
+## Repo layout
+
+```
+src/            runtime (tick loop, memory, hygiene, boundaries, wake server)
+  runtime/     core loop + storage + policy
+  tools/       native tools (linear, github, slack, gmail, memory, ask, …)
+  adapters/    ecosystem bridges (mcp, hermes, eve, acp)
+coworkers/     one directory per live coworker (mostly gitignored)
+examples/      committed coworker templates you copy from
+docs/          operator docs (webhooks, systemd, ADRs, comparison, …)
+bin/           setup + verify + admin shell scripts
+templates/     internal scaffolds used by bin/new-coworker*.sh
+test/          vitest suite + fake LLM/API fixtures
+```
+
+Entry point: `src/index.ts`. Everything else hangs off it.
+
+---
+
+## Prerequisites
+
+- Node **>= 22** (uses `node:sqlite` and `--experimental-strip-types`).
+- `npm install` at repo root.
+- An OpenAI-compatible LLM endpoint. Default is `https://ollama.com`
+  (Ollama Cloud) — override with `OLLAMA_HOST` for a self-hosted or
+  OpenAI-proxy endpoint.
+- Optional per-integration CLIs: `hermes` (for Slack + Gmail setup),
+  `smee-client` (for local webhook tunnelling).
+
+---
+
+## Environment variables
+
+Two scopes:
+
+- **Shell / root `.env`** — applies to every coworker.
+- **`coworkers/<name>/.env`** — per-coworker overrides, overlaid on top.
+  Gitignored. `src/runtime/credentials.ts` loads it.
+
+Every variable actually read by `src/`:
+
+| Name | Required? | Default | Purpose |
+|---|---|---|---|
+| `OLLAMA_API_KEY` | yes | — | Bearer token for the LLM endpoint. |
+| `OLLAMA_HOST` | no | `https://ollama.com` | LLM base URL (OpenAI-compatible). |
+| `COWORKER_MODEL` | no | `gemma4:cloud` | Main deliberation model. |
+| `TRIAGE_MODEL` | no | unset | If set, a cheap-first preflight model asked "act or skip?" before the expensive prompt each tick. |
+| `TICK_INTERVAL_MS` | no | `300000` | Base tick interval (5 min). |
+| `MIN_TICK_INTERVAL_MS` | no | `15000` | Floor when the model asks to `pace: faster`. |
+| `MAX_TICK_INTERVAL_MS` | no | `1800000` | Cap for adaptive backoff (30 min). Ignored when the role sets `Cadence: constant`. |
+| `MAX_TOOLS_PER_TICK` | no | runtime default | Max tool calls chained per tick. |
+| `WAKE_PORT` | no | unset | Port for HTTP wake endpoint. Required if you want webhooks. |
+| `WAKE_SECRET` | no | unset | Shared secret for `/wake`; presence flips bind to `0.0.0.0`. |
+| `METRICS_ENABLED` | no | unset | Set to `1` to expose Prometheus `/metrics` on `WAKE_PORT`. |
+| `MCP_SERVERS` | no | unset | JSON array of MCP servers to spawn (see MCP section). |
+| `ACTIVE_SKILLS` | no | unset | Comma-separated skill names to inline in the system prompt (Hermes adapter). |
+| `SKILLS_DIR` | no | `~/.hermes/skills` | Where the Hermes adapter looks for skills. |
+| `ACP_AGENT_CMD` | no | unset | If set, gives the coworker a `code.delegate` tool that spawns this ACP agent. |
+| `ACP_ALLOW_KINDS` | no | runtime default | Which tool kinds the ACP agent may call. |
+| `ACP_TIMEOUT_MS` | no | runtime default | Timeout for ACP agent delegations. |
+| `LINEAR_API_KEY` | no | — | Only the Linear tools need it. |
+| `LINEAR_IGNORE_TEAMS` | no | unset | Comma-separated team keys the Linear sensor filters out. |
+| `LINEAR_WEBHOOK_SECRET` | no | unset | HMAC secret referenced by `WEBHOOKS.json` `auth.secretEnv`. |
+| `GITHUB_TOKEN` | no | — | For the GitHub tools. |
+| `WATCHED_REPOS` | no | unset | Comma-separated `owner/repo` list for the GitHub sensor. |
+| `SLACK_BOT_TOKEN` | no | — | For the Slack tools (`xoxb-…`). |
+| `SLACK_WATCHED_CHANNELS` | no | unset | Comma-separated channel names/IDs. |
+| `MANAGER_SLACK` | no | unset | Manager Slack handle for escalations. |
+| `PII_MASK` | no | unset | Set to `1` to enable reversible identifier masking in prompts. |
+| `NOTE_HMAC_SECRET` | no | unset | Signs operator notes so `bin/note-to.sh` output is trusted. |
+| `NOTE_REQUIRE_SIGNED` | no | unset | If set, reject unsigned notes. |
+| `LOG_FORMAT` | no | unset | Set to `json` for JSONL logs. |
+| `AICW_SANDBOX` | no | unset | Sandbox mode for tool execution. |
+| `DASHBOARD_PORT` | no | `7777` | `src/dashboard.ts` fleet view port. |
+
+If a variable you expected isn't here, do **not** invent it — grep
+`src/` first (`grep -rE 'env\.[A-Z_]+' src/`).
+
+---
+
+## Creating a coworker
+
+Three options, in increasing effort:
+
+```bash
+cp -r examples/generic-triage coworkers/my-triage        # start from a template
+bin/new-coworker.sh my-triage                            # blank skeleton
+bin/new-coworker-interview.sh my-triage                  # JD-style Q&A → writes role docs
+```
+
+Templates available under `examples/`:
+
+- `generic-triage` — Linear triage engineer.
+- `pr-reviewer` — reviews open PRs on watched GitHub repos.
+- `project-manager` — project health summaries, aging tickets.
+- `scribe` — keeps README + docs honest as code changes.
+- `trace` — incident RCA: stack traces + git history.
+- `log` — auto-changelog + GitHub releases on tags.
+- `watchtower` — monitoring with aggressive dedup.
+
+---
+
+## Role docs
+
+Each coworker owns a directory `coworkers/<name>/role/` containing markdown
+the runtime parses on every tick (with hot-reload — `src/index.ts` watches
+`role/` recursively and re-parses on any `.md` or `.json` change).
+
+Reference set: `examples/generic-triage/role/`.
+
+| File | Encodes |
+|---|---|
+| `ROLE.md` | Identity, working style, tone. Rendered into the system prompt. |
+| `RESPONSIBILITIES.md` | What this coworker owns. |
+| `AUTHORITY.md` | What they may decide alone vs escalate. |
+| `BOUNDARIES.md` | Hard "must not touch" list + resource caps (max LLM/day, max worktrees). Enforced pre-execute. |
+| `RITUALS.md` | Recurring behaviors + tempo target. Also declares `Cadence: adaptive|constant`. |
+| `WORKSPACE.md` | Stable facts about the world (team names, project glossary). |
+| `TOOLS.md` | Which tools they may use (subset of the registered set). |
+| `RELATIONSHIPS.md` | Named peers, managers, escalation targets. |
+| `WEBHOOKS.json` | Declarative inbound webhooks (see below). |
+| `rituals/*.json` | Structured recurring jobs; re-read every tick. |
+
+---
+
+## Connecting a service
+
+Each setup script writes tokens to `coworkers/<name>/.env` (gitignored).
+
+### Linear
+
+```bash
+bin/setup-linear.sh <coworker>
+bin/verify-linear.sh <coworker>
+```
+
+Prompts for a personal or service-account API key
+(https://linear.app/settings/api), optional watched/ignored teams, and an
+optional `LINEAR_WEBHOOK_SECRET`. Verify runs a GraphQL `viewer +
+organization` call. Prefer a dedicated Linear user — see
+[docs/dedicated-linear-user.md](docs/dedicated-linear-user.md).
+
+### Slack
+
+```bash
+bin/setup-slack.sh <coworker>
+bin/verify-slack.sh <coworker>
+```
+
+Requires the `hermes` CLI. Generates a Slack app manifest via `hermes slack
+manifest`, walks you through creating and installing the app at
+https://api.slack.com/apps, then prompts for the `xoxb-…` bot token and
+signing secret. Verify calls Slack `auth.test`.
+
+### Gmail (Google Workspace)
+
+```bash
+bin/setup-gmail.sh <coworker>
+bin/verify-gmail.sh <coworker>
+```
+
+Wraps the Hermes `google-workspace` skill's `setup.py`. One-time
+prerequisite: a Google Cloud project with Gmail/Drive/Docs/Calendar/Sheets
+APIs enabled and a "Desktop app" OAuth credential downloaded as
+`credentials.json`. The resulting token lands at
+`coworkers/<name>/state/hermes-home/google_token.json` — scoped per
+coworker via `HERMES_HOME`. Verify runs one `in:inbox` search through
+Hermes's `google_api.py`.
+
+---
+
+## Webhooks
+
+Coworkers can declare inbound webhooks in
+`coworkers/<name>/role/WEBHOOKS.json`. The runtime
+(`src/runtime/webhooks_loader.ts` + `webhook_router.ts`) loads them on
+startup, verifies signatures with a closed set of named verifiers,
+optionally filters the payload, and fires an immediate wake.
+
+Top-level is an array. Full field schema:
+
+```json
+[
+  {
+    "name": "linear",
+    "path": "/webhook/linear",
+    "auth": {
+      "type": "hmac-sha256",
+      "header": "linear-signature",
+      "secretEnv": "LINEAR_WEBHOOK_SECRET",
+      "maxAgeSeconds": 300
+    },
+    "filter": {
+      "jsonPath": "data.team.key",
+      "allow": ["ILO", "AIC"]
+    },
+    "onEvent": {
+      "wake": true,
+      "invalidate": ["linear.new_issues", "linear.workspace_snapshot"]
+    }
+  }
+]
+```
+
+**`auth.type`** — closed set:
+
+| type | header default | notes |
+|---|---|---|
+| `hmac-sha256` | you must name it | HMAC-SHA256(body), hex-compare. |
+| `github-sha256` | `x-hub-signature-256` | Strips `sha256=` prefix. |
+| `slack-v0` | `x-slack-signature` | Slack v0 scheme. Enforces `|now-ts| <= maxAgeSeconds` (default 300). |
+| `none` | — | Always accepts. Startup warning is logged. |
+
+Adding a new scheme is a PR to `src/runtime/webhook_verifiers.ts`, not a
+JSON edit — this closed set is deliberate.
+
+**`filter.jsonPath`** — dotted path into the parsed JSON body
+(`data.team.key`, `pull_request.user.login`, etc.). Simple walk, no JSONPath
+operators. `allow` is a string array; the value at the path must be
+`===`-equal to one of them.
+
+**`onEvent.invalidate`** — sensor cache keys to force-refresh on the
+resulting tick, so the coworker sees the change immediately instead of
+serving a cached snapshot.
+
+**Return codes** (from `POST /webhook/<name>`):
+
+| Code | Meaning |
+|---|---|
+| 200 | Signature valid, filter matched (or absent), coworker woken. |
+| 202 | Signature valid, filter did not match; ack, no wake. |
+| 401 | Missing or bad signature. |
+| 404 | No webhook spec matches that path. |
+| 503 | Spec's `secretEnv` is not set in the process env. |
+
+Example — GitHub:
+
+```json
+{
+  "name": "github",
+  "path": "/webhook/github",
+  "auth": { "type": "github-sha256", "secretEnv": "GITHUB_WEBHOOK_SECRET" },
+  "onEvent": { "wake": true, "invalidate": ["github.open_prs"] }
+}
+```
+
+Example — Slack:
+
+```json
+{
+  "name": "slack",
+  "path": "/webhook/slack",
+  "auth": { "type": "slack-v0", "secretEnv": "SLACK_SIGNING_SECRET", "maxAgeSeconds": 300 },
+  "onEvent": { "wake": true }
+}
+```
+
+Full tunnelling guide (smee for local dev, Cloudflare / Tailscale for
+prod): [docs/webhooks.md](docs/webhooks.md).
+
+---
+
+## MCP servers
+
+Any MCP-compatible server registers its tools as `mcp.<name>.<tool>`. One
+env var per fleet (or per coworker, since `.env` is per-coworker):
+
+```
+MCP_SERVERS='[
+  {"name":"github","command":"npx","args":["-y","@modelcontextprotocol/server-github"]},
+  {"name":"fs","command":"npx","args":["-y","@modelcontextprotocol/server-filesystem","/tmp/agent-scratch"]}
+]'
+```
+
+Each server config: `{ name, command, args?, env? }`.
+
+**Caveat**: OAuth-based remote MCPs (e.g. Linear's remote MCP server) need
+refresh-token handling. The current transport in `src/adapters/mcp.ts` is
+stdio-only — verify `src/adapters/mcp.ts` before assuming remote OAuth
+works. Local stdio servers are the well-trodden path.
+
+MCP tools are all registered as `kind: "action"` — MCP doesn't distinguish
+read vs write, so gate anything sensitive via `BOUNDARIES.md` /
+`AUTHORITY.md` instead of relying on the tool taxonomy.
+
+---
+
+## Sensors and the quiet gate
+
+**Sensors** are read-only tools declared with `kind: "sensor"`. They live
+in `src/tools/*.ts` (`linear.new_issues`, `github.open_prs`,
+`slack.mentions`, `gmail.inbox_check`, `branch_room.status`, etc.) and are
+the coworker's window on the world. Sensors are cached with a hygiene TTL
+and never mutate anything.
+
+**Quiet gate** — before every tick the runtime asks: did any sensor
+observe a change? Any operator note? Any ritual or promise due? If no, the
+tick is skipped without spending a single LLM token. This is why an idle
+coworker costs nothing to run. Webhooks bypass the gate (`forceNext =
+true` in `src/index.ts`) — an external event guarantees the model sees
+this tick.
+
+---
+
+## Boundaries and dry-run
+
+Every proposed action is checked against `BOUNDARIES.md` before execution.
+Rejected actions log `boundary.block` (visible in `highlights.log`) and
+never reach the target system.
+
+Default run mode is dry-run: writes return `{dryRun: true, would: {...}}`.
+Promote to live per coworker by passing `--live` on the command line.
+Watch a coworker in dry-run for a day before granting live access — the
+"would" payloads let you verify intent without side effects.
+
+`BOUNDARIES.md` also caps resources:
+
+```md
+## Resource limits
+- Max concurrent worktrees: 0
+- Max LLM calls per day: 500
+- Max LLM calls per 5h window: 200
+```
+
+---
+
+## Running the coworker
+
+Foreground:
+
+```bash
+node --experimental-strip-types --no-warnings src/index.ts <name>          # dry-run
+node --experimental-strip-types --no-warnings src/index.ts <name> --live   # promoted
+```
+
+Fleet dashboard:
+
+```bash
+node --experimental-strip-types src/dashboard.ts                            # http://127.0.0.1:7777
+```
+
+Wake port (if `WAKE_PORT` is set):
+
+```
+http://127.0.0.1:<WAKE_PORT>/wake
+http://127.0.0.1:<WAKE_PORT>/metrics   # if METRICS_ENABLED=1
+http://127.0.0.1:<WAKE_PORT>/webhook/<name>   # per WEBHOOKS.json entry
+```
+
+Long-running deployment (unit files, log rotation, restart policy):
+[docs/systemd.md](docs/systemd.md).
+
+Multi-machine fleets: [docs/multi-machine.md](docs/multi-machine.md).
+
+---
+
+## Verifying it works
+
+Concrete checklist after starting a coworker:
+
+```bash
+# 1. Process is up and ticking
+tail -f coworkers/<name>/state/stream.log
+
+# 2. Event log is growing
+sqlite3 coworkers/<name>/state/events.db \
+  "SELECT ts, kind, substr(payload,1,120) FROM events ORDER BY id DESC LIMIT 20"
+
+# 3. Highlights (thoughts + actions + escalations)
+tail -f coworkers/<name>/state/highlights.log
+
+# 4. Wake endpoint responds
+curl -X POST http://127.0.0.1:${WAKE_PORT:-7778}/wake
+
+# 5. Webhook endpoint returns 200/202 for a valid signature (401 for a bad one)
+curl -v -X POST http://127.0.0.1:${WAKE_PORT:-7778}/webhook/linear \
+  -H 'content-type: application/json' -H 'linear-signature: deadbeef' -d '{}'
+
+# 6. Metrics
+curl -s http://127.0.0.1:${WAKE_PORT:-7778}/metrics | head
+
+# 7. Service tokens land
+bin/verify-linear.sh <name>
+bin/verify-slack.sh  <name>
+bin/verify-gmail.sh  <name>
+
+# 8. Tests still pass
+npm test
+```
+
+---
+
+## Common failure modes
+
+| Symptom | Likely cause | Fix |
+|---|---|---|
+| Process exits immediately with LLM auth error | `OLLAMA_API_KEY` unset or wrong endpoint | Set it in root `.env` or `coworkers/<name>/.env`. |
+| Every tick is `quiet — skipping` | No sensor sees change, no note, no ritual due. Working as designed. | Leave a note: `bin/note-to.sh <name> "test"`. |
+| `boundary.block` in `highlights.log` | Proposed action tripped `BOUNDARIES.md` | Read the block reason; either widen boundaries or fix the coworker's plan. |
+| Webhook returns `401` | Signature mismatch — wrong `secretEnv` value, or provider sending a different scheme | Verify `secretEnv` is set and matches the provider's configured secret. Check `stream.log` for the verifier's error. |
+| Webhook returns `503` | `secretEnv` referenced in `WEBHOOKS.json` is not set in the process env | Set it in `coworkers/<name>/.env` and restart. |
+| Webhook returns `404` | No spec matches that path | Check `WEBHOOKS.json` `path` field vs the URL you're posting to. |
+| MCP server "failed to connect" | Bad `command`/`args`, missing npm package, missing env | Try the exact `command + args` outside the harness first. |
+| Sensor errors in `stream.log` | Upstream API down or token expired | Re-run the corresponding `bin/verify-*.sh`. |
+| Operator note ignored | `NOTE_REQUIRE_SIGNED=1` and note wasn't signed | Set `NOTE_HMAC_SECRET` and use `bin/note-to.sh` (which signs). |
+
+Crash-level errors are written to `coworkers/<name>/state/crash.log`
+before the event log is available — check there if the process dies
+before writing to `events.db`.
+
+---
+
+## Contributing / making changes
+
+- Read [CONTRIBUTING.md](CONTRIBUTING.md) and [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
+- Tests are non-negotiable — add coverage in `test/` alongside any change
+  to `src/`.
+- Adding a new webhook signature scheme is a PR to
+  `src/runtime/webhook_verifiers.ts` — the closed-set discipline is
+  deliberate; don't push scheme selection into role JSON.
+- New native tools are a new file under `src/tools/` exporting
+  `ToolDef[]`, registered in `src/index.ts`.
+- Prefer editing existing role docs / examples over creating new markdown.
+- No YAML anywhere.
+
+---
+
+## Where to read more
+
+- [README.md](README.md) — pitch, tick-loop diagram, adapters table.
+- [docs/webhooks.md](docs/webhooks.md) — webhook schema + tunnel setup.
+- [docs/systemd.md](docs/systemd.md) — long-running deployment.
+- [docs/multi-machine.md](docs/multi-machine.md) — fleets across hosts.
+- [docs/dedicated-linear-user.md](docs/dedicated-linear-user.md) — why the Linear identity matters.
+- [docs/comparison.md](docs/comparison.md) — vs Hermes / OpenClaw / Eve / ElizaOS / CrewAI / LangGraph etc.
+- [docs/tool-cookbook.md](docs/tool-cookbook.md) — patterns for writing native tools.
+- [docs/migration.md](docs/migration.md) — porting from other harnesses.
+- [docs/release-process.md](docs/release-process.md) — how versions ship.
+- [docs/adr/](docs/adr/) — architecture decision records (start with `0001-coala-memory-taxonomy.md`).
+- [CHANGELOG.md](CHANGELOG.md) — what changed when.
+- [SECURITY.md](SECURITY.md) — reporting vulnerabilities.
