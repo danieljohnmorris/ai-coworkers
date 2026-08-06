@@ -24,6 +24,7 @@ import { loadRituals, type RitualAction, type RitualSpec } from "./rituals_loade
 import { dreamOnce } from "./reflect.ts";
 import { auditRoleDocs } from "./role_audit.ts";
 import { filterEnvForTool } from "./credentials.ts";
+import { triage } from "./triage.ts";
 import { writeJournal } from "./journal.ts";
 import { matchIntents } from "./intents.ts";
 import { tailHighlights } from "./log.ts";
@@ -49,6 +50,7 @@ export interface TickContext {
   reactions: Reactions;
   tools: ToolRegistry;
   llm: LLMConfig;
+  triageLlm?: LLMConfig;       // AIC-47 — optional cheap-first preflight
   dryRun: boolean;
   log: Log;
   forceDeliberate?: boolean;   // set by external wake — bypass quiet gate this tick
@@ -227,6 +229,22 @@ export async function tick(ctx: TickContext): Promise<TickOutcome> {
   if (perception.reactionsUnread) {
     ctx.log.highlight(`🫱 reactions from manager:\n${perception.reactionsUnread.slice(0, 400)}`);
     ctx.reactions.markAllRead();
+  }
+
+  // AIC-47 — optional cheap-first triage. When ctx.triageLlm is set,
+  // ask a small model whether there's anything worth acting on. If not,
+  // skip the expensive deliberate entirely. forceDeliberate (external
+  // wake) bypasses the triage — humans asked for a tick, honour it.
+  if (ctx.triageLlm && !ctx.forceDeliberate) {
+    const t = await triage(ctx.triageLlm, perception);
+    if (!t.act) {
+      ctx.log.event("tick.triage-skip", { reason: t.reason.slice(0, 200) });
+      ctx.log.stream(`triage-skip — ${t.reason.slice(0, 100)}`);
+      sweep(ctx.hygiene, ctx.role.limits, ctx.log);
+      await finish(ctx, tStart);
+      return { quiet: true };
+    }
+    ctx.log.event("tick.triage-act", { reason: t.reason.slice(0, 200) });
   }
 
   // 3. deliberate
