@@ -189,8 +189,9 @@ need features the native path does not cover.
 
 ## Credential handling
 
-Under AIC-74, native tools declare `requiresCreds` and receive a filtered
-env. MCP servers currently receive the whole coworker env — scope
+Native tools declare `requiresCreds` and receive a filtered env
+(see [`src/runtime/credentials.ts`](../src/runtime/credentials.ts)).
+MCP servers currently receive the whole coworker env — scope
 sensitive tokens inside the MCP block's own `env`:
 
 ```

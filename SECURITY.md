@@ -49,6 +49,6 @@ running from a commit and hit a security issue, upgrade to current
 ## Related
 
 - [ADR 0003 — subprocess sandboxing + container isolation](docs/adr/0003-container-isolation.md)
-- [AIC-50 — injection scanner beyond regex](https://linear.app/ilo-lang/issue/AIC-50) *(internal ticket)*
-- [AIC-74 — credential broker](https://linear.app/ilo-lang/issue/AIC-74) *(internal ticket)*
-- [AIC-85 — secret hygiene (pre-commit + runtime redaction)](https://linear.app/ilo-lang/issue/AIC-85) *(internal ticket)*
+- Injection scanner: [`src/runtime/injection.ts`](src/runtime/injection.ts)
+- Credential broker: [`src/runtime/credentials.ts`](src/runtime/credentials.ts)
+- Secret redaction + pre-commit hook: [`src/runtime/secret_redaction.ts`](src/runtime/secret_redaction.ts), [`bin/scan-secrets.mjs`](bin/scan-secrets.mjs), [`.githooks/pre-commit`](.githooks/pre-commit)

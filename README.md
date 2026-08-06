@@ -37,12 +37,11 @@ Two env vars in `.env`:
 ```
 OLLAMA_API_KEY=...    # or any OpenAI-compatible endpoint
 COWORKER_MODEL=...    # optional — main model, defaults to gemma4:cloud
-TRIAGE_MODEL=...      # optional — cheap-first preflight (AIC-47); when
-                      #   set, every tick asks this small model "act or
+TRIAGE_MODEL=...      # optional — cheap-first preflight; when set,
+                      #   every tick asks this small model "act or
                       #   skip?" before spending the expensive prompt
 LINEAR_API_KEY=...    # optional — only the Linear coworker needs it
-METRICS_ENABLED=1     # optional (AIC-67) — expose Prometheus /metrics
-                      #   on WAKE_PORT
+METRICS_ENABLED=1     # optional — expose Prometheus /metrics on WAKE_PORT
 ```
 
 Run it:
@@ -59,16 +58,16 @@ you can watch a coworker for a day before granting live access.
 
 ## Watch it think
 
-Real excerpt from `highlights.log`:
+Excerpt from a real `highlights.log` (ticket ids anonymised):
 
 ```
 [22:57:51] 📬 note from manager: The linear.set_labels tool is fixed.
-                                Please retry AIC-36.
-[22:57:54] 💭 Dan confirmed linear.set_labels is fixed. AIC-36 (webhook
-             adapter) needs 'Feature' label. I have the UUID and label ID
-             from previous failed attempts. Retrying now.
+                                Please retry TRIAGE-42.
+[22:57:54] 💭 Manager confirmed linear.set_labels is fixed. TRIAGE-42
+             (webhook adapter) needs 'Feature' label. I have the UUID
+             and label ID from previous failed attempts. Retrying now.
 [22:57:54] → linear.set_labels: {"issueId":"e6ce...","labelIds":["98d9..."]}
-[22:57:56] 💭 AIC-36 labeled 'Feature' successfully. Backlog catch-up
+[22:57:56] 💭 TRIAGE-42 labeled 'Feature' successfully. Backlog catch-up
              continues, but this specific task is done.
 ```
 
@@ -267,6 +266,6 @@ without touching real services.
 
 Early. Runtime is stable and battle-tested against real Linear. Coding
 coworker (`code.delegate`) is scaffolded but not yet wired to a real coding
-harness. Open work: [linear.app/ilo-lang/team/AIC](https://linear.app/ilo-lang/team/AIC).
+harness. Open work: [GitHub Issues](../../issues).
 
 MIT.

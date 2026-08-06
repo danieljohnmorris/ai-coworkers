@@ -39,9 +39,8 @@ skills live in a git repo (this one, or a fork) that every machine
 pulls from.
 
 - Deploy = `git pull && systemctl --user restart <coworker>@*.service`.
-- Role changes propagate on next pull; the hot-reload watcher
-  (AIC-58) picks them up without a restart if the machine already
-  has the file open.
+- Role changes propagate on next pull; the hot-reload watcher picks
+  them up without a restart if the machine already has the file open.
 - State stays local — no cross-machine race conditions on events.db.
 - Each machine's metrics endpoint is its own scrape target for
   Prometheus.

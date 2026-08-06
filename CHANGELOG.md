@@ -39,8 +39,8 @@ adapter contracts are stable in practice but may still shift; see
 ### Added — Adapters
 - **MCP** (Model Context Protocol) — expose any MCP server as coworker tools.
 - **Hermes** — load Nous Research skills as procedural memory (recursive scan).
-- **Vercel Eve** — surface `agent/`-shape tools (see [AIC-87](https://linear.app/ilo-lang/issue/AIC-87)
-  for the not-yet-executable gap).
+- **Vercel Eve** — surface `agent/`-shape tools (executable-adapter gap
+  documented in `src/adapters/eve.ts`).
 - **ACP** (Agent Client Protocol) — spawn Goose / Codex / Claude Code
   as `code.delegate`, sandboxed via bwrap/firejail (see [ADR 0002](docs/adr/0002-acp-code-delegate.md),
   [ADR 0003](docs/adr/0003-container-isolation.md)).
