@@ -18,6 +18,13 @@ MCP tool names.
 - Forbidden writes (block outright): `mcp.linear.create_issue`,
   `mcp.linear.delete_*`, `mcp.linear.archive_*`, `mcp.linear.create_label`.
 
+## Tool field allowlist
+Machine-parseable field restrictions (enforced by `src/runtime/boundaries.ts`
+`checkAction`). Any top-level input key outside the list causes the call to
+be blocked with `field '<key>' not in allowlist for <tool>`.
+
+- `mcp.linear.update_issue`: labelIds
+
 ## Resource limits
 - Max concurrent worktrees: 0 (triage coworkers do not code)
 - Max worktree age: 24 h

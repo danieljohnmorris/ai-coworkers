@@ -50,6 +50,87 @@ describe("checkAction", () => {
     expect(r.reason).toMatch(/forbidden target/);
   });
 
+  describe("field allowlist", () => {
+    const updateTool: ToolDef = {
+      name: "mcp.linear.update_issue",
+      kind: "action",
+      description: "",
+      inputSchema: { type: "object" },
+      handler: async () => ({}),
+    };
+    const boundariesWith = (body: string) =>
+      roleWith({ TOOLS: "- mcp.linear", BOUNDARIES: body });
+
+    it("allows a call whose keys are all on the allowlist", () => {
+      const role = boundariesWith(
+        "## Tool field allowlist\n- mcp.linear.update_issue: labelIds"
+      );
+      const r = checkAction(role, updateTool, { labelIds: ["a"] }, ctx);
+      expect(r.allowed).toBe(true);
+    });
+
+    it("blocks a call with a field outside the allowlist", () => {
+      const role = boundariesWith(
+        "## Tool field allowlist\n- mcp.linear.update_issue: labelIds"
+      );
+      const r = checkAction(
+        role,
+        updateTool,
+        { labelIds: ["a"], title: "nope" },
+        ctx
+      );
+      expect(r.allowed).toBe(false);
+      expect(r.reason).toMatch(/field 'title' not in allowlist/);
+    });
+
+    it("leaves tools without an allowlist entry unaffected", () => {
+      const role = boundariesWith(
+        "## Tool field allowlist\n- mcp.linear.update_issue: labelIds"
+      );
+      const r = checkAction(
+        roleWith({ TOOLS: "- linear", BOUNDARIES: role.docs.BOUNDARIES }),
+        tool,
+        { issueId: "ILO-1", body: "hi" },
+        ctx
+      );
+      expect(r.allowed).toBe(true);
+    });
+
+    it("supports multiple allowed fields", () => {
+      const role = boundariesWith(
+        "## Tool field allowlist\n- mcp.linear.update_issue: labelIds, stateId"
+      );
+      const r = checkAction(
+        role,
+        updateTool,
+        { labelIds: ["a"], stateId: "s" },
+        ctx
+      );
+      expect(r.allowed).toBe(true);
+    });
+
+    it("accepts empty input against an allowlist", () => {
+      const role = boundariesWith(
+        "## Tool field allowlist\n- mcp.linear.update_issue: labelIds"
+      );
+      const r = checkAction(role, updateTool, {}, ctx);
+      expect(r.allowed).toBe(true);
+    });
+
+    it("does not recurse — nested keys under an allowed field pass", () => {
+      const role = boundariesWith(
+        "## Tool field allowlist\n- mcp.linear.update_issue: labelIds"
+      );
+      const r = checkAction(
+        role,
+        updateTool,
+        { labelIds: { set: ["a"], meta: { title: "ignored" } } },
+        ctx
+      );
+      expect(r.allowed).toBe(true);
+    });
+  });
+
   it("allows input that does not mention forbidden targets", () => {
     const role = roleWith({
       TOOLS: "- linear",

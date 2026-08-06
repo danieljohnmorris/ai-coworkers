@@ -29,6 +29,23 @@ export function checkAction(
     return { allowed: false, reason: `${tool.name} not declared in TOOLS.md` };
   }
 
+  // Field-scoped allowlist: if BOUNDARIES.md declares an allowlist for this
+  // tool, any top-level input key outside the list is blocked. Nested object
+  // values under an allowed key are NOT recursed — the allowlist gates the
+  // API surface (which fields the tool touches), not their contents. Deep
+  // content is still subject to the denylist scan below.
+  const fieldAllow = fieldAllowlist(role.docs.BOUNDARIES, tool.name);
+  if (fieldAllow && input && typeof input === "object" && !Array.isArray(input)) {
+    for (const key of Object.keys(input as Record<string, unknown>)) {
+      if (!fieldAllow.includes(key)) {
+        return {
+          allowed: false,
+          reason: `field '${key}' not in allowlist for ${tool.name}`,
+        };
+      }
+    }
+  }
+
   // AIC-49 — Word-boundary denylist scan (was naive substring; "billing"
   // used to match "billion"). Skip tokens shorter than 3 chars to avoid
   // over-blocking on common English fragments.
@@ -47,6 +64,36 @@ export function checkAction(
   }
 
   return { allowed: true };
+}
+
+// Parse a field-scoped allowlist for a specific tool from BOUNDARIES.md.
+// Convention: under a heading matching /field allowlist/i, a bullet line of
+// the form `- <tool.name>: <field>, <field>` declares which top-level input
+// keys are permitted. Returns `undefined` when no allowlist applies to this
+// tool (i.e. no gate) and `[]` when the tool is explicitly restricted to no
+// fields (empty input only).
+function fieldAllowlist(
+  boundariesMd: string,
+  toolName: string
+): string[] | undefined {
+  if (!boundariesMd) return undefined;
+  const lines = boundariesMd.split(/\r?\n/);
+  let capturing = false;
+  for (const line of lines) {
+    if (/^#+\s+/.test(line)) {
+      capturing = /field\s+allowlist/i.test(line);
+      continue;
+    }
+    if (!capturing) continue;
+    const m = line.match(/^-\s+`?([a-z][a-z0-9_.]*)`?\s*:\s*(.+?)\s*$/i);
+    if (!m) continue;
+    if (m[1] !== toolName) continue;
+    return m[2]
+      .split(",")
+      .map((s) => s.trim().replace(/^`|`$/g, ""))
+      .filter(Boolean);
+  }
+  return undefined;
 }
 
 function allowedToolNames(toolsMd: string): string[] {

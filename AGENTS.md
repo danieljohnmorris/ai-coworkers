@@ -493,6 +493,23 @@ Watch a coworker in dry-run for a day before granting live access — the
 - Max LLM calls per 5h window: 200
 ```
 
+### Tool field allowlists
+
+Broad MCP tools (e.g. `mcp.linear.update_issue`, which can change title,
+description, state, assignee, labels, etc.) can be narrowed to a specific
+set of top-level input keys via a `## Tool field allowlist` heading:
+
+```md
+## Tool field allowlist
+- mcp.linear.update_issue: labelIds
+```
+
+Each bullet is `- <tool.name>: <field>[, <field>...]`. At runtime, any call
+whose top-level input contains a key outside the list is blocked with
+`field '<key>' not in allowlist for <tool>`. The check is shallow: values
+under an allowed key are not recursed (the allowlist gates which API surface
+the tool touches, not the contents of that surface).
+
 ---
 
 ## Running the coworker
