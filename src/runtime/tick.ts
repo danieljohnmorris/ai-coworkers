@@ -40,6 +40,7 @@ import { shouldSkip as circuitShouldSkip, recordError as circuitError, recordSuc
 import { compactRecentActions, truncateSensorPayloads } from "./working.ts";
 import { retryAsync } from "./retry.ts";
 import { validateInput } from "./validate.ts";
+import type { McpSensorRunner } from "./mcp_sensor.ts";
 
 export interface TickContext {
   role: Role;
@@ -61,6 +62,9 @@ export interface TickContext {
   // scoped env built by loadCoworkerEnv() so multiple coworkers in one
   // repo don't share secrets.
   env?: NodeJS.ProcessEnv;
+  // Declarative MCP sensors (role/SENSORS.json). Additive to native
+  // `kind: "sensor"` tools; results are merged into Perception.sensors[].
+  mcpSensors?: McpSensorRunner;
 }
 
 export interface TickOutcome {
@@ -139,6 +143,21 @@ export async function tick(ctx: TickContext): Promise<TickOutcome> {
       }
       const c = circuitError(s.name, nowMs);
       if (c.quarantined) ctx.log.event("note", { sensor: s.name, quarantined: true });
+    }
+  }
+
+  // Declarative MCP sensors (role/SENSORS.json). Merged alongside native
+  // sensor results — same Perception.sensors[] shape. The runner owns its
+  // own cache + diff bookkeeping; we just drain it into the perception.
+  if (ctx.mcpSensors) {
+    try {
+      const mcpResults = await ctx.mcpSensors.runOnce();
+      for (const r of mcpResults) {
+        sensors.push(r.error ? { name: r.name, result: r.result, error: r.error } : { name: r.name, result: r.result });
+        ctx.log.event("sensor.read", { name: r.name, ok: !r.error, mcp: true, changed: r.changedSinceLast });
+      }
+    } catch (err) {
+      ctx.log.event("sensor.error", { name: "mcp-sensors", error: String(err) });
     }
   }
 
