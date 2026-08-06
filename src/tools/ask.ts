@@ -15,7 +15,6 @@ import type { ToolDef, ToolCtx } from "../runtime/tools.ts";
 import { appendFileSync, readFileSync, existsSync, mkdirSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { slackPost, slackDM } from "./slack.ts";
-import { linearComment } from "./linear.ts";
 import { githubPRComment } from "./github.ts";
 import { redact, knownSecretsFrom } from "../runtime/secret_redaction.ts";
 
@@ -32,7 +31,7 @@ export const ask: ToolDef = {
   name: "ask",
   // ask routes to slack / linear / github, so it needs any credential the
   // underlying tools might reach for.
-  requiresCreds: ["SLACK_BOT_TOKEN", "LINEAR_API_KEY", "GITHUB_TOKEN"],
+  requiresCreds: ["SLACK_BOT_TOKEN", "GITHUB_TOKEN"],
   kind: "action",
   description:
     "Ask a question of your manager, a peer coworker, or anyone via Slack. Use when you genuinely need input to proceed. Do NOT use for routine work. The question persists (or is delivered) — you will see any unanswered questions to your manager in future perception until resolved, so ask only when blocked.",
@@ -103,11 +102,17 @@ export const ask: ToolDef = {
       return { ...(result as object), ...redactionMeta };
     }
 
-    // --- linear ticket comment (reply where the ticket lives) ---
+    // --- linear ticket comment ---
+    // The native Linear tool was removed in favour of Linear's remote
+    // MCP server. Route the model at `mcp.linear.create_comment`
+    // directly instead of going through `ask` — the routing shim can't
+    // statically import an MCP tool since MCP tools are registered at
+    // runtime from `MCP_SERVERS`.
     if (input.to.startsWith("linear:")) {
-      const issueId = input.to.slice("linear:".length);
-      const result = await linearComment.handler({ issueId, body }, ctx);
-      return { ...(result as object), ...redactionMeta };
+      return {
+        error: `ask no longer routes linear: comments. Call mcp.linear.create_comment directly with the issue id "${input.to.slice("linear:".length)}".`,
+        ...redactionMeta,
+      };
     }
 
     // --- github PR comment ---

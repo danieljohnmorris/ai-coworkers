@@ -1,0 +1,25 @@
+[
+  {
+    "name": "linear.new_issues",
+    "mcp": "linear",
+    "tool": "list_issues",
+    "args": { "orderBy": "createdAt", "limit": 20 },
+    "cacheMs": 60000,
+    "summarise": "identity"
+  },
+  {
+    "name": "linear.untagged_issues",
+    "mcp": "linear",
+    "tool": "list_issues",
+    "args": { "hasLabels": false, "state": "open", "limit": 50 },
+    "cacheMs": 60000,
+    "summarise": "identity"
+  },
+  {
+    "name": "linear.workspace_snapshot",
+    "mcp": "linear",
+    "tool": "list_teams",
+    "cacheMs": 86400000,
+    "summarise": "identity"
+  }
+]

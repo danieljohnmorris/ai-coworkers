@@ -85,7 +85,7 @@ node --experimental-strip-types --no-warnings src/index.ts myworker
 ## Coding conventions
 
 Read a handful of existing files (`src/runtime/tick.ts`,
-`src/runtime/reflect.ts`, `src/tools/linear.ts`) and match that style.
+`src/runtime/reflect.ts`, `src/tools/github.ts`) and match that style.
 Notable choices:
 
 - **TypeScript, no build step** — `--experimental-strip-types` runs

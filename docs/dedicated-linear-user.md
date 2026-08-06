@@ -1,17 +1,24 @@
 # Give your coworker a dedicated Linear identity
 
-By default `LINEAR_API_KEY` uses your personal Linear API key, which
-means every ticket comment the coworker posts shows up under your name.
-Bad on three axes:
+Since the migration to Linear's remote MCP server
+(`https://mcp.linear.app/mcp`), auth is OAuth 2.1 with Dynamic Client
+Registration — no more static `LINEAR_API_KEY`. Whoever completes the
+browser consent on first connect is the identity every subsequent tool
+call runs as, until the refresh token is revoked or the cached tokens
+are deleted.
+
+That matters for three reasons:
 
 - **Confusing to teammates** — humans can't tell "Dan asked a real
-  question" from "Dan's coworker asked an automated question".
-- **Wrong audit trail** — Linear's activity log attributes everything
-  to you, so your prior-year contribution stats are polluted.
+  question" from "Dan's coworker asked an automated question" if both
+  post as Dan.
+- **Wrong audit trail** — Linear's activity log attributes every
+  comment/label change to whoever consented. If you consent as
+  yourself, your contribution stats get polluted.
 - **Rate-limit collision** — you and the coworker share one quota. A
   chatty coworker can back you out of the API.
 
-## Set up a service account (Linear seats permitting)
+## Recommended: consent as a dedicated Linear user
 
 Cheapest, cleanest option:
 
@@ -20,27 +27,35 @@ Cheapest, cleanest option:
 2. Complete signup as that user in a private browser window.
 3. Set their display name to something obviously non-human:
    **Alex (ai-coworker)** or similar.
-4. Give them the minimum permissions needed. Most coworkers only need
-   *Member* on the teams whose issues they'll touch — no admin.
-5. As that user, go to **Settings → API → Personal API keys**, generate
-   a key, copy the value into `~/.bashrc` as `LINEAR_API_KEY` (or your
-   coworker's `.env`).
+4. Give them the minimum permissions needed. Most triage coworkers only
+   need *Member* on the teams whose issues they'll touch — no admin.
+5. Add the Linear MCP server entry to the coworker's `.env` (see the
+   [OAuth-based MCP servers section of AGENTS.md](../AGENTS.md#oauth-based-mcp-servers)):
 
-## Set up a Linear OAuth app (if you can't add a seat)
+   ```
+   MCP_SERVERS='[{"name":"linear","url":"https://mcp.linear.app/mcp","oauth":{"scopes":["read","write"]}}]'
+   ```
 
-If your Linear plan is at the seat limit or you want the coworker to
-act across multiple workspaces:
+6. Start the coworker. On first tick it will print an authorization URL
+   to stdout. Open it **in a private/incognito browser window logged in
+   as the dedicated Linear user** — not your normal browser session —
+   and consent.
+7. Tokens land at
+   `coworkers/<name>/state/mcp-tokens/linear.json` (mode 0600). Every
+   future tick reuses them silently.
 
-1. **Settings → API → OAuth applications → New**.
-2. Redirect URL: your coworker's `/wake` endpoint (or any callback you
-   own; the token only needs to be captured once).
-3. Scopes: `read`, `write` (the current tools need issue read/write and
-   comment create).
-4. Do the OAuth dance once; store the resulting access token as
-   `LINEAR_API_KEY`.
+The Linear activity log will now attribute every action to the
+dedicated user, not to you.
 
-OAuth tokens show up in Linear's activity log under the app's name, not
-under any human, which is usually the right behaviour for a bot.
+## Rotation and revocation
+
+- To force a fresh browser flow (e.g. after changing scopes), delete
+  `coworkers/<name>/state/mcp-tokens/linear.json` and restart.
+- To revoke the coworker's access entirely, go to Linear **Settings →
+  API → Authorized applications** as the dedicated user and revoke the
+  ai-coworkers entry.
+- Rotating no longer means editing an env var; there is no long-lived
+  API key to leak.
 
 ## Naming convention that has held up
 
@@ -48,7 +63,7 @@ Give each coworker a first-name identity — Alex, Sam, Watchtower, etc.
 — and reference that name in:
 
 - `role/ROLE.md` (the persona)
-- The Linear display name of the service account
+- The Linear display name of the dedicated user
 - Slack (if a bot user exists)
 - `/wake` webhook subject headers where applicable
 
@@ -57,18 +72,23 @@ triage" faster when the same name shows up in every surface.
 
 ## What NOT to do
 
-- Don't share one Linear API key across multiple coworkers. If one
-  gets rate-limited or has to be rotated, they all break at once.
-- Don't give the service account admin permissions. Boundaries.md is
+- Don't consent as yourself unless you genuinely want the coworker to
+  act *as you* in Linear's audit log.
+- Don't share one Linear identity across multiple coworkers. If one
+  gets rate-limited or has its refresh token revoked, they all break
+  at once.
+- Don't give the dedicated user admin permissions. BOUNDARIES.md is
   our defence in depth, but tighter Linear permissions are cheaper
   than a boundary regex that fails open.
-- Don't skip the display name. `LINEAR_API_KEY user 3` posting on
-  every ticket is exactly the "who is this bot and why is it
-  commenting" complaint you'll get from your team.
 
-## Rotation
+## Headless deployments
 
-`bin/why.sh` doesn't include the API key it hits — safe to share.
-Nothing in this repo persists the key beyond your `.env`. Rotate by
-generating a new key in Linear settings, updating `.env`, and
-restarting the coworker. Old key becomes invalid immediately.
+OAuth-based MCPs are great on interactive workstations and fragile on
+headless boxes. A refresh-token rejection at 3am means silent breakage
+until an operator opens the printed URL from a machine with a browser.
+See the "Headless caveat" in
+[AGENTS.md](../AGENTS.md#oauth-based-mcp-servers) for the trade-off.
+The current recommendation for headless production is: do the OAuth
+consent once on a workstation, copy
+`coworkers/<name>/state/mcp-tokens/linear.json` to the headless box,
+and hope refresh continues to work.

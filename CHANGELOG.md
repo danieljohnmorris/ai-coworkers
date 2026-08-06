@@ -8,6 +8,34 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## [Unreleased]
 
+### Changed
+- **Linear integration migrated to the remote MCP server**
+  (`https://mcp.linear.app/mcp`, OAuth 2.1 + DCR). The native
+  `src/tools/linear.ts` (and its tests) plus `bin/setup-linear.sh` /
+  `bin/verify-linear.sh` have been deleted. Linear is now declarative
+  config: an `MCP_SERVERS` entry in `coworkers/<name>/.env` and sensor
+  specs in `role/SENSORS.json`. Sensor names (`linear.new_issues`,
+  `linear.untagged_issues`, `linear.workspace_snapshot`) are preserved
+  so `WEBHOOKS.json` `onEvent.invalidate` targets keep working.
+
+### Removed
+- `src/tools/linear.ts`, `src/tools/linear-more.test.ts`,
+  `bin/setup-linear.sh`, `bin/verify-linear.sh`.
+- `LINEAR_API_KEY`, `LINEAR_IGNORE_TEAMS` env vars.
+  `LINEAR_WEBHOOK_SECRET` is retained — webhook auth is independent of
+  tool auth.
+
+### Breaking
+- Any coworker that used the native `linear.*` tool names (comment,
+  set_labels, create_label, issue_detail, team_labels, search) must
+  migrate to the MCP-prefixed equivalents (`mcp.linear.create_comment`,
+  `mcp.linear.update_issue`, `mcp.linear.get_issue`,
+  `mcp.linear.list_labels`, `mcp.linear.list_issues`). See
+  `coworkers/alex-triage/role/{TOOLS,BOUNDARIES,AUTHORITY}.md` for the
+  updated mapping and boundary rules (in particular:
+  `mcp.linear.update_issue` must be gated to labelIds-only payloads to
+  preserve the "labels + comments only" contract).
+
 ## [0.1.0] - 2026-08-06
 
 Initial public-shape release. All notable features from prior internal

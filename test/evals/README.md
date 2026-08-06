@@ -32,7 +32,7 @@ describe("scenario: happy-path triage", () => {
       role: "triage",
       sensors: [{ name: "linear.new_issues", result: { issues: [/*…*/] } }],
       llmSequence: [
-        { action: "call", tool: "linear.comment", input: { /*…*/ }, reason: "…" },
+        { action: "call", tool: "mcp.linear.create_comment", input: { /*…*/ }, reason: "…" },
         { action: "noop", reason: "backlog quiet" },
       ],
       expect: (log, events) => {
