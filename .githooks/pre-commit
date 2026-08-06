@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# Block commits that contain credential-shaped substrings.
+# Enable with: git config core.hooksPath .githooks
+set -eu
+node --experimental-strip-types --no-warnings "$(git rev-parse --show-toplevel)/bin/scan-secrets.mjs" --staged

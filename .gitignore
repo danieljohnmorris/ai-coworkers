@@ -11,6 +11,12 @@ coworkers/*
 !coworkers/.gitkeep
 .env
 .env.local
+.env.*
+*.pem
+*.key
+# credentials.json / token.json come from Google OAuth flow — keep them local
+credentials.json
+token.json
 *.log
 .DS_Store
 dist/
