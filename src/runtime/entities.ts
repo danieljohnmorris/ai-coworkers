@@ -9,11 +9,27 @@
 //
 // Writes go through the injection scanner (third-party text is untrusted).
 
-import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync } from "node:fs";
+import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, appendFileSync } from "node:fs";
 import { join, dirname, basename } from "node:path";
 import { scan } from "./injection.ts";
 
 const HANDLE_ALLOW = /^[a-zA-Z0-9._-]+$/;
+
+export type EntityKind = "person" | "project";
+
+export interface EntityRef { kind: EntityKind; key: string }
+
+// AIC-55 — RELATIONSHIP edges. A directed edge from one entity to another
+// with a labelled type. Kept minimal (no properties/weights): the type
+// string is the meaning ("works_on", "reviews", "reports_to", "owns",
+// "blocks", etc.), the note is a free-text human hint.
+export interface Edge {
+  from: EntityRef;
+  to: EntityRef;
+  type: string;
+  ts: string;
+  note?: string;
+}
 
 export interface EntityStore {
   people(): string[];                                     // list of handles present
@@ -25,6 +41,9 @@ export interface EntityStore {
   // Given a blob of text (e.g. a JSON-encoded perception), return the entities
   // that are mentioned — used to decide what to inject into the prompt.
   detect(text: string): { people: string[]; projects: string[] };
+  // AIC-55 — relationships.
+  relate(edge: Omit<Edge, "ts"> & { ts?: string }): { accepted: boolean; reason: string };
+  edgesFor(ref: EntityRef): Edge[];
 }
 
 const CAP = 4096;
@@ -32,8 +51,22 @@ const CAP = 4096;
 export function openEntities(root: string): EntityStore {
   const peopleDir = join(root, "people");
   const projectsDir = join(root, "projects");
+  const edgesPath = join(root, "relationships.jsonl");
   mkdirSync(peopleDir, { recursive: true });
   mkdirSync(projectsDir, { recursive: true });
+
+  const validRef = (r: EntityRef): boolean =>
+    (r.kind === "person" || r.kind === "project") && HANDLE_ALLOW.test(r.key);
+
+  const readEdges = (): Edge[] => {
+    if (!existsSync(edgesPath)) return [];
+    const out: Edge[] = [];
+    for (const line of readFileSync(edgesPath, "utf8").split("\n")) {
+      const t = line.trim(); if (!t) continue;
+      try { out.push(JSON.parse(t) as Edge); } catch { /* skip */ }
+    }
+    return out;
+  };
 
   const list = (dir: string): string[] =>
     readdirSync(dir)
@@ -81,6 +114,25 @@ export function openEntities(root: string): EntityStore {
         (k) => new RegExp(`\\b${k}(?:-\\d+)?\\b`).test(text)
       );
       return { people, projects };
+    },
+
+    relate(edge) {
+      if (!validRef(edge.from) || !validRef(edge.to)) return { accepted: false, reason: "invalid ref (kind or key)" };
+      if (!edge.type || typeof edge.type !== "string" || edge.type.length > 60) return { accepted: false, reason: "type must be 1..60 chars" };
+      if (edge.note && edge.note.length > 500) return { accepted: false, reason: "note too long (>500 chars)" };
+      if (edge.note) {
+        const s = scan(edge.note);
+        if (s.suspicious) return { accepted: false, reason: `note flagged: ${s.hits.join(",")}` };
+      }
+      const record: Edge = { ...edge, ts: edge.ts ?? new Date().toISOString() };
+      appendFileSync(edgesPath, JSON.stringify(record) + "\n");
+      return { accepted: true, reason: "written" };
+    },
+
+    edgesFor(ref) {
+      if (!validRef(ref)) return [];
+      const same = (a: EntityRef, b: EntityRef) => a.kind === b.kind && a.key === b.key;
+      return readEdges().filter((e) => same(e.from, ref) || same(e.to, ref));
     },
   };
 }
