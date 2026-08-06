@@ -4,10 +4,12 @@
 [![coverage](https://img.shields.io/badge/coverage-97.8%25-brightgreen)](#tests)
 [![node](https://img.shields.io/badge/node-%E2%89%A522-brightgreen)](https://nodejs.org)
 [![license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
-[![tests](https://img.shields.io/badge/tests-279-brightgreen)](#tests)
+[![tests](https://img.shields.io/badge/tests-311-brightgreen)](#tests)
 
 Long-running AI coworkers with **roles**, **boundaries**, and a **tick loop**.
 Not one-shot task agents — persistent processes that decide when *not* to act.
+
+**Runs your existing agent artifacts.** Point ai-coworkers at your Claude Code / OpenClaw / NanoClaw SOUL.md, Hermes skills, or Vercel Eve `agent/` folder — the adapters load them in-place. Delegate coding work to any [ACP](https://agentclientprotocol.com)-conformant agent (Goose, Codex, Claude Code) via `code.delegate`. Expose any [MCP](https://modelcontextprotocol.io) server through a coworker with one env var.
 
 Unlike Hermes / ElizaOS (single-agent, chat-native) or CrewAI (task
 orchestration), ai-coworkers models **roles with hard boundaries**, defaults
@@ -15,7 +17,7 @@ to **dry-run**, and **escalates to a human inbox** instead of guessing.
 
 | LOC | tests | coverage | adapters | memory tiers |
 |---|---|---|---|---|
-| ~4.2k | 279 | 97.8% | MCP · Hermes · Eve · native | working · episodic · semantic · entity · procedural · reflective |
+| ~4.6k | 311 | 97%+ | MCP · Hermes · Eve · ACP · native | working · episodic · semantic · entity · procedural · reflective |
 
 > _(TODO: 15-sec asciinema of a coworker deciding not to act — the whole thesis in one clip.)_
 
@@ -170,6 +172,7 @@ the surface that fits.
 | **MCP servers** | `MCP_SERVERS='[{"name":"github","command":"npx","args":["-y","@modelcontextprotocol/server-github"]}]'` | `src/adapters/mcp.ts` |
 | **Hermes / OpenClaw / Anthropic skills** | Drop under `~/.hermes/skills/`; add name to `ACTIVE_SKILLS=` to inline the full body | `src/adapters/hermes.ts` |
 | **Vercel Eve `agent/` folder** | Point loader at Eve-shaped directory | `src/adapters/eve.ts` |
+| **ACP coding agents** (Goose / Codex / Claude Code / …) | `ACP_AGENT_CMD="goose acp"` → coworker gets `code.delegate` tool | `src/adapters/acp.ts` |
 | **Native tools** | New `src/tools/<name>.ts` exporting `ToolDef[]` | `src/tools/linear.ts` |
 
 ---
@@ -228,8 +231,8 @@ MemGPT/Letta (tiered memory), Vercel Eve (filesystem-first), Claude Code / Pi
 ## Tests
 
 ```bash
-npm test              # 279 tests
-npm run test:cov      # 97.8% lines · 96% functions · 87% branches
+npm test              # 311 tests
+npm run test:cov      # 97%+ lines · 96%+ functions · 87%+ branches
 ```
 
 Fake LLM + fake API fixtures in `test/fixtures.ts` exercise the tick pipeline
