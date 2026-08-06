@@ -1,0 +1,82 @@
+#!/usr/bin/env bash
+# Unified CLI router for ai-coworkers. Dispatches `aicw <verb>` to bin/aicw-<verb>.
+set -euo pipefail
+
+_here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+_describe() {
+  # Print the first single-line comment (# or //) after the shebang.
+  local f="$1" line
+  local i=0
+  while IFS= read -r line; do
+    i=$((i + 1))
+    if [ "$i" -eq 1 ]; then
+      continue
+    fi
+    case "$line" in
+      \#!*) continue ;;
+      \#\ *) printf '%s' "${line#\# }"; return ;;
+      //\ *) printf '%s' "${line#// }"; return ;;
+      "" | "#" | "//") continue ;;
+      *) return ;;
+    esac
+  done < "$f"
+}
+
+_list_verbs() {
+  local f name desc
+  echo "usage: aicw <verb> [args...]"
+  echo
+  echo "verbs:"
+  for f in "$_here"/aicw-*; do
+    [ -x "$f" ] || continue
+    [ -L "$f" ] && continue
+    name="${f##*/aicw-}"
+    desc="$(_describe "$f")"
+    printf '  %-22s %s\n' "$name" "$desc"
+  done
+  echo
+  echo "run 'aicw <verb> --help' for verb-specific usage."
+}
+
+_suggest() {
+  local want="$1" f name best="" bestlen=99
+  for f in "$_here"/aicw-*; do
+    [ -x "$f" ] || continue
+    [ -L "$f" ] && continue
+    name="${f##*/aicw-}"
+    case "$name" in
+      "$want"*|*"$want"*)
+        if [ "${#name}" -lt "$bestlen" ]; then
+          best="$name"
+          bestlen="${#name}"
+        fi
+        ;;
+    esac
+  done
+  [ -n "$best" ] && echo "did you mean: aicw $best ?" >&2
+}
+
+if [ "$#" -eq 0 ]; then
+  _list_verbs
+  exit 0
+fi
+
+verb="$1"; shift || true
+case "$verb" in
+  -h|--help|help)
+    _list_verbs
+    exit 0
+    ;;
+esac
+
+target="$_here/aicw-$verb"
+if [ ! -x "$target" ]; then
+  echo "aicw: unknown verb '$verb'" >&2
+  _suggest "$verb"
+  echo >&2
+  _list_verbs >&2
+  exit 2
+fi
+
+exec "$target" "$@"

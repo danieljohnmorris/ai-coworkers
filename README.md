@@ -79,15 +79,15 @@ Per-coworker overrides go in `coworkers/<name>/.env` and win over the shell env.
 cp -r examples/generic-triage coworkers/my-triage
 ```
 
-Available: `generic-triage`, `pr-reviewer`, `project-manager`, `scribe`, `trace`, `log`, `watchtower`. Or scaffold from scratch with `bin/new-coworker.sh <name>` (blank) or `bin/new-coworker-interview.sh <name>` (JD-style Q&A).
+Available: `generic-triage`, `pr-reviewer`, `project-manager`, `scribe`, `trace`, `log`, `watchtower`. Or scaffold from scratch with `bin/aicw new <name>` (blank) or `bin/aicw new-interview <name>` (JD-style Q&A). For a full guided setup — template + integrations + config — use `bin/aicw new <name> --wizard`. (The legacy `bin/new-coworker.sh` / `bin/new-coworker-interview.sh` names still work via deprecated symlinks.)
 
 ### 3. Connect a service
 
 Each script prompts for tokens and writes them to `coworkers/<name>/.env`:
 
 ```bash
-bin/setup-slack.sh  my-triage    &&  bin/verify-slack.sh  my-triage
-bin/setup-gmail.sh  my-triage    &&  bin/verify-gmail.sh  my-triage
+bin/aicw slack  my-triage    &&  bin/aicw verify-slack  my-triage
+bin/aicw gmail  my-triage    &&  bin/aicw verify-gmail  my-triage
 ```
 
 Linear no longer has a setup script — it's wired via its remote MCP
@@ -239,12 +239,12 @@ reach the target system. Coworkers get promoted to `--live` independently.
 
 **You → coworker** — leaves a note that surfaces in the next tick's prompt:
 ```bash
-bin/note-to.sh alex-triage "Prioritise ILO parser bugs today"
+bin/aicw note alex-triage "Prioritise ILO parser bugs today"
 ```
 
 **Coworker → you** — persistent question log they see until answered:
 ```bash
-bin/answer.sh alex-triage "Keep it as perf, don't split yet."
+bin/aicw answer alex-triage "Keep it as perf, don't split yet."
 ```
 
 **Coworker → coworker / Slack / Linear / GitHub** — one `ask` tool with
@@ -262,15 +262,15 @@ the surface that fits.
 | **Hermes / OpenClaw / Anthropic skills** | Drop under `~/.hermes/skills/`; add name to `ACTIVE_SKILLS=` to inline the full body | `src/adapters/hermes.ts` |
 | **Vercel Eve `agent/` folder** | Point loader at Eve-shaped directory | `src/adapters/eve.ts` |
 | **ACP coding agents** (Goose / Codex / Claude Code / …) | `ACP_AGENT_CMD="goose acp"` → coworker gets `code.delegate` tool | `src/adapters/acp.ts` |
-| **Gmail + Google Workspace** (reuses Hermes) | `bin/setup-gmail.sh <coworker>` → OAuth flow, token scoped per-coworker at `state/hermes-home/`; then `gmail.*` tools available | `src/tools/gmail.ts` |
-| **Slack** | `bin/setup-slack.sh <coworker>` → generates app manifest via `hermes slack manifest`, walks you through workspace install, prompts for tokens → written to `coworkers/<name>/.env` | `src/tools/slack.ts` |
+| **Gmail + Google Workspace** (reuses Hermes) | `bin/aicw gmail <coworker>` → OAuth flow, token scoped per-coworker at `state/hermes-home/`; then `gmail.*` tools available | `src/tools/gmail.ts` |
+| **Slack** | `bin/aicw slack <coworker>` → generates app manifest via `hermes slack manifest`, walks you through workspace install, prompts for tokens → written to `coworkers/<name>/.env` | `src/tools/slack.ts` |
 | **Linear** | Add Linear's remote MCP server (`https://mcp.linear.app/mcp`, OAuth 2.1 + DCR) to `MCP_SERVERS` in `coworkers/<name>/.env`; declare sensors in `role/SENSORS.json`. First tick opens a browser to consent. | `src/adapters/mcp.ts` + `examples/generic-triage/role/SENSORS.json` |
 | **Native tools** | New `src/tools/<name>.ts` exporting `ToolDef[]` | `src/tools/github.ts` |
 
 **Verify setup landed:**
 ```bash
-bin/verify-gmail.sh <coworker>    # runs one 'in:inbox' read via Hermes google_api.py
-bin/verify-slack.sh <coworker>    # calls Slack auth.test with the coworker's token
+bin/aicw verify-gmail <coworker>    # runs one 'in:inbox' read via Hermes google_api.py
+bin/aicw verify-slack <coworker>    # calls Slack auth.test with the coworker's token
 # For Linear: check stream.log for "mcp: connected linear (N tools)"
 # and coworkers/<coworker>/state/mcp-tokens/linear.json existence.
 ```
@@ -291,8 +291,10 @@ bin/verify-slack.sh <coworker>    # calls Slack auth.test with the coworker's to
 
 From scratch:
 ```bash
-bin/new-coworker.sh <name>              # blank template
-bin/new-coworker-interview.sh <name>    # JD-style Q&A → writes role docs
+bin/aicw new <name>                     # blank template
+bin/aicw new <name> --wizard            # guided: template + integrations + config
+bin/aicw new-interview <name>           # JD-style Q&A → writes role docs
+# (Legacy `bin/new-coworker.sh` / `bin/new-coworker-interview.sh` still work as deprecated symlinks.)
 ```
 
 ---

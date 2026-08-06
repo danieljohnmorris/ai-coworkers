@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+# Verify Gmail setup landed for a coworker by making a token-only read
+# call (search for one inbox message, --max 1). Prints the snippet if
+# it worked. Non-zero exit on any failure.
+#
+# Usage:  bin/verify-gmail.sh <coworker>
+
+_aicw_self="$(basename "$(readlink -f "${BASH_SOURCE[0]}")")"
+_aicw_invoked="$(basename "$0")"
+if [ "$_aicw_invoked" != "$_aicw_self" ]; then
+  echo "[deprecated] bin/$_aicw_invoked is now bin/aicw ${_aicw_self#aicw-} — this symlink will be removed in a future release" >&2
+fi
+set -euo pipefail
+name="${1:?usage: verify-gmail <coworker>}"
+[[ "$name" =~ ^[a-zA-Z0-9_-]+$ ]] || { echo "invalid coworker name" >&2; exit 1; }
+
+root="$(cd "$(dirname "$0")/.." && pwd)"
+skill="$HOME/.hermes/skills/productivity/google-workspace/scripts"
+export HERMES_HOME="$root/coworkers/$name/state/hermes-home"
+
+[ -f "$skill/google_api.py" ] || { echo "Hermes google-workspace skill not installed at $skill" >&2; exit 1; }
+[ -f "$HERMES_HOME/google_token.json" ] || { echo "No token at $HERMES_HOME/google_token.json — run bin/setup-gmail.sh $name first" >&2; exit 1; }
+
+echo "Verifying Gmail access for coworker '$name'…"
+if ! python "$skill/setup.py" --check >/dev/null 2>&1; then
+  echo "✗ setup.py --check failed. Token may be expired or scopes changed." >&2
+  echo "  Try re-running bin/setup-gmail.sh $name to refresh." >&2
+  exit 1
+fi
+
+# Real read call. --max 1 keeps it cheap; any Gmail account has at least
+# a welcome email so the query nearly always returns something.
+if out=$(python "$skill/google_api.py" gmail search "in:inbox" --max 1 2>&1); then
+  echo "✓ Gmail read call succeeded."
+  echo "  Sample response (first 300 chars):"
+  echo "  $(echo "$out" | head -c 300)"
+else
+  echo "✗ Gmail read call failed:" >&2
+  echo "$out" >&2
+  exit 1
+fi

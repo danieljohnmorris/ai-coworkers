@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+# Leave a note in a coworker's inbox. Appears in their next tick's perception.
+#
+# Usage:
+#   bin/note-to.sh <coworker> "message"                 # anonymous, unsigned
+#   bin/note-to.sh <coworker> --sender <name> "msg"     # attributed
+#
+# Signing (AIC-57): if NOTE_HMAC_SECRET is set in your env, the note is
+# signed with HMAC-SHA256(secret, sender + timestamp + message). The
+# coworker's inbox reader verifies; unsigned or bad-signature notes get
+# a [UNSIGNED] prefix when presented to the model. If the coworker was
+# started with NOTE_REQUIRE_SIGNED=1, unsigned notes are rejected entirely.
+#
+# Rationale: on a shared host, multiple humans may drop notes into one
+# coworker's inbox. HMAC lets forwarders (webhook adapters, other
+# machines) prove authorship without shared filesystem access.
+
+_aicw_self="$(basename "$(readlink -f "${BASH_SOURCE[0]}")")"
+_aicw_invoked="$(basename "$0")"
+if [ "$_aicw_invoked" != "$_aicw_self" ]; then
+  echo "[deprecated] bin/$_aicw_invoked is now bin/aicw ${_aicw_self#aicw-} — this symlink will be removed in a future release" >&2
+fi
+set -euo pipefail
+name="${1:?usage: note-to <coworker> [--sender <who>] \"message\"}"
+shift
+sender=""
+if [ "${1:-}" = "--sender" ]; then
+  sender="${2:?--sender needs a name}"
+  shift 2
+fi
+msg="$*"
+[ -z "$msg" ] && { echo "usage: note-to <coworker> [--sender <who>] \"message\"" >&2; exit 1; }
+[[ "$name" =~ ^[a-zA-Z0-9_-]+$ ]] || { echo "invalid coworker name" >&2; exit 1; }
+if [ -n "$sender" ]; then
+  [[ "$sender" =~ ^[a-zA-Z0-9_.@+-]+$ ]] || { echo "invalid sender name" >&2; exit 1; }
+fi
+
+root="$(cd "$(dirname "$0")/.." && pwd)"
+inbox="$root/coworkers/$name/state/inbox.md"
+mkdir -p "$(dirname "$inbox")"
+
+ts="$(date -Iseconds)"
+header="## $ts"
+[ -n "$sender" ] && header="$header — from $sender"
+
+sig=""
+if [ -n "${NOTE_HMAC_SECRET:-}" ]; then
+  payload="${sender}|${ts}|${msg}"
+  sig="$(printf '%s' "$payload" | openssl dgst -sha256 -hmac "$NOTE_HMAC_SECRET" -binary | base64 -w0 2>/dev/null || printf '%s' "$payload" | openssl dgst -sha256 -hmac "$NOTE_HMAC_SECRET" -binary | base64)"
+fi
+
+{
+  printf '%s\n' "$header"
+  printf '%s\n' "$msg"
+  if [ -n "$sig" ]; then
+    printf '<!-- sig:%s sender:%s ts:%s -->\n' "$sig" "$sender" "$ts"
+  fi
+  printf '\n'
+} >> "$inbox"
+
+echo "written to $inbox${sig:+ (signed as $sender)}"

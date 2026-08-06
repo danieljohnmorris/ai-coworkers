@@ -1,0 +1,105 @@
+#!/usr/bin/env bash
+# Scaffold a new coworker under coworkers/<name>/ from an example template.
+# Usage:
+#   bin/aicw new <name> [example]
+#   bin/aicw new <name> --wizard         # interactive full setup
+# Default example: generic-triage
+_aicw_self="$(basename "$(readlink -f "${BASH_SOURCE[0]}")")"
+_aicw_invoked="$(basename "$0")"
+if [ "$_aicw_invoked" != "$_aicw_self" ]; then
+  echo "[deprecated] bin/$_aicw_invoked is now bin/aicw ${_aicw_self#aicw-} — this symlink will be removed in a future release" >&2
+fi
+set -euo pipefail
+
+name="${1:?usage: aicw new <name> [example|--wizard]}"
+arg2="${2:-}"
+
+root="$(cd "$(dirname "$0")/.." && pwd)"
+bindir="$root/bin"
+
+wizard=0
+example="generic-triage"
+case "$arg2" in
+  --wizard) wizard=1 ;;
+  "") ;;
+  *) example="$arg2" ;;
+esac
+
+_ask() {
+  local prompt="$1" default="${2:-}" reply
+  if [ -n "$default" ]; then
+    read -r -p "$prompt [$default]: " reply || true
+    echo "${reply:-$default}"
+  else
+    read -r -p "$prompt: " reply || true
+    echo "$reply"
+  fi
+}
+
+if [ "$wizard" -eq 1 ]; then
+  echo "available templates:"
+  ls "$root/examples" | sed 's/^/  /'
+  echo
+  example="$(_ask "template" "generic-triage")"
+fi
+
+src="$root/examples/$example"
+dst="$root/coworkers/$name"
+
+if [ ! -d "$src" ]; then
+  echo "unknown example: $example" >&2
+  echo "available:" >&2
+  ls "$root/examples" 2>/dev/null | sed 's/^/  /' >&2
+  exit 1
+fi
+if [ -e "$dst" ]; then
+  echo "already exists: $dst" >&2
+  exit 1
+fi
+
+cp -r "$src" "$dst"
+mkdir -p "$dst/state"
+
+echo "scaffolded: $dst"
+
+if [ "$wizard" -eq 1 ]; then
+  echo
+  echo "which integrations to add? (y/N each)"
+  for integration in linear slack gmail github custom-mcp custom-webhook; do
+    reply="$(_ask "add $integration" "N")"
+    case "$reply" in
+      y|Y|yes|YES)
+        case "$integration" in
+          linear)
+            "$bindir/aicw-connect" "$name" linear || echo "aicw-connect failed for linear" >&2
+            ;;
+          slack)
+            "$bindir/aicw-slack" "$name" || echo "aicw-slack failed" >&2
+            ;;
+          gmail)
+            "$bindir/aicw-gmail" "$name" || echo "aicw-gmail failed" >&2
+            ;;
+          github)
+            "$bindir/aicw-connect" "$name" github || echo "aicw-connect failed for github" >&2
+            ;;
+          custom-mcp)
+            "$bindir/aicw-connect" "$name" || echo "aicw-connect failed" >&2
+            ;;
+          custom-webhook)
+            "$bindir/aicw-webhook" "$name" || echo "aicw-webhook failed" >&2
+            ;;
+        esac
+        ;;
+    esac
+  done
+
+  echo
+  echo "running behavioural configuration wizard..."
+  "$bindir/aicw-configure" "$name" || echo "aicw-configure failed" >&2
+fi
+
+echo
+echo "next steps:"
+echo "  1. edit $dst/role/WORKSPACE.md (teams, priority conventions, style)"
+echo "  2. review $dst/role/AUTHORITY.md and BOUNDARIES.md"
+echo "  3. run: node --experimental-strip-types --no-warnings src/index.ts $name"

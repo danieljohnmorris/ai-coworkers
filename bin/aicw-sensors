@@ -1,0 +1,97 @@
+#!/usr/bin/env bash
+# Generic sensor declaration — append an entry to a coworker's role/SENSORS.json.
+# Usage: bin/aicw sensors <coworker> [<name>]
+set -euo pipefail
+
+coworker="${1:?usage: aicw sensors <coworker> [<name>]}"
+hint="${2:-}"
+
+root="$(cd "$(dirname "$0")/.." && pwd)"
+dst="$root/coworkers/$coworker"
+role_dir="$dst/role"
+sensors_file="$role_dir/SENSORS.json"
+env_file="$dst/.env"
+
+if [ ! -d "$role_dir" ]; then
+  echo "no such coworker (role/ missing): $role_dir" >&2
+  exit 1
+fi
+
+_ask() {
+  local prompt="$1" default="${2:-}" reply
+  if [ -n "$default" ]; then
+    read -r -p "$prompt [$default]: " reply || true
+    echo "${reply:-$default}"
+  else
+    read -r -p "$prompt: " reply || true
+    echo "$reply"
+  fi
+}
+
+name="$(_ask "sensor name (unique per coworker)" "$hint")"
+[ -n "$name" ] || { echo "name required" >&2; exit 1; }
+
+# Discover known MCP server names from .env for suggestion / validation
+known_servers=""
+if [ -f "$env_file" ] && grep -q '^MCP_SERVERS=' "$env_file"; then
+  raw="$(grep '^MCP_SERVERS=' "$env_file" | head -1 | sed "s/^MCP_SERVERS=//; s/^'//; s/'$//; s/^\"//; s/\"$//")"
+  known_servers="$(node -e '
+    try {
+      const a = JSON.parse(process.argv[1]);
+      if (Array.isArray(a)) process.stdout.write(a.map(e => e && e.name).filter(Boolean).join(" "));
+    } catch {}
+  ' -- "$raw")"
+fi
+if [ -n "$known_servers" ]; then
+  echo "known MCP servers: $known_servers"
+fi
+
+mcp="$(_ask "mcp server name")"
+if [ -n "$known_servers" ]; then
+  found=0
+  for s in $known_servers; do [ "$s" = "$mcp" ] && found=1; done
+  if [ "$found" -eq 0 ]; then
+    echo "warning: '$mcp' is not in MCP_SERVERS — will be resolved at runtime" >&2
+  fi
+fi
+
+tool="$(_ask "mcp tool name")"
+args_json="$(_ask "args (JSON object)" "{}")"
+
+# Validate args JSON
+if ! node -e 'const v=JSON.parse(process.argv[1]); if (typeof v!=="object"||Array.isArray(v)||v===null) throw new Error("not an object")' -- "$args_json" 2>/dev/null; then
+  echo "invalid JSON object for args: $args_json" >&2
+  exit 1
+fi
+
+cache_ms="$(_ask "cache TTL ms" "60000")"
+summarise="$(_ask "summarise mode (identity|count|first|dot.path)" "identity")"
+
+entry="$(node <<'NODE' "$name" "$mcp" "$tool" "$args_json" "$cache_ms" "$summarise"
+const [name, mcp, tool, argsStr, cacheMs, summarise] = process.argv.slice(1);
+const entry = { name, mcp, tool, args: JSON.parse(argsStr), cacheMs: Number(cacheMs), summarise };
+process.stdout.write(JSON.stringify(entry));
+NODE
+)"
+
+merged="$(node <<'NODE' "$sensors_file" "$entry"
+const fs = require("fs");
+const [file, entryStr] = process.argv.slice(1);
+let arr = [];
+if (fs.existsSync(file)) {
+  try { arr = JSON.parse(fs.readFileSync(file, "utf8")); if (!Array.isArray(arr)) arr = []; } catch {}
+}
+const entry = JSON.parse(entryStr);
+if (arr.some(e => e && e.name === entry.name)) {
+  process.stderr.write("sensor '" + entry.name + "' already exists — refusing to overwrite\n");
+  process.exit(2);
+}
+arr.push(entry);
+process.stdout.write(JSON.stringify(arr, null, 2));
+NODE
+)" || exit $?
+
+printf '%s\n' "$merged" > "$sensors_file"
+
+echo
+echo "wrote sensor '$name' to $sensors_file"
