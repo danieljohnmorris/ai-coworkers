@@ -113,11 +113,17 @@ describe("tick pipeline", () => {
   it("skips the LLM call when over daily budget", async () => {
     const role = seedRole("t");
     const c = ctx(role, tools(() => {}));
-    // Seed 500 deliberate events for today
-    for (let i = 0; i < 500; i++) {
-      c.events.prepare("INSERT INTO events (ts, coworker, kind, payload) VALUES (?, ?, ?, ?)")
-        .run(new Date().toISOString(), "t", "deliberate", "{}");
-    }
+    // Seed 500 deliberate events for today. Wrap in a transaction — otherwise
+    // each insert fsyncs individually AND fires the FTS5 AFTER INSERT trigger
+    // from initEpisodic, which on a slow CI disk takes ~10ms/row and blows
+    // the 5s test timeout. Production never bulk-inserts like this; tests do.
+    const now = new Date().toISOString();
+    const stmt = c.events.prepare(
+      "INSERT INTO events (ts, coworker, kind, payload) VALUES (?, ?, ?, ?)"
+    );
+    c.events.exec("BEGIN");
+    for (let i = 0; i < 500; i++) stmt.run(now, "t", "deliberate", "{}");
+    c.events.exec("COMMIT");
     // If the LLM WERE called it would 500 (nothing queued); expect no error
     await tick(c);
     // deliberate count didn't grow (no new deliberate event this tick)
