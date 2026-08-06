@@ -56,4 +56,25 @@ describe("loadRole", () => {
     expect(r.limits.killSubprocessIdleMin).toBe(15);
     rmSync(root, { recursive: true, force: true });
   });
+
+  it("warns to stderr on typo'd resource-limit lines", () => {
+    const { root, name } = scaffold({
+      "BOUNDARIES.md": [
+        "## Resource limits",
+        // Near-miss form: mentions worktrees + a number, but not the strict "max concurrent worktrees: N" phrasing.
+        "- max concurrent limit: 3 worktrees allowed",
+      ].join("\n"),
+    });
+    const chunks: string[] = [];
+    const orig = process.stderr.write.bind(process.stderr);
+    (process.stderr as any).write = (s: any) => { chunks.push(String(s)); return true; };
+    try {
+      const r = loadRole(root, name);
+      expect(r.limits.maxWorktrees).toBe(5);
+    } finally {
+      (process.stderr as any).write = orig;
+    }
+    expect(chunks.join("")).toContain("possible typo in BOUNDARIES.md");
+    rmSync(root, { recursive: true, force: true });
+  });
 });

@@ -57,4 +57,18 @@ describe("renderSkillsIndex", () => {
     expect(out).toContain("- **b**");
     expect(out).toContain("SKILLS (procedural memory");
   });
+
+  it("inlines full body for activated skills", () => {
+    const out = renderSkillsIndex(
+      [
+        { name: "a", description: "does a", path: "/x", body: "APPLY RULES A" },
+        { name: "b", description: "does b", path: "/y", body: "unused body" },
+      ],
+      ["a"],
+    );
+    expect(out).toContain("## Active skills");
+    expect(out).toContain("### a");
+    expect(out).toContain("APPLY RULES A");
+    expect(out).not.toContain("unused body");
+  });
 });
