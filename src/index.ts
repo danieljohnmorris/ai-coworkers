@@ -12,6 +12,7 @@ import { openSemantic } from "./runtime/semantic.ts";
 import { initEpisodic } from "./runtime/episodic.ts";
 import { openEntities } from "./runtime/entities.ts";
 import { openInbox } from "./runtime/inbox.ts";
+import { openReactions } from "./runtime/reactions.ts";
 import { ToolRegistry } from "./runtime/tools.ts";
 import { tick } from "./runtime/tick.ts";
 import { linearTools } from "./tools/linear.ts";
@@ -57,6 +58,7 @@ async function main() {
   const semantic = openSemantic(join(stateDir, "memory", "MEMORY.md"));
   const entities = openEntities(join(stateDir, "entities"));
   const inbox = openInbox(join(stateDir, "inbox.md"));
+  const reactions = openReactions(join(stateDir, "reactions.log"));
   const log = new Log(events, name, {
     streamPath: join(stateDir, "stream.log"),
     highlightPath: join(stateDir, "highlights.log"),
@@ -131,7 +133,7 @@ async function main() {
     let outcome = { quiet: false };
     try {
       outcome = await tick({
-        role, events, memory, hygiene, semantic, entities, inbox,
+        role, events, memory, hygiene, semantic, entities, inbox, reactions,
         tools, llm, dryRun: !live, log,
         forceDeliberate: forceNext,
       });

@@ -21,6 +21,7 @@ export interface Perception {
   highlightsTail: string;         // condensed narrative of recent notable events
   recentThoughts: string;         // your last few thoughts-to-self, in order
   inboxUnread: string;             // messages from your manager (human) since last read
+  reactionsUnread: string;         // 👍 / 👎 reactions from your manager since last read
 }
 
 export type Pace = "faster" | "hold" | "slower";
@@ -87,6 +88,10 @@ export async function deliberate(
       ? `# 📬 UNREAD NOTES FROM YOUR MANAGER (read and consider FIRST — these override recent inferences)\n\n${perception.inboxUnread}`
       : ``,
     perception.inboxUnread ? `` : ``,
+    perception.reactionsUnread
+      ? `# 🫱 UNREAD REACTIONS FROM YOUR MANAGER (👍 = keep doing this; 👎 = stop / correct course)\n\n${perception.reactionsUnread}`
+      : ``,
+    perception.reactionsUnread ? `` : ``,
     `# Your recent thoughts to yourself`,
     perception.recentThoughts || "(no recent thoughts logged)",
     ``,
