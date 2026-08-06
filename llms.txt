@@ -21,6 +21,7 @@ The distinctive thesis: agents live in a filesystem directory (role docs + state
 - [boundaries.ts](https://github.com/danieljohnmorris/ai-coworkers/blob/main/src/runtime/boundaries.ts): regex-based pre-execute check against every tool call.
 - [semantic.ts](https://github.com/danieljohnmorris/ai-coworkers/blob/main/src/runtime/semantic.ts): capped `MEMORY.md` with injection scan on write.
 - [reflect.ts](https://github.com/danieljohnmorris/ai-coworkers/blob/main/src/runtime/reflect.ts): the weekly "dream" — LLM compacts the week's events into learnings, cites source event IDs (AIC-70), enforces loss guards + snapshots.
+- [role_audit.ts](https://github.com/danieljohnmorris/ai-coworkers/blob/main/src/runtime/role_audit.ts): daily drift audit (ritual `role.audit`) that snapshots every role doc, flags Must-not-touch entries removed or cap values raised as `critical` findings, and escalates to `state/questions.md`. Advance the snapshot with `bin/audit-accept.sh <coworker> [DOC]`.
 - [inbox.ts](https://github.com/danieljohnmorris/ai-coworkers/blob/main/src/runtime/inbox.ts) & [reactions.ts](https://github.com/danieljohnmorris/ai-coworkers/blob/main/src/runtime/reactions.ts): human → coworker channels (notes + 👍/👎 reactions) with cursor-based one-time presentation.
 - [branch_room.ts](https://github.com/danieljohnmorris/ai-coworkers/blob/main/src/runtime/branch_room.ts): per-branch narrative files (`state/branches/<branch>.md`) — coworker's running record of patches / CI / review / merge for each branch it touches. Exposed via `branch.note`, `branch.read`, `branch.list` tools.
 - [entities.ts](https://github.com/danieljohnmorris/ai-coworkers/blob/main/src/runtime/entities.ts): per-person + per-project cards, alias-aware detection in perception.
@@ -49,6 +50,7 @@ The distinctive thesis: agents live in a filesystem directory (role docs + state
 - `bin/review-proposal.sh <coworker> [show|accept|reject <id>]`: handle role-doc change proposals.
 - `bin/new-coworker.sh <name>` / `bin/new-coworker-interview.sh <name>`: scaffold blank or JD-interview-driven coworker.
 - `bin/import-hermes.sh <src> <name>` / `bin/import-openclaw.sh` / `bin/import-eve.sh`: migrate an existing agent from Hermes / OpenClaw / Vercel Eve into an ai-coworker (see `docs/migration.md`).
+- `bin/audit-accept.sh <coworker> [DOC]`: after reviewing `role.audit` critical findings, accept the current role docs as the new snapshot baseline.
 
 ## Optional
 
