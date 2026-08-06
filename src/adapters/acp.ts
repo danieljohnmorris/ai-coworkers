@@ -19,6 +19,7 @@
 import { spawn, type ChildProcess } from "node:child_process";
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { dirname, isAbsolute, resolve } from "node:path";
+import { wrapWithSandbox } from "../runtime/sandbox.ts";
 
 const PROTOCOL_VERSION = 1;
 
@@ -104,8 +105,14 @@ export async function runAcpTurn(req: TurnRequest): Promise<TurnResult> {
   const timeoutMs = req.timeoutMs ?? 5 * 60_000;
   const cwd = resolve(req.cwd);
 
-  const [cmd, ...args] = req.agentCmd;
-  if (!cmd) return { stopReason: "error", transcript: "", toolCalls: [], error: "agentCmd is empty" };
+  if (req.agentCmd.length === 0) return { stopReason: "error", transcript: "", toolCalls: [], error: "agentCmd is empty" };
+
+  // AIC-73 — optionally wrap the agent subprocess in a bwrap/firejail
+  // sandbox. Filesystem writes are jailed to `cwd`; the rest of the host
+  // is read-only. See src/runtime/sandbox.ts for env-var config.
+  const sandboxed = wrapWithSandbox(req.agentCmd, { cwd });
+  const [cmd, ...args] = sandboxed.argv;
+  if (!cmd) return { stopReason: "error", transcript: "", toolCalls: [], error: "sandbox wrap produced empty argv" };
 
   const child: ChildProcess = spawn(cmd, args, {
     cwd,
@@ -173,10 +180,19 @@ export async function runAcpTurn(req: TurnRequest): Promise<TurnResult> {
   child.stdout?.on("data", (c: Buffer) => parser.push(c, (msg) => { void handleIncoming(msg); }));
   // Trap async spawn failures (missing binary, permission denied) so they
   // fail every pending request instead of surfacing as unhandled errors.
-  let spawnError: Error | null = null;
   child.on("error", (err) => {
-    spawnError = err;
     for (const [, p] of pending) p.reject(err);
+    pending.clear();
+  });
+  // Also trap the case where the child exits without answering — that
+  // includes "binary is missing when the outer command was a sandbox
+  // wrapper that spawned successfully but then couldn't exec the target"
+  // (AIC-73 sandboxing), and any generic crash during a turn.
+  child.on("exit", (code, signal) => {
+    if (pending.size === 0) return;
+    const stderrStr = Buffer.concat(stderrChunks).toString("utf8").slice(-500);
+    const reason = new Error(`agent subprocess exited early (code=${code} signal=${signal}) ${stderrStr ? "— stderr: " + stderrStr : ""}`);
+    for (const [, p] of pending) p.reject(reason);
     pending.clear();
   });
   child.stdin?.on("error", () => { /* pipe closes when the child dies; swallow */ });
