@@ -11,6 +11,10 @@
 // All docs are plain markdown and human-editable. The system prompt is the
 // concatenation, with headings, so the coworker literally reads its own JD
 // every deliberation.
+//
+// The coworker cannot write these files. It can suggest edits through the
+// role.propose_change tool (see runtime/role-proposals.ts); a human reviews
+// with bin/review-proposal.sh and accepting applies the change here.
 
 import { readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
