@@ -20,8 +20,8 @@ scribe.service         → coworkers/scribe/         → WAKE_PORT=7780
 
 Constraints to remember:
 - Each coworker has its own `state/events.db`. Cross-coworker search
-  (see AIC-53) is not shipped yet — for now, `sqlite3` across all three
-  files is the workaround.
+  is `bin/search.sh "<query>" [<coworker>] [<days>]` — walks every
+  coworker's events.db via the FTS5 shadow index.
 - `SKILLS_DIR` and `MCP_SERVERS` can be shared or per-coworker; shared
   is simpler unless you want different permission scopes per role.
 - If two coworkers should never see each other's tokens, put the
