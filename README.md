@@ -9,6 +9,8 @@
 Long-running AI coworkers with **roles**, **boundaries**, and a **tick loop**.
 Not one-shot task agents — persistent processes that decide when *not* to act.
 
+**Small harness, meant to be forked.** Inspired by the Pi CLI philosophy of shipping a compact, readable runtime rather than a framework: ~6.5k lines you can adopt, fork, and adapt to your team's shape without fighting an opinionated abstraction layer. Every design choice has an ADR (`docs/adr/`) so you can disagree and rewrite that piece in isolation.
+
 **Runs your existing agent artifacts.** Point ai-coworkers at your Claude Code / OpenClaw / NanoClaw SOUL.md, Hermes skills, or Vercel Eve `agent/` folder — the adapters load them in-place. Delegate coding work to any [ACP](https://agentclientprotocol.com)-conformant agent (Goose, Codex, Claude Code) via `code.delegate`. Expose any [MCP](https://modelcontextprotocol.io) server through a coworker with one env var.
 
 Unlike Hermes / ElizaOS (single-agent, chat-native) or CrewAI (task
@@ -241,10 +243,11 @@ node --experimental-strip-types src/dashboard.ts     # fleet view on :7777
 - [systemd deployment](docs/systemd.md)
 - [Webhooks & external wakes](docs/webhooks.md)
 
-**Design lineage** — Hermes/OpenClaw (SOUL/USER/MEMORY files, skills, dreams),
-ElizaOS (providers·actions·evaluators), Generative Agents (Stanford),
-MemGPT/Letta (tiered memory), Vercel Eve (filesystem-first), Claude Code / Pi
-(multi-tool turns), [CoALA](https://arxiv.org/abs/2309.02427) (memory taxonomy).
+**Design lineage** — Pi CLI (small forkable harness > opinionated framework),
+Hermes/OpenClaw (SOUL/USER/MEMORY files, skills, dreams), ElizaOS
+(providers·actions·evaluators), Generative Agents (Stanford), MemGPT/Letta
+(tiered memory), Vercel Eve (filesystem-first), Claude Code (multi-tool turns),
+[CoALA](https://arxiv.org/abs/2309.02427) (memory taxonomy).
 
 ---
 
