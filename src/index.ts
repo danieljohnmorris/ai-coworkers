@@ -102,6 +102,12 @@ async function main() {
     apiKey: process.env.OLLAMA_API_KEY,
     model: process.env.COWORKER_MODEL ?? "gemma4:cloud",
   };
+  // AIC-47 — optional cheap-first preflight. Set TRIAGE_MODEL to a small
+  // model on the same OLLAMA_HOST; when set, every tick asks it "act or
+  // skip?" before spending the expensive COWORKER_MODEL prompt.
+  const triageLlm = process.env.TRIAGE_MODEL
+    ? { baseUrl: process.env.OLLAMA_HOST ?? "https://ollama.com", apiKey: process.env.OLLAMA_API_KEY, model: process.env.TRIAGE_MODEL }
+    : undefined;
 
   log.stream(`start coworker=${name} model=${llm.model} live=${live}`);
   log.event("note", { message: "startup", model: llm.model, live });
@@ -138,7 +144,7 @@ async function main() {
     try {
       outcome = await tick({
         role, events, memory, hygiene, semantic, entities, inbox, reactions,
-        tools, llm, dryRun: !live, log,
+        tools, llm, triageLlm, dryRun: !live, log,
         forceDeliberate: forceNext,
       });
       forceNext = false;

@@ -34,6 +34,10 @@ Two env vars in `.env`:
 
 ```
 OLLAMA_API_KEY=...    # or any OpenAI-compatible endpoint
+COWORKER_MODEL=...    # optional — main model, defaults to gemma4:cloud
+TRIAGE_MODEL=...      # optional — cheap-first preflight (AIC-47); when
+                      #   set, every tick asks this small model "act or
+                      #   skip?" before spending the expensive prompt
 LINEAR_API_KEY=...    # optional — only the Linear coworker needs it
 ```
 
