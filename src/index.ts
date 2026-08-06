@@ -29,6 +29,7 @@ import { loadCoworkerEnv } from "./runtime/credentials.ts";
 import { knownSecretsFrom } from "./runtime/secret_redaction.ts";
 import { loadHermesSkills, renderSkillsIndex } from "./adapters/hermes.ts";
 import { startWakeServer } from "./runtime/wake.ts";
+import { loadWebhooks } from "./runtime/webhooks_loader.ts";
 
 async function main() {
   const args = process.argv.slice(2);
@@ -175,15 +176,24 @@ async function main() {
   // Optional HTTP /wake endpoint (WAKE_PORT env). Lets Linear/Slack/GitHub
   // webhooks (or any curl) fire an immediate tick.
   const wakePort = Number(coworkerEnv.WAKE_PORT ?? 0);
+  const webhooksResult = loadWebhooks(join(coworkersDir, name, "role"));
+  for (const err of webhooksResult.errors) log.stream(`webhooks: error — ${err}`);
+  for (const warn of webhooksResult.warnings) log.stream(`webhooks: warning — ${warn}`);
   if (wakePort > 0) {
     startWakeServer(wakePort, wake, {
       secret: coworkerEnv.WAKE_SECRET,
       events,
       coworkerName: name,
       metricsEnabled: coworkerEnv.METRICS_ENABLED === "1",
+      webhooks: webhooksResult.specs,
+      env: coworkerEnv,
     });
     log.stream(`wake endpoint: http://127.0.0.1:${wakePort}/wake`);
     if (coworkerEnv.METRICS_ENABLED === "1") log.stream(`metrics endpoint: http://127.0.0.1:${wakePort}/metrics`);
+    if (webhooksResult.specs.length) {
+      const summary = webhooksResult.specs.map((s) => `${s.name} ${s.path} ${s.auth.type}`).join(", ");
+      log.stream(`${name} webhooks: [${summary}]`);
+    }
   }
   const onSig = () => {
     log.stream(`shutdown signal`);
