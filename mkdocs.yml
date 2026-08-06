@@ -1,0 +1,54 @@
+# AIC-65 — minimal docs site config. Deliberately no theme customisation,
+# no plugins beyond material's search. This is not a marketing site; it's
+# a way to browse the same markdown that lives in `docs/` with nav +
+# search when a wall of raw READMEs isn't what you want.
+#
+# Local:      pip install mkdocs-material && mkdocs serve
+# Deploy:     mkdocs gh-deploy
+# CI-friendly: docs live at `docs/` (mkdocs default). README + top-level
+#              markdown surfaced via nav entries; no symlinks needed.
+
+site_name: ai-coworkers
+site_description: Long-running AI coworkers with roles, boundaries, and a tick loop.
+site_url: https://danieljohnmorris.github.io/ai-coworkers
+repo_url: https://github.com/danieljohnmorris/ai-coworkers
+repo_name: danieljohnmorris/ai-coworkers
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.top
+    - content.code.copy
+    - content.action.edit
+
+markdown_extensions:
+  - admonition
+  - toc:
+      permalink: true
+  - pymdownx.superfences
+  - pymdownx.details
+  - tables
+
+nav:
+  - Home: index.md
+  - Getting started:
+      - README: index.md
+      - Contributing: contributing.md
+  - Concepts:
+      - Tool cookbook (Hermes / MCP / native): tool-cookbook.md
+      - Migration from other frameworks: migration.md
+      - Dedicated Linear identity: dedicated-linear-user.md
+  - Operations:
+      - systemd deployment: systemd.md
+      - Multi-machine deployment: multi-machine.md
+      - Webhooks + external wakes: webhooks.md
+      - Release process: release-process.md
+  - Architecture (ADRs):
+      - 0001 — CoALA memory taxonomy: adr/0001-coala-memory-taxonomy.md
+      - 0002 — ACP for code.delegate: adr/0002-acp-code-delegate.md
+      - 0003 — Container isolation: adr/0003-container-isolation.md
+      - 0004 — Single events.db: adr/0004-events-db-single-file.md
+      - 0005 — Evaluators + services: adr/0005-evaluators-services.md
