@@ -66,8 +66,24 @@ if [ -f "$db" ]; then
   sensor_errs="$(sqlite3 "$db" "SELECT COUNT(*) FROM events WHERE kind='sensor.error' AND ts > datetime('now','-1 hour')" 2>/dev/null || echo "?")"
 fi
 
+# state-file vanish detector — flag if the count under state/ dropped >20% since last run.
+baseline_file="$state/.file-count-baseline"
+current_count="$(find "$state" -type f | wc -l | tr -d ' ')"
+vanish_warning=""
+if [ -f "$baseline_file" ]; then
+  baseline_count="$(tr -dc '0-9' < "$baseline_file")"
+  if [ -n "$baseline_count" ] && [ "$baseline_count" -gt 10 ]; then
+    # threshold: current < baseline * 0.8, done in integer math: current*5 < baseline*4
+    if [ $(( current_count * 5 )) -lt $(( baseline_count * 4 )) ]; then
+      vanish_warning="[WARNING] STATE FILES VANISHED — $baseline_count -> $current_count. Check coworkers/$name/state.bak/ if you ran bin/backup-state.sh."
+    fi
+  fi
+fi
+printf '%s\n' "$current_count" > "$baseline_file"
+
 echo "$name — $mode ($proc_line)"
 echo "  mode: $wake_mode   $port_state"
 echo "  ticks today: $ticks_today"
 echo "  last action: $last_action"
 echo "  sensor errors (1h): $sensor_errs"
+if [ -n "$vanish_warning" ]; then echo "$vanish_warning"; fi
