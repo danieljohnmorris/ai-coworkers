@@ -85,3 +85,52 @@ describe("unansweredQuestions when file missing", () => {
     expect(unansweredQuestions("nonexistent-coworker")).toBe("");
   });
 });
+
+describe("ask routing to external channels", () => {
+  const original = globalThis.fetch;
+  let calls: string[];
+  beforeEach(() => {
+    calls = [];
+    globalThis.fetch = (async (url: string) => {
+      calls.push(String(url));
+      const u = String(url);
+      if (u.includes("conversations.open")) {
+        return new Response(JSON.stringify({ ok: true, channel: { id: "D1" } }));
+      }
+      if (u.includes("chat.postMessage")) {
+        return new Response(JSON.stringify({ ok: true, ts: "1.0", channel: "C1" }));
+      }
+      if (u.includes("linear.app")) {
+        return new Response(JSON.stringify({ data: { commentCreate: { success: true, comment: { id: "c1", url: "u" } } } }));
+      }
+      if (u.includes("api.github.com")) {
+        return new Response(JSON.stringify({ id: 1, html_url: "u" }));
+      }
+      return new Response("{}");
+    }) as typeof fetch;
+  });
+  afterEach(() => { globalThis.fetch = original; });
+
+  it("slack:@user routes to slackDM", async () => {
+    const r = await ask.handler({ to: "slack:@U123", question: "hi" }, ctxLive({ SLACK_BOT_TOKEN: "t" })) as any;
+    expect(r.ts).toBe("1.0");
+    expect(calls.some((u) => u.includes("conversations.open"))).toBe(true);
+  });
+
+  it("slack:#channel routes to slackPost", async () => {
+    const r = await ask.handler({ to: "slack:#ops", question: "hi" }, ctxLive({ SLACK_BOT_TOKEN: "t" })) as any;
+    expect(r.ts).toBe("1.0");
+    expect(calls.some((u) => u.includes("chat.postMessage"))).toBe(true);
+  });
+
+  it("linear:<issue> routes to linearComment", async () => {
+    const r = await ask.handler({ to: "linear:ILO-1", question: "hi" }, ctxLive({ LINEAR_API_KEY: "k" })) as any;
+    expect(r.success).toBe(true);
+  });
+
+  it("github:owner/repo#123 routes to githubPRComment", async () => {
+    const r = await ask.handler({ to: "github:foo/bar#7", question: "hi" }, ctxLive({ GITHUB_TOKEN: "t" })) as any;
+    expect(calls.some((u) => u.includes("api.github.com"))).toBe(true);
+    expect(r).toBeTruthy();
+  });
+});

@@ -5,6 +5,7 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import {
   linearUntaggedIssues, linearSearchIssues,
   linearIssueDetail, linearTeamLabels, linearSetLabels,
+  linearCreateLabel,
 } from "./linear.ts";
 import type { ToolCtx } from "../runtime/tools.ts";
 
@@ -29,6 +30,9 @@ beforeEach(() => {
     }
     if (q.includes("team(") && q.includes("labels")) {
       return new Response(JSON.stringify({ data: { team: { id: "T1", name: "ILO", labels: { nodes: [{ id: "L1", name: "parser", color: "#f00" }] } } } }));
+    }
+    if (q.includes("issueLabelCreate")) {
+      return new Response(JSON.stringify({ data: { issueLabelCreate: { success: true, issueLabel: { id: "L9", name: body.variables.input.name, color: body.variables.input.color ?? "#000" } } } }));
     }
     if (q.includes("issue(id")) {
       return new Response(JSON.stringify({ data: { issue: { id: "u1", identifier: "ILO-1", title: "parser bug", labels: { nodes: [] }, team: { key: "ILO", name: "ILO" }, state: { name: "Backlog", type: "backlog" } } } }));
@@ -117,5 +121,26 @@ describe("linearSetLabels", () => {
     const last = calls[calls.length - 1];
     expect(last.body.variables).toEqual({ issueId: "u1", labelIds: ["L1"] });
     expect(String(last.body.query)).toContain("$issueId");
+  });
+});
+
+describe("linearCreateLabel", () => {
+  it("dry-run does not fetch", async () => {
+    const r = await linearCreateLabel.handler({ teamId: "T1", name: "parser" }, ctxDry({ LINEAR_API_KEY: "k" })) as any;
+    expect(r.dryRun).toBe(true);
+    expect(calls.length).toBe(0);
+  });
+  it("throws without key", async () => {
+    await expect(linearCreateLabel.handler({ teamId: "T1", name: "parser" }, ctxLive({}))).rejects.toThrow(/LINEAR_API_KEY/);
+  });
+  it("posts issueLabelCreate mutation with the input variables", async () => {
+    const r = await linearCreateLabel.handler(
+      { teamId: "T1", name: "compaction", color: "#F0A020", description: "d" },
+      ctxLive({ LINEAR_API_KEY: "k" }),
+    ) as any;
+    expect(r.success).toBe(true);
+    expect(r.issueLabel.name).toBe("compaction");
+    const last = calls[calls.length - 1];
+    expect(last.body.variables.input).toEqual({ teamId: "T1", name: "compaction", color: "#F0A020", description: "d" });
   });
 });
