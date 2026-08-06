@@ -1397,10 +1397,10 @@
 
 <h1 id="ai-coworkers">ai-coworkers<a class="headerlink" href="#ai-coworkers" title="Permanent link">&para;</a></h1>
 <p><a href="https://github.com/danieljohnmorris/ai-coworkers/actions/workflows/ci.yml"><img alt="ci" src="https://github.com/danieljohnmorris/ai-coworkers/actions/workflows/ci.yml/badge.svg" /></a>
-<a href="#tests"><img alt="coverage" src="https://img.shields.io/badge/coverage-97.8%25-brightgreen" /></a>
+<a href="#tests"><img alt="coverage" src="https://img.shields.io/badge/coverage-94%25-brightgreen" /></a>
 <a href="https://nodejs.org"><img alt="node" src="https://img.shields.io/badge/node-%E2%89%A522-brightgreen" /></a>
 <a href="LICENSE"><img alt="license" src="https://img.shields.io/badge/license-MIT-blue" /></a>
-<a href="#tests"><img alt="tests" src="https://img.shields.io/badge/tests-311-brightgreen" /></a></p>
+<a href="#tests"><img alt="tests" src="https://img.shields.io/badge/tests-393-brightgreen" /></a></p>
 <p>Long-running AI coworkers with <strong>roles</strong>, <strong>boundaries</strong>, and a <strong>tick loop</strong>.
 Not one-shot task agents — persistent processes that decide when <em>not</em> to act.</p>
 <p><strong>Runs your existing agent artifacts.</strong> Point ai-coworkers at your Claude Code / OpenClaw / NanoClaw SOUL.md, Hermes skills, or Vercel Eve <code>agent/</code> folder — the adapters load them in-place. Delegate coding work to any <a href="https://agentclientprotocol.com">ACP</a>-conformant agent (Goose, Codex, Claude Code) via <code>code.delegate</code>. Expose any <a href="https://modelcontextprotocol.io">MCP</a> server through a coworker with one env var.</p>
@@ -1419,9 +1419,9 @@ to <strong>dry-run</strong>, and <strong>escalates to a human inbox</strong> ins
 </thead>
 <tbody>
 <tr>
-<td>~4.6k</td>
-<td>311</td>
-<td>97%+</td>
+<td>~6.3k</td>
+<td>393</td>
+<td>94% lines · 91% statements · 82% branches</td>
 <td>MCP · Hermes · Eve · ACP · native</td>
 <td>working · episodic · semantic · entity · procedural · reflective</td>
 </tr>
@@ -1622,8 +1622,8 @@ MemGPT/Letta (tiered memory), Vercel Eve (filesystem-first), Claude Code / Pi
 (multi-tool turns), <a href="https://arxiv.org/abs/2309.02427">CoALA</a> (memory taxonomy).</p>
 <hr />
 <h2 id="tests">Tests<a class="headerlink" href="#tests" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code>npm<span class="w"> </span><span class="nb">test</span><span class="w">              </span><span class="c1"># 311 tests</span>
-npm<span class="w"> </span>run<span class="w"> </span>test:cov<span class="w">      </span><span class="c1"># 97%+ lines · 96%+ functions · 87%+ branches</span>
+<div class="highlight"><pre><span></span><code>npm<span class="w"> </span><span class="nb">test</span><span class="w">              </span><span class="c1"># 393 tests, ~2s</span>
+npm<span class="w"> </span>run<span class="w"> </span>test:cov<span class="w">      </span><span class="c1"># 94% lines · 91% statements · 95% functions · 82% branches</span>
 </code></pre></div>
 <p>Fake LLM + fake API fixtures in <code>test/fixtures.ts</code> exercise the tick pipeline
 without touching real services.</p>
