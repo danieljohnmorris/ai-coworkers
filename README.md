@@ -179,7 +179,15 @@ the surface that fits.
 | **Hermes / OpenClaw / Anthropic skills** | Drop under `~/.hermes/skills/`; add name to `ACTIVE_SKILLS=` to inline the full body | `src/adapters/hermes.ts` |
 | **Vercel Eve `agent/` folder** | Point loader at Eve-shaped directory | `src/adapters/eve.ts` |
 | **ACP coding agents** (Goose / Codex / Claude Code / …) | `ACP_AGENT_CMD="goose acp"` → coworker gets `code.delegate` tool | `src/adapters/acp.ts` |
+| **Gmail + Google Workspace** (reuses Hermes) | `bin/setup-gmail.sh <coworker>` → OAuth flow, token scoped per-coworker at `state/hermes-home/`; then `gmail.*` tools available | `src/tools/gmail.ts` |
+| **Slack** | `bin/setup-slack.sh <coworker>` → generates app manifest via `hermes slack manifest`, walks you through workspace install, prompts for tokens → written to `coworkers/<name>/.env` | `src/tools/slack.ts` |
 | **Native tools** | New `src/tools/<name>.ts` exporting `ToolDef[]` | `src/tools/linear.ts` |
+
+**Verify setup landed:**
+```bash
+bin/verify-gmail.sh <coworker>   # runs one 'in:inbox' read via Hermes google_api.py
+bin/verify-slack.sh <coworker>   # calls Slack auth.test with the coworker's token
+```
 
 ---
 

@@ -28,6 +28,16 @@ mkdir -p "$HERMES_HOME"
 echo "Token will land at: $HERMES_HOME/google_token.json"
 echo
 
+# 0. Ensure Python deps are installed. Idempotent — no-op when already
+#    present. Runs first so setup.py --check below can actually import
+#    google.oauth2 etc without a confusing traceback.
+echo "Step 0/3 — Verify Python dependencies (idempotent)"
+if ! python "$skill/setup.py" --install-deps; then
+  echo "✗ Could not install Python deps. Check python3 + pip on PATH." >&2
+  exit 1
+fi
+echo
+
 # 1. Check current state.
 if python "$skill/setup.py" --check >/dev/null 2>&1; then
   echo "✓ Already authenticated for coworker '$name'. Nothing to do."
