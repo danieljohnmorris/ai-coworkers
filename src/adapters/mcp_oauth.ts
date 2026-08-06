@@ -23,7 +23,7 @@ import { mkdirSync, readFileSync, writeFileSync, existsSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { createHash, randomBytes } from "node:crypto";
 import { createServer, type Server } from "node:http";
-import { AddressInfo } from "node:net";
+import type { AddressInfo } from "node:net";
 import type {
   OAuthClientMetadata,
   OAuthClientInformationFull,
@@ -153,7 +153,7 @@ export function createLoopbackListener(): LoopbackListener {
 export class McpOAuthClientProvider {
   private readonly opts: OAuthProviderOptions;
   private readonly filePath: string;
-  private state: StoredState;
+  private _data: StoredState;
   private listener: LoopbackListener | null = null;
   private listenerInfo: { port: number; url: string } | null = null;
 
@@ -164,7 +164,7 @@ export class McpOAuthClientProvider {
       "mcp-tokens",
       `${opts.serverName}.json`,
     );
-    this.state = this.load();
+    this._data = this.load();
   }
 
   private load(): StoredState {
@@ -178,7 +178,7 @@ export class McpOAuthClientProvider {
 
   private persist(): void {
     mkdirSync(dirname(this.filePath), { recursive: true });
-    writeFileSync(this.filePath, JSON.stringify(this.state, null, 2), { mode: 0o600 });
+    writeFileSync(this.filePath, JSON.stringify(this._data, null, 2), { mode: 0o600 });
   }
 
   // --- OAuthClientProvider interface ---
@@ -187,7 +187,7 @@ export class McpOAuthClientProvider {
     // Lock a redirect URI the first time we're asked. We prefer the port
     // configured explicitly; if omitted we listen on an ephemeral port
     // during redirectToAuthorization and rewrite the state before persist.
-    if (this.state.redirect_uri) return this.state.redirect_uri;
+    if (this._data.redirect_uri) return this._data.redirect_uri;
     const host = this.opts.callbackHost ?? "127.0.0.1";
     const port = this.opts.redirectPort ?? 0;
     // If port==0 we don't yet know the real port; use a placeholder that
@@ -209,30 +209,30 @@ export class McpOAuthClientProvider {
   }
 
   clientInformation(): OAuthClientInformationFull | undefined {
-    return this.state.client_info;
+    return this._data.client_info;
   }
 
   saveClientInformation(info: OAuthClientInformationFull): void {
-    this.state.client_info = info;
+    this._data.client_info = info;
     this.persist();
   }
 
   tokens(): OAuthTokens | undefined {
-    return this.state.tokens;
+    return this._data.tokens;
   }
 
   saveTokens(tokens: OAuthTokens): void {
-    this.state.tokens = tokens;
+    this._data.tokens = tokens;
     this.persist();
   }
 
   saveCodeVerifier(verifier: string): void {
-    this.state.code_verifier = verifier;
+    this._data.code_verifier = verifier;
     this.persist();
   }
 
   codeVerifier(): string {
-    const v = this.state.code_verifier;
+    const v = this._data.code_verifier;
     if (!v) throw new Error("No PKCE code_verifier stored");
     return v;
   }
@@ -248,7 +248,7 @@ export class McpOAuthClientProvider {
       const host = this.opts.callbackHost ?? "127.0.0.1";
       const port = this.opts.redirectPort ?? 0;
       this.listenerInfo = await this.listener.start(port, host);
-      this.state.redirect_uri = this.listenerInfo.url;
+      this._data.redirect_uri = this.listenerInfo.url;
       this.persist();
     }
     const opener =
@@ -260,10 +260,10 @@ export class McpOAuthClientProvider {
   }
 
   invalidateCredentials(scope: "all" | "client" | "tokens" | "verifier" | "discovery"): void {
-    if (scope === "all") this.state = {};
-    else if (scope === "client") this.state.client_info = undefined;
-    else if (scope === "tokens") this.state.tokens = undefined;
-    else if (scope === "verifier") this.state.code_verifier = undefined;
+    if (scope === "all") this._data = {};
+    else if (scope === "client") this._data.client_info = undefined;
+    else if (scope === "tokens") this._data.tokens = undefined;
+    else if (scope === "verifier") this._data.code_verifier = undefined;
     // 'discovery' state isn't persisted here yet — no-op.
     this.persist();
   }

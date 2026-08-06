@@ -613,6 +613,16 @@ before writing to `events.db`.
 - Prefer editing existing role docs / examples over creating new markdown.
 - No YAML anywhere.
 
+### For AI agents making commits
+
+- **Never add `Co-Authored-By: Claude` (or any AI-tool trailer) to commit
+  messages.** No `Claude-Session:` links. No `Generated with Claude Code`
+  footer. These commits are Dan's work; do not attribute them to an AI.
+- Commit messages should stand on their own — describe the change and the
+  why, not the process that produced them.
+- Never push with `--no-verify`, `--force` (except on your own short-lived
+  branches), or bypass hooks unless Dan explicitly asks.
+
 ---
 
 ## Where to read more
