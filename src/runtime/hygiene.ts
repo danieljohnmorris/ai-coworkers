@@ -12,6 +12,7 @@ import type { ResourceLimits } from "./role.ts";
 export type ResourceKind =
   | "worktree" | "clone" | "branch"
   | "subprocess"
+  | "http_client"
   | "scratch_dir"
   | "gdoc_draft" | "slack_thread";
 

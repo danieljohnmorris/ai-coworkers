@@ -14,7 +14,6 @@ export default defineConfig({
         "src/**/*.test.ts",
         "src/index.ts",             // process entry-point
         "src/dashboard.ts",          // http server — manual
-        "src/adapters/mcp.ts",       // spawns MCP subprocess; parseMcpEnv only
       ],
       thresholds: {
         lines: 90,
