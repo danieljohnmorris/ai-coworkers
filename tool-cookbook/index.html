@@ -514,6 +514,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#verifying-setup-landed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Verifying setup landed
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1066,6 +1077,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#verifying-setup-landed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Verifying setup landed
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1271,6 +1293,14 @@ until the operator runs setup.</p>
 <p>Existing native <code>src/tools/slack.ts</code> picks the tokens up on next
 restart. No new tool code needed — the setup step is what was
 missing.</p>
+<h3 id="verifying-setup-landed">Verifying setup landed<a class="headerlink" href="#verifying-setup-landed" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code>bin/verify-gmail.sh<span class="w"> </span>&lt;coworker&gt;<span class="w">   </span><span class="c1"># one read call via Hermes google_api.py</span>
+bin/verify-slack.sh<span class="w"> </span>&lt;coworker&gt;<span class="w">   </span><span class="c1"># one Slack auth.test call</span>
+</code></pre></div>
+<p>Both fail loudly on any problem (bad token, expired refresh, wrong
+scopes, missing skill). Prints workspace / bot name / message snippet
+when they pass, so you know it's actually reaching the right account
+before you flip a coworker to <code>--live</code>.</p>
 <h2 id="path-b-mcp-servers">Path B — MCP servers<a class="headerlink" href="#path-b-mcp-servers" title="Permanent link">&para;</a></h2>
 <p>The <a href="https://modelcontextprotocol.io">Model Context Protocol</a> ecosystem
 ships servers for most APIs. We spawn them as subprocesses via

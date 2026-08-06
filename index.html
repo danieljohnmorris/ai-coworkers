@@ -1573,12 +1573,26 @@ the surface that fits.</p>
 <td><code>src/adapters/acp.ts</code></td>
 </tr>
 <tr>
+<td><strong>Gmail + Google Workspace</strong> (reuses Hermes)</td>
+<td><code>bin/setup-gmail.sh &lt;coworker&gt;</code> → OAuth flow, token scoped per-coworker at <code>state/hermes-home/</code>; then <code>gmail.*</code> tools available</td>
+<td><code>src/tools/gmail.ts</code></td>
+</tr>
+<tr>
+<td><strong>Slack</strong></td>
+<td><code>bin/setup-slack.sh &lt;coworker&gt;</code> → generates app manifest via <code>hermes slack manifest</code>, walks you through workspace install, prompts for tokens → written to <code>coworkers/&lt;name&gt;/.env</code></td>
+<td><code>src/tools/slack.ts</code></td>
+</tr>
+<tr>
 <td><strong>Native tools</strong></td>
 <td>New <code>src/tools/&lt;name&gt;.ts</code> exporting <code>ToolDef[]</code></td>
 <td><code>src/tools/linear.ts</code></td>
 </tr>
 </tbody>
 </table>
+<p><strong>Verify setup landed:</strong>
+<div class="highlight"><pre><span></span><code>bin/verify-gmail.sh<span class="w"> </span>&lt;coworker&gt;<span class="w">   </span><span class="c1"># runs one &#39;in:inbox&#39; read via Hermes google_api.py</span>
+bin/verify-slack.sh<span class="w"> </span>&lt;coworker&gt;<span class="w">   </span><span class="c1"># calls Slack auth.test with the coworker&#39;s token</span>
+</code></pre></div></p>
 <hr />
 <h2 id="coworker-templates">Coworker templates<a class="headerlink" href="#coworker-templates" title="Permanent link">&para;</a></h2>
 <p><code>cp -r examples/&lt;name&gt; coworkers/&lt;yourname&gt;</code>:</p>
