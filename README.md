@@ -39,6 +39,8 @@ TRIAGE_MODEL=...      # optional — cheap-first preflight (AIC-47); when
                       #   set, every tick asks this small model "act or
                       #   skip?" before spending the expensive prompt
 LINEAR_API_KEY=...    # optional — only the Linear coworker needs it
+METRICS_ENABLED=1     # optional (AIC-67) — expose Prometheus /metrics
+                      #   on WAKE_PORT
 ```
 
 Run it:
