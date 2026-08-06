@@ -1,0 +1,32 @@
+# Weekly dependency updates. Opens a PR per outdated package; auto-
+# grouped by ecosystem to keep the PR count sane. Merge policy is
+# whatever the maintainer decides — this file doesn't auto-merge.
+
+version: 2
+updates:
+  # npm — runtime + dev deps (we ship 2 runtime + 2 dev; small surface).
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+      time: "07:00"
+      timezone: "Europe/London"
+    open-pull-requests-limit: 5
+    labels: [dependencies, npm]
+    groups:
+      minor-and-patch:
+        # Bundle minor + patch bumps into a single PR — cuts noise.
+        # Majors still get their own PR so the reviewer sees the delta.
+        update-types: [minor, patch]
+
+  # GitHub Actions used in .github/workflows/*.yml — pin bumps.
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+      time: "07:00"
+      timezone: "Europe/London"
+    open-pull-requests-limit: 3
+    labels: [dependencies, github-actions]
