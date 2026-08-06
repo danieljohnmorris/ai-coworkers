@@ -13,6 +13,7 @@ import { openMemory } from "./memory.ts";
 import { openSemantic } from "./semantic.ts";
 import { openEntities } from "./entities.ts";
 import { openInbox } from "./inbox.ts";
+import { openReactions } from "./reactions.ts";
 import { ToolRegistry, type ToolDef } from "./tools.ts";
 import type { Role } from "./role.ts";
 import type { LLMConfig } from "./llm.ts";
@@ -52,12 +53,13 @@ function makeCtx(dir: string, roleOverrides: Parameters<typeof makeRole>[1] = {}
   const semantic = openSemantic(join(dir, "state", "memory", "MEMORY.md"));
   const entities = openEntities(join(dir, "state", "entities"));
   const inbox = openInbox(join(dir, "state", "inbox.md"));
+  const reactions = openReactions(join(dir, "state", "reactions.log"));
   const tools = new ToolRegistry();
   const llm: LLMConfig = { baseUrl: "http://x", apiKey: "k", model: "test-model" };
   const log = new Log(events, "tester");
   // Silence stdout from log.stream / log.highlight.
   vi.spyOn(process.stdout, "write").mockImplementation(() => true);
-  return { role, events, memory, hygiene, semantic, entities, inbox, tools, llm, dryRun: false, log };
+  return { role, events, memory, hygiene, semantic, entities, inbox, reactions, tools, llm, dryRun: false, log };
 }
 
 function llmReply(decision: unknown) {
@@ -346,6 +348,22 @@ describe("tick — inbox + entities + rituals", () => {
     mockFetchSequence([{ action: "noop", reason: "done" }]);
     await tick(ctx);
     expect(ctx.inbox.unread()).toBe("");
+  });
+
+  it("surfaces reactions in the deliberate prompt then marks them read", async () => {
+    const ctx = makeCtx(dir, { tools: "- fake" });
+    ctx.reactions.append({ verdict: "👎", note: "stop reopening ILO-509" });
+    ctx.reactions.append({ verdict: "👍" });
+    const spy = mockFetchSequence([{ action: "noop", reason: "done" }]);
+    await tick(ctx);
+    // Prompt should carry the reactions block.
+    const body = JSON.parse((spy.mock.calls[0] as any)[1].body);
+    const userMsg = body.messages[body.messages.length - 1].content;
+    expect(userMsg).toContain("UNREAD REACTIONS");
+    expect(userMsg).toContain("👎");
+    expect(userMsg).toContain("stop reopening ILO-509");
+    // After the tick, cursor advanced.
+    expect(ctx.reactions.unread()).toEqual([]);
   });
 
   it("augments prompt with semantic memory + entity cards", async () => {

@@ -27,6 +27,7 @@ import { tailHighlights } from "./log.ts";
 import { join } from "node:path";
 import type { EntityStore } from "./entities.ts";
 import type { Inbox } from "./inbox.ts";
+import { renderReactions, type Reactions } from "./reactions.ts";
 import { checkBudget, extractCallCap, extractWindowCap, extractWindowMinutes } from "./budget.ts";
 import { shouldSkip as circuitShouldSkip, recordError as circuitError, recordSuccess as circuitOk } from "./circuit.ts";
 import { compactRecentActions, truncateSensorPayloads } from "./working.ts";
@@ -41,6 +42,7 @@ export interface TickContext {
   semantic: SemanticMemory;
   entities: EntityStore;
   inbox: Inbox;
+  reactions: Reactions;
   tools: ToolRegistry;
   llm: LLMConfig;
   dryRun: boolean;
@@ -209,6 +211,7 @@ export async function tick(ctx: TickContext): Promise<TickOutcome> {
     highlightsTail,
     recentThoughts,
     inboxUnread: ctx.inbox.unread(),
+    reactionsUnread: renderReactions(ctx.reactions.unread()),
   };
   // Once perception is built the unread notes are marked as read so a note
   // is presented once (highlighted for the model that turn) and doesn't
@@ -216,6 +219,10 @@ export async function tick(ctx: TickContext): Promise<TickOutcome> {
   if (perception.inboxUnread) {
     ctx.log.highlight(`📬 note from manager: ${perception.inboxUnread.slice(0, 200)}`);
     ctx.inbox.markAllRead();
+  }
+  if (perception.reactionsUnread) {
+    ctx.log.highlight(`🫱 reactions from manager:\n${perception.reactionsUnread.slice(0, 400)}`);
+    ctx.reactions.markAllRead();
   }
 
   // 3. deliberate
