@@ -1,5 +1,8 @@
 # ai-coworkers
 
+[![ci](https://github.com/danieljohnmorris/ai-coworkers/actions/workflows/ci.yml/badge.svg)](https://github.com/danieljohnmorris/ai-coworkers/actions/workflows/ci.yml)
+[![coverage](https://img.shields.io/badge/coverage-97.8%25-brightgreen)](#tests)
+
 Long-running AI coworkers with **roles**, **boundaries**, and a **tick loop**.
 Not one-shot task agents — persistent processes that decide when *not* to act.
 
