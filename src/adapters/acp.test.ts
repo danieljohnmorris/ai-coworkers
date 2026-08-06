@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { runAcpTurn } from "./acp.ts";
+import { runAcpTurn, FrameParser } from "./acp.ts";
 import { mkdtempSync, rmSync, writeFileSync, readFileSync, existsSync, chmodSync, mkdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -238,5 +238,25 @@ describe("runAcpTurn", () => {
     const r = await runAcpTurn({ agentCmd: ["/nonexistent-binary-xyz"], prompt: "x", cwd: dir, timeoutMs: 2000 });
     expect(r.stopReason).toBe("error");
     expect(r.error).toBeTruthy();
+  });
+});
+
+describe("FrameParser", () => {
+  it("skips a malformed frame (no Content-Length header) and keeps parsing", () => {
+    const parser = new FrameParser();
+    const seen: unknown[] = [];
+    // Two frames: the first has garbage headers, the second is well-formed.
+    // The parser must advance past the bad header/body delimiter without
+    // wedging on it, then emit the good frame.
+    const good = JSON.stringify({ jsonrpc: "2.0", method: "session/update", params: { hi: 1 } });
+    const badHeaders = "Not-A-Header: whatever\r\nAnother-Bogus: value";
+    const chunk = Buffer.from(
+      badHeaders + "\r\n\r\n" +
+      `Content-Length: ${Buffer.byteLength(good, "utf8")}\r\n\r\n${good}`,
+      "utf8",
+    );
+    parser.push(chunk, (m) => seen.push(m));
+    expect(seen).toHaveLength(1);
+    expect((seen[0] as any).method).toBe("session/update");
   });
 });

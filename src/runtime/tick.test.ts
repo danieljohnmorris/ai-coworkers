@@ -718,4 +718,17 @@ describe("tick — inbox + entities + rituals", () => {
     const names = ran.map(r => JSON.parse(r.payload).name);
     expect(names).toContain("health.snapshot");
   });
+
+  it("recentThoughts skips malformed deliberate payloads without crashing", async () => {
+    const ctx = makeCtx(dir, { tools: "- fake" });
+    // Insert a deliberate row with non-JSON payload; the recentThoughts
+    // assembly catches parse errors and returns empty rather than throwing.
+    ctx.events.prepare("INSERT INTO events (ts, coworker, kind, payload) VALUES (?, ?, ?, ?)")
+      .run(new Date().toISOString(), "tester", "deliberate", "not-json-at-all");
+    ctx.events.prepare("INSERT INTO events (ts, coworker, kind, payload) VALUES (?, ?, ?, ?)")
+      .run(new Date().toISOString(), "tester", "deliberate", JSON.stringify({ thoughts: "this one is fine" }));
+    mockFetchSequence([{ action: "noop", reason: "done" }]);
+    const out = await tick(ctx);
+    expect(out.quiet).toBe(false); // deliberation ran; corrupted row didn't kill the tick
+  });
 });
