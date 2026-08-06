@@ -129,7 +129,7 @@ Currently migrated (env still works as a deprecated fallback):
 Non-technical operators can walk the schema interactively:
 
 ```
-bin/configure.sh <coworker>
+bin/aicw configure <coworker>   # legacy: bin/configure.sh (deprecated symlink)
 ```
 
 Loader: `src/runtime/coworker_config.ts` — `config.json` wins when both
@@ -145,8 +145,10 @@ Three options, in increasing effort:
 
 ```bash
 cp -r examples/generic-triage coworkers/my-triage        # start from a template
-bin/new-coworker.sh my-triage                            # blank skeleton
-bin/new-coworker-interview.sh my-triage                  # JD-style Q&A → writes role docs
+bin/aicw new my-triage                                   # blank skeleton
+bin/aicw new my-triage --wizard                          # guided: template + integrations + config
+bin/aicw new-interview my-triage                         # JD-style Q&A → writes role docs
+# Legacy `bin/new-coworker.sh` / `bin/new-coworker-interview.sh` remain as deprecated symlinks.
 ```
 
 Templates available under `examples/`:
@@ -248,8 +250,8 @@ unchanged — webhook signature auth is independent of tool auth.
 ### Slack
 
 ```bash
-bin/setup-slack.sh <coworker>
-bin/verify-slack.sh <coworker>
+bin/aicw slack <coworker>          # legacy: bin/setup-slack.sh
+bin/aicw verify-slack <coworker>   # legacy: bin/verify-slack.sh
 ```
 
 Requires the `hermes` CLI. Generates a Slack app manifest via `hermes slack
@@ -260,8 +262,8 @@ signing secret. Verify calls Slack `auth.test`.
 ### Gmail (Google Workspace)
 
 ```bash
-bin/setup-gmail.sh <coworker>
-bin/verify-gmail.sh <coworker>
+bin/aicw gmail <coworker>          # legacy: bin/setup-gmail.sh
+bin/aicw verify-gmail <coworker>   # legacy: bin/verify-gmail.sh
 ```
 
 Wraps the Hermes `google-workspace` skill's `setup.py`. One-time
@@ -638,7 +640,7 @@ At startup the coworker prints a 3-line ASCII banner announcing **LIVE**
 or **DRY-RUN**, sets the terminal window/tab title to
 `<name> [LIVE|dry]`, and prefixes every action line in `highlights.log`
 with `[LIVE]` or `[dry]`. So the mode is visible from the tab, from the
-log tail, and from every write. `bin/status.sh <name>` echoes it too.
+log tail, and from every write. `bin/aicw status <name>` echoes it too.
 
 `BOUNDARIES.md` also caps resources:
 
@@ -722,7 +724,7 @@ Concrete checklist after starting a coworker:
 ```bash
 # 0. One-shot status readout — pid/etime, LIVE-or-DRY-RUN mode, wake port
 #    listen state, ticks today, last action, recent sensor errors.
-bin/status.sh <name>
+bin/aicw status <name>
 
 # 1. Process is up and ticking
 tail -f coworkers/<name>/state/stream.log
@@ -745,8 +747,8 @@ curl -v -X POST http://127.0.0.1:${WAKE_PORT:-7778}/webhook/linear \
 curl -s http://127.0.0.1:${WAKE_PORT:-7778}/metrics | head
 
 # 7. Service tokens land
-bin/verify-slack.sh  <name>
-bin/verify-gmail.sh  <name>
+bin/aicw verify-slack  <name>
+bin/aicw verify-gmail  <name>
 # For Linear (MCP OAuth): stream.log should contain
 #   "mcp: connected linear (N tools)"
 # and coworkers/<name>/state/mcp-tokens/linear.json should exist.

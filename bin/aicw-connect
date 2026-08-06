@@ -1,0 +1,120 @@
+#!/usr/bin/env bash
+# Generic MCP server setup — append an entry to a coworker's MCP_SERVERS in .env.
+# Usage: bin/aicw connect <coworker> [<server-name>]
+set -euo pipefail
+
+coworker="${1:?usage: aicw connect <coworker> [<server-name>]}"
+server_hint="${2:-}"
+
+root="$(cd "$(dirname "$0")/.." && pwd)"
+dst="$root/coworkers/$coworker"
+env_file="$dst/.env"
+
+if [ ! -d "$dst" ]; then
+  echo "no such coworker: $dst" >&2
+  exit 1
+fi
+mkdir -p "$dst"
+
+_ask() {
+  # _ask "prompt" "default"
+  local prompt="$1" default="${2:-}" reply
+  if [ -n "$default" ]; then
+    read -r -p "$prompt [$default]: " reply || true
+    echo "${reply:-$default}"
+  else
+    read -r -p "$prompt: " reply || true
+    echo "$reply"
+  fi
+}
+
+name="$(_ask "server name" "$server_hint")"
+if [ -z "$name" ]; then
+  echo "server name required" >&2
+  exit 1
+fi
+
+transport="$(_ask "transport (stdio|http)" "http")"
+
+entry=""
+case "$transport" in
+  stdio)
+    cmd="$(_ask "command (e.g. npx)")"
+    args_line="$(_ask "args (space-separated)")"
+    # Build JSON args array
+    args_json="[]"
+    if [ -n "$args_line" ]; then
+      args_json="$(node -e 'const a=process.argv[1].split(/\s+/).filter(Boolean);process.stdout.write(JSON.stringify(a))' -- "$args_line")"
+    fi
+    entry="$(node -e 'const [n,c,a]=process.argv.slice(1);process.stdout.write(JSON.stringify({name:n,command:c,args:JSON.parse(a)}))' -- "$name" "$cmd" "$args_json")"
+    ;;
+  http)
+    url="$(_ask "url")"
+    auth="$(_ask "auth (none|bearer|oauth)" "none")"
+    case "$auth" in
+      none)
+        entry="$(node -e 'const [n,u]=process.argv.slice(1);process.stdout.write(JSON.stringify({name:n,url:u}))' -- "$name" "$url")"
+        ;;
+      bearer)
+        bearer_env="$(_ask "bearer env var name" "$(echo "$name" | tr '[:lower:]-' '[:upper:]_')_TOKEN")"
+        entry="$(node -e 'const [n,u,b]=process.argv.slice(1);process.stdout.write(JSON.stringify({name:n,url:u,bearerEnv:b}))' -- "$name" "$url" "$bearer_env")"
+        ;;
+      oauth)
+        scopes="$(_ask "scopes (space-separated)" "read write")"
+        port="$(_ask "redirect port" "33418")"
+        scopes_json="$(node -e 'process.stdout.write(JSON.stringify(process.argv[1].split(/\s+/).filter(Boolean)))' -- "$scopes")"
+        entry="$(node -e 'const [n,u,s,p]=process.argv.slice(1);process.stdout.write(JSON.stringify({name:n,url:u,oauth:{scopes:JSON.parse(s),redirectPort:Number(p)}}))' -- "$name" "$url" "$scopes_json" "$port")"
+        ;;
+      *)
+        echo "unknown auth: $auth" >&2; exit 1;;
+    esac
+    ;;
+  *)
+    echo "unknown transport: $transport" >&2; exit 1;;
+esac
+
+# Read existing MCP_SERVERS and merge
+existing="[]"
+if [ -f "$env_file" ] && grep -q '^MCP_SERVERS=' "$env_file"; then
+  existing="$(grep '^MCP_SERVERS=' "$env_file" | head -1 | sed "s/^MCP_SERVERS=//; s/^'//; s/'$//; s/^\"//; s/\"$//")"
+fi
+
+merged="$(node -e '
+  const [existing, entryStr] = process.argv.slice(1);
+  let arr = [];
+  try { arr = JSON.parse(existing); if (!Array.isArray(arr)) arr = []; } catch {}
+  const entry = JSON.parse(entryStr);
+  const idx = arr.findIndex(e => e && e.name === entry.name);
+  if (idx >= 0) {
+    process.stderr.write("server \"" + entry.name + "\" already exists in MCP_SERVERS. overwrite? [y/N] ");
+    // read one line from stdin
+    const buf = Buffer.alloc(64);
+    let n = 0;
+    try { n = require("fs").readSync(0, buf, 0, 64, null); } catch {}
+    const ans = buf.slice(0, n).toString().trim().toLowerCase();
+    if (ans !== "y" && ans !== "yes") { process.stderr.write("aborted\n"); process.exit(3); }
+    arr[idx] = entry;
+  } else {
+    arr.push(entry);
+  }
+  process.stdout.write(JSON.stringify(arr));
+' -- "$existing" "$entry")" || {
+  rc=$?
+  if [ "$rc" -eq 3 ]; then exit 0; fi
+  echo "failed to merge MCP_SERVERS" >&2; exit 1
+}
+
+# Write back to .env — replace or append MCP_SERVERS line, preserve all others
+touch "$env_file"
+tmp="$(mktemp)"
+if grep -q '^MCP_SERVERS=' "$env_file"; then
+  awk -v val="MCP_SERVERS='$merged'" '/^MCP_SERVERS=/ {print val; next} {print}' "$env_file" > "$tmp"
+else
+  cat "$env_file" > "$tmp"
+  printf "MCP_SERVERS='%s'\n" "$merged" >> "$tmp"
+fi
+mv "$tmp" "$env_file"
+
+echo
+echo "wrote MCP server '$name' to $env_file"
+echo "Start the coworker to trigger first connection (OAuth flow will prompt in browser if configured)."

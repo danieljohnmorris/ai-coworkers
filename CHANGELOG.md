@@ -9,6 +9,34 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 ## [Unreleased]
 
 ### Added
+- **Unified `bin/aicw` CLI** — a single git-style router that dispatches
+  `bin/aicw <verb>` to `bin/aicw-<verb>`. `bin/aicw help` (or no args)
+  lists every discovered verb with its one-line description. Existing
+  scripts have been renamed to the new convention (`bin/aicw-status`,
+  `bin/aicw-configure`, `bin/aicw-slack`, `bin/aicw-new`, …); the old
+  `bin/<name>.sh` paths remain as symlinks that print a one-line
+  deprecation warning on invocation and will be removed in a future
+  release.
+- **`bin/aicw connect <coworker> [<server>]`** — generic MCP-server
+  setup wizard. Prompts for transport (stdio/http), auth
+  (none/bearer/oauth), and merges the entry into `MCP_SERVERS` in the
+  coworker's `.env` without wiping other keys.
+- **`bin/aicw webhook <coworker> [<name>]`** — generic webhook wizard.
+  Prompts for verifier type, header, secret env var (optionally
+  generating a random 64-char hex secret and writing it to `.env`),
+  filter, and sensor invalidation targets. Appends to
+  `role/WEBHOOKS.json`.
+- **`bin/aicw sensors <coworker> [<name>]`** — generic declarative-MCP
+  sensor wizard. Prompts for MCP server (validated against
+  `MCP_SERVERS`), tool, args, cache TTL, and summarise mode. Appends
+  to `role/SENSORS.json`.
+- **`bin/aicw new <name> --wizard`** — master orchestrator: pick a
+  template, tick-box a set of integrations (linear / slack / gmail /
+  github / custom MCP / custom webhook), and finish with the behavioural
+  configuration wizard. Without `--wizard`, `bin/aicw new` preserves
+  the previous blank-scaffold behaviour.
+
+### Added
 - **Per-coworker `config.json`** — behavioural knobs are moving off
   environment variables into a schema-validated JSON file at
   `coworkers/<name>/config.json` (schema:

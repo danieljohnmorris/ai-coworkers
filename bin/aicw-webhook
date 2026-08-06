@@ -1,0 +1,124 @@
+#!/usr/bin/env bash
+# Generic webhook setup — append an entry to a coworker's role/WEBHOOKS.json.
+# Usage: bin/aicw webhook <coworker> [<name>]
+set -euo pipefail
+
+coworker="${1:?usage: aicw webhook <coworker> [<name>]}"
+hint="${2:-}"
+
+root="$(cd "$(dirname "$0")/.." && pwd)"
+dst="$root/coworkers/$coworker"
+role_dir="$dst/role"
+webhooks_file="$role_dir/WEBHOOKS.json"
+env_file="$dst/.env"
+
+if [ ! -d "$role_dir" ]; then
+  echo "no such coworker (role/ missing): $role_dir" >&2
+  exit 1
+fi
+
+_ask() {
+  local prompt="$1" default="${2:-}" reply
+  if [ -n "$default" ]; then
+    read -r -p "$prompt [$default]: " reply || true
+    echo "${reply:-$default}"
+  else
+    read -r -p "$prompt: " reply || true
+    echo "$reply"
+  fi
+}
+
+name="$(_ask "webhook name" "$hint")"
+[ -n "$name" ] || { echo "name required" >&2; exit 1; }
+
+verifier="$(_ask "verifier type (hmac-sha256|github-sha256|slack-v0|none)" "hmac-sha256")"
+
+case "$verifier" in
+  github-sha256) default_header="x-hub-signature-256" ;;
+  slack-v0)      default_header="x-slack-signature" ;;
+  hmac-sha256)   default_header="${name}-signature" ;;
+  none)          default_header="" ;;
+  *) echo "unknown verifier: $verifier" >&2; exit 1;;
+esac
+
+header=""
+if [ "$verifier" != "none" ]; then
+  header="$(_ask "header name" "$default_header")"
+fi
+
+upper_name="$(echo "$name" | tr '[:lower:]-' '[:upper:]_')"
+default_secret_env="${upper_name}_WEBHOOK_SECRET"
+
+secret_env=""
+generated_secret=""
+if [ "$verifier" != "none" ]; then
+  secret_env="$(_ask "secret env var name" "$default_secret_env")"
+  generated_secret="$(node -e 'process.stdout.write(require("crypto").randomBytes(32).toString("hex"))')"
+  write_secret="$(_ask "write generated secret to .env? (y/N)" "N")"
+  if [ "$write_secret" = "y" ] || [ "$write_secret" = "Y" ]; then
+    touch "$env_file"
+    if grep -q "^${secret_env}=" "$env_file"; then
+      echo "note: $secret_env already set in $env_file — leaving existing value" >&2
+    else
+      printf "%s=%s\n" "$secret_env" "$generated_secret" >> "$env_file"
+      echo "wrote $secret_env to $env_file"
+    fi
+  fi
+fi
+
+filter_path="$(_ask "filter jsonPath (blank to accept everything)" "")"
+filter_allow=""
+if [ -n "$filter_path" ]; then
+  filter_allow="$(_ask "allow list (comma-separated)")"
+fi
+
+invalidate="$(_ask "sensor invalidation targets (comma-separated, blank for none)" "")"
+
+# Build the entry as JSON via node
+entry="$(node <<'NODE' "$name" "$verifier" "$header" "$secret_env" "$filter_path" "$filter_allow" "$invalidate"
+const [name, verifier, header, secretEnv, filterPath, filterAllow, invalidate] = process.argv.slice(1);
+const entry = { name, path: "/webhook/" + name };
+if (verifier !== "none") {
+  entry.auth = { type: verifier, secretEnv };
+  if (header) entry.auth.header = header;
+} else {
+  entry.auth = { type: "none" };
+}
+if (filterPath) {
+  entry.filter = {
+    jsonPath: filterPath,
+    allow: filterAllow.split(",").map(s => s.trim()).filter(Boolean),
+  };
+}
+entry.onEvent = { wake: true };
+if (invalidate) {
+  entry.onEvent.invalidate = invalidate.split(",").map(s => s.trim()).filter(Boolean);
+}
+process.stdout.write(JSON.stringify(entry));
+NODE
+)"
+
+# Merge into WEBHOOKS.json
+merged="$(node <<'NODE' "$webhooks_file" "$entry"
+const fs = require("fs");
+const [file, entryStr] = process.argv.slice(1);
+let arr = [];
+if (fs.existsSync(file)) {
+  try { arr = JSON.parse(fs.readFileSync(file, "utf8")); if (!Array.isArray(arr)) arr = []; } catch {}
+}
+const entry = JSON.parse(entryStr);
+const idx = arr.findIndex(e => e && e.name === entry.name);
+if (idx >= 0) arr[idx] = entry; else arr.push(entry);
+process.stdout.write(JSON.stringify(arr, null, 2));
+NODE
+)"
+
+printf '%s\n' "$merged" > "$webhooks_file"
+
+echo
+echo "wrote webhook '$name' to $webhooks_file"
+if [ -n "$generated_secret" ]; then
+  echo "Point the '$name' webhook at http://your-tunnel/webhook/$name with secret $generated_secret"
+else
+  echo "Point the '$name' webhook at http://your-tunnel/webhook/$name"
+fi

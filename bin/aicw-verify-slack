@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+# Verify Slack setup landed for a coworker by making one auth.test call
+# with the bot token. Prints the workspace + bot user info if it worked.
+# Non-zero exit on any failure.
+#
+# Usage:  bin/verify-slack.sh <coworker>
+
+_aicw_self="$(basename "$(readlink -f "${BASH_SOURCE[0]}")")"
+_aicw_invoked="$(basename "$0")"
+if [ "$_aicw_invoked" != "$_aicw_self" ]; then
+  echo "[deprecated] bin/$_aicw_invoked is now bin/aicw ${_aicw_self#aicw-} — this symlink will be removed in a future release" >&2
+fi
+set -euo pipefail
+name="${1:?usage: verify-slack <coworker>}"
+[[ "$name" =~ ^[a-zA-Z0-9_-]+$ ]] || { echo "invalid coworker name" >&2; exit 1; }
+
+root="$(cd "$(dirname "$0")/.." && pwd)"
+envfile="$root/coworkers/$name/.env"
+[ -f "$envfile" ] || { echo "No .env for $name at $envfile — run bin/setup-slack.sh $name first" >&2; exit 1; }
+
+# Extract SLACK_BOT_TOKEN without sourcing (avoid the shell interpreting
+# other keys). Take the LAST matching line so an override wins.
+token=$(grep "^SLACK_BOT_TOKEN=" "$envfile" | tail -n 1 | cut -d= -f2-)
+[ -n "$token" ] || { echo "SLACK_BOT_TOKEN not set in $envfile — run bin/setup-slack.sh $name" >&2; exit 1; }
+
+echo "Verifying Slack access for coworker '$name'…"
+resp=$(curl -s -X POST https://slack.com/api/auth.test -H "Authorization: Bearer $token")
+if [ "$(echo "$resp" | jq -r '.ok')" = "true" ]; then
+  team=$(echo "$resp" | jq -r '.team')
+  user=$(echo "$resp" | jq -r '.user')
+  bot_id=$(echo "$resp" | jq -r '.bot_id')
+  echo "✓ Slack auth OK."
+  echo "  workspace: $team"
+  echo "  bot user : $user"
+  echo "  bot id   : $bot_id"
+else
+  err=$(echo "$resp" | jq -r '.error // "unknown"')
+  echo "✗ Slack auth.test failed: $err" >&2
+  echo "  Full response: $resp" >&2
+  exit 1
+fi

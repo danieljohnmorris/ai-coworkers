@@ -1,0 +1,119 @@
+#!/usr/bin/env bash
+# AIC-66 — test-coworker harness. Fork an existing coworker's role docs
+# into a scratch copy with a candidate change applied; run role.parseLimits
+# + auditRoleDocs against the candidate to preview what would happen if
+# you deployed it. Doesn't touch the real coworker.
+#
+# Usage:
+#   bin/test-role.sh <coworker> <candidate-role-dir>
+#
+# Example:
+#   # I want to change alex-triage's BOUNDARIES.md
+#   mkdir -p /tmp/candidate-role
+#   cp coworkers/alex-triage/role/*.md /tmp/candidate-role/
+#   vim /tmp/candidate-role/BOUNDARIES.md    # your proposed change
+#   bin/test-role.sh alex-triage /tmp/candidate-role
+#
+# Reports:
+#   - parseLimits diff (are the resource caps different?)
+#   - auditRoleDocs findings if we swapped the docs (would drift-audit
+#     alarm on this change?)
+#   - Boundary-block dry-run: pick 3 recent 'action' events from the real
+#     coworker's events.db, run them through checkAction against the
+#     candidate BOUNDARIES.md, and report which would now be blocked.
+
+_aicw_self="$(basename "$(readlink -f "${BASH_SOURCE[0]}")")"
+_aicw_invoked="$(basename "$0")"
+if [ "$_aicw_invoked" != "$_aicw_self" ]; then
+  echo "[deprecated] bin/$_aicw_invoked is now bin/aicw ${_aicw_self#aicw-} — this symlink will be removed in a future release" >&2
+fi
+set -euo pipefail
+name="${1:?usage: test-role <coworker> <candidate-role-dir>}"
+cand="${2:?usage: test-role <coworker> <candidate-role-dir>}"
+[[ "$name" =~ ^[a-zA-Z0-9_-]+$ ]] || { echo "invalid coworker name: $name" >&2; exit 1; }
+[ -d "$cand" ] || { echo "no such candidate dir: $cand" >&2; exit 1; }
+root="$(cd "$(dirname "$0")/.." && pwd)"
+real="$root/coworkers/$name"
+[ -d "$real/role" ] || { echo "no live coworker: $real" >&2; exit 1; }
+
+# Fork into a temp directory the harness owns; delete on exit.
+work="$(mktemp -d /tmp/test-role.XXXXXX)"
+trap 'rm -rf "$work"' EXIT
+mkdir -p "$work/coworkers/$name/role" "$work/coworkers/$name/state/audit/snapshots"
+cp "$cand"/*.md "$work/coworkers/$name/role/"
+# Copy the CURRENT role docs into the audit snapshot so the audit sees
+# 'this is what we deployed; here's what you want to change to'.
+cp "$real/role"/*.md "$work/coworkers/$name/state/audit/snapshots/"
+# Fork events.db too so boundary dry-runs have real recent actions to test.
+if [ -f "$real/state/events.db" ]; then
+  mkdir -p "$work/coworkers/$name/state"
+  cp "$real/state/events.db" "$work/coworkers/$name/state/events.db"
+fi
+
+REPO_ROOT_TS="$root" WORK="$work" NAME="$name" REAL="$real" \
+node --experimental-strip-types --no-warnings -e '
+  const REPO_ROOT = process.env.REPO_ROOT_TS;
+  const WORK = process.env.WORK;
+  const NAME = process.env.NAME;
+  const REAL = process.env.REAL;
+  import(REPO_ROOT + "/src/runtime/role.ts").then(async ({ loadRole }) => {
+    const audit = await import(REPO_ROOT + "/src/runtime/role_audit.ts");
+    const bounds = await import(REPO_ROOT + "/src/runtime/boundaries.ts");
+    const path = await import("node:path");
+    const fs = await import("node:fs");
+
+    const liveRole = loadRole(path.join(REPO_ROOT, "coworkers"), NAME);
+    const candRole = loadRole(path.join(WORK, "coworkers"), NAME);
+
+    console.log(""); console.log("=== parseLimits diff ===");
+    for (const k of Object.keys(liveRole.limits)) {
+      const before = liveRole.limits[k], after = candRole.limits[k];
+      const marker = before === after ? "  " : (after > before ? "⚠️" : "✓ ");
+      console.log(`  ${marker} ${k}: ${before}  →  ${after}`);
+    }
+
+    console.log(""); console.log("=== auditRoleDocs findings ===");
+    const result = audit.auditRoleDocs({
+      roleDir: path.join(WORK, "coworkers", NAME, "role"),
+      snapshotDir: path.join(WORK, "coworkers", NAME, "state", "audit", "snapshots"),
+      findingsLog: path.join(WORK, "coworkers", NAME, "state", "audit", "findings.log"),
+    });
+    if (result.findings.length === 0) {
+      console.log("  (no drift findings — candidate matches snapshot in every audited way)");
+    } else {
+      for (const f of result.findings) {
+        const icon = f.severity === "critical" ? "🚨" : f.severity === "warn" ? "⚠️ " : "ℹ️ ";
+        console.log(`  ${icon} ${f.doc}.md [${f.severity}] ${f.message}`);
+      }
+    }
+
+    console.log(""); console.log("=== boundary dry-run against recent actions ===");
+    const eventsDbPath = path.join(REAL, "state", "events.db");
+    if (!fs.existsSync(eventsDbPath)) {
+      console.log("  (no events.db in real coworker — skipping)");
+      return;
+    }
+    const { DatabaseSync } = await import("node:sqlite");
+    const db = new DatabaseSync(eventsDbPath);
+    const rows = db.prepare(
+      "SELECT payload FROM events WHERE kind = ? ORDER BY id DESC LIMIT 5"
+    ).all("action");
+    if (rows.length === 0) {
+      console.log("  (no recent action events — skipping)");
+      return;
+    }
+    for (const row of rows) {
+      try {
+        const p = JSON.parse(row.payload);
+        const fakeTool = { name: p.tool, kind: "action", description: "", inputSchema: {}, handler: async () => ({}) };
+        const check = bounds.checkAction(candRole, fakeTool, p.input, { coworker: NAME, dryRun: true, env: {} });
+        const marker = check.allowed ? "✓" : "✗";
+        console.log(`  ${marker} ${p.tool} — ${check.allowed ? "would run" : "blocked: " + check.reason}`);
+      } catch (err) {
+        console.log(`  ? parse error: ${err}`);
+      }
+    }
+
+    console.log(""); console.log("Done. If any 🚨 or ✗ above surprise you, revise the candidate before deploying.");
+  }).catch((err) => { console.error(err); process.exit(1); });
+'

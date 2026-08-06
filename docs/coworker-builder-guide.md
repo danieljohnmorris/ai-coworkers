@@ -38,25 +38,35 @@ The `examples/` folder has templates for ticket triage, PR review, project
 management, incident tracing, changelog writing, and a couple more. Copy
 the one closest to your intent and rename the copy.
 
-If you'd rather answer a few questions and have the skeleton generated for
-you, run:
-
-```
-bin/new-coworker.sh alex
-```
-
-or the interview version:
-
-```
-bin/new-coworker-interview.sh alex
-```
-
-Once the folder exists, configure the coworker's behaviour with the
+If you'd rather have the whole thing generated interactively — template
+choice, service integrations, and behaviour knobs — run the master
 wizard:
 
 ```
-bin/configure.sh alex
+bin/aicw new alex --wizard
 ```
+
+For a blank skeleton without the interview, drop the `--wizard`:
+
+```
+bin/aicw new alex
+```
+
+or the JD-style interview:
+
+```
+bin/aicw new-interview alex
+```
+
+If you scaffolded without `--wizard`, configure the coworker's behaviour
+after the fact:
+
+```
+bin/aicw configure alex
+```
+
+The older `bin/new-coworker.sh` and `bin/configure.sh` names still work
+via deprecated symlinks.
 
 The wizard walks you through each setting one at a time, shows you what it
 means, and offers a sensible default. Press Enter to accept a default;
@@ -92,8 +102,13 @@ Coworkers can talk to Linear, Slack, Gmail, GitHub, and anything with an
 MCP server. Each service has its own setup script:
 
 ```
-bin/setup-slack.sh alex
-bin/setup-gmail.sh alex
+bin/aicw slack alex
+bin/aicw gmail alex
+
+# For any other MCP server, webhook, or sensor, use the generic wizards:
+bin/aicw connect alex <server-name>       # add an MCP server to .env
+bin/aicw webhook alex <name>              # declare an inbound webhook
+bin/aicw sensors alex <name>              # declare a declarative MCP sensor
 ```
 
 Linear is set up by editing `coworkers/alex/.env` and adding an MCP
@@ -115,11 +130,11 @@ node --experimental-strip-types --no-warnings src/index.ts alex
 While it's running, in another terminal:
 
 ```
-bin/status.sh alex
+bin/aicw status alex
 tail -f coworkers/alex/state/highlights.log
 ```
 
-`status.sh` gives you a one-shot summary — is it running, is it live or
+`aicw status` gives you a one-shot summary — is it running, is it live or
 dry-run, how many ticks today, what did it last do. `highlights.log`
 scrolls its thoughts and actions in near-real-time.
 

@@ -1,0 +1,132 @@
+#!/usr/bin/env bash
+# Interactive config wizard for a coworker. Walks every knob defined in
+# src/runtime/config-schema.json using the schema's description and default,
+# shows the current value from coworkers/<name>/config.json (if any), and
+# writes the result back after a confirmation prompt.
+#
+# Usage:  bin/configure.sh <coworker>
+
+_aicw_self="$(basename "$(readlink -f "${BASH_SOURCE[0]}")")"
+_aicw_invoked="$(basename "$0")"
+if [ "$_aicw_invoked" != "$_aicw_self" ]; then
+  echo "[deprecated] bin/$_aicw_invoked is now bin/aicw ${_aicw_self#aicw-} — this symlink will be removed in a future release" >&2
+fi
+set -euo pipefail
+
+name="${1:?usage: configure.sh <coworker>}"
+[[ "$name" =~ ^[a-zA-Z0-9_-]+$ ]] || { echo "invalid coworker name" >&2; exit 1; }
+
+if ! command -v jq >/dev/null 2>&1; then
+  echo "jq is required. Install:" >&2
+  echo "  arch:   sudo pacman -S jq" >&2
+  echo "  debian: sudo apt-get install jq" >&2
+  echo "  mac:    brew install jq" >&2
+  exit 1
+fi
+
+root="$(cd "$(dirname "$0")/.." && pwd)"
+schema="$root/src/runtime/config-schema.json"
+cfg_dir="$root/coworkers/$name"
+cfg_file="$cfg_dir/config.json"
+
+[[ -f "$schema" ]] || { echo "schema not found at $schema" >&2; exit 1; }
+mkdir -p "$cfg_dir"
+
+# Load existing config (or start empty). Preserve unknown fields so re-runs
+# never wipe keys the wizard doesn't know about.
+if [[ -f "$cfg_file" ]]; then
+  current="$(cat "$cfg_file")"
+else
+  current="{}"
+fi
+
+# Iterate over the schema's declared properties in the order they appear.
+keys=$(jq -r '.properties | keys_unsorted[]' "$schema")
+
+pending="$current"
+changes=""
+
+echo "Configuring coworker: $name"
+echo "Schema: $schema"
+echo "Config: $cfg_file"
+echo
+echo "For each knob: press ENTER to keep the current/default value, or type a new one."
+echo
+
+for key in $keys; do
+  desc=$(jq -r --arg k "$key" '.properties[$k].description // ""' "$schema")
+  type=$(jq -r --arg k "$key" '.properties[$k].type // "string"' "$schema")
+  default=$(jq -r --arg k "$key" '.properties[$k].default' "$schema")
+  enum=$(jq -r --arg k "$key" '.properties[$k].enum // [] | join(", ")' "$schema")
+  current_val=$(jq -r --arg k "$key" 'if has($k) then .[$k]|tostring else "" end' <<<"$pending")
+
+  echo "── $key ($type)"
+  [[ -n "$desc" ]] && echo "   $desc"
+  [[ -n "$enum" ]] && echo "   values: $enum"
+  if [[ -n "$current_val" ]]; then
+    echo "   current: $current_val   (default: $default)"
+  else
+    echo "   default: $default"
+  fi
+
+  read -r -p "   > " answer </dev/tty || answer=""
+  echo
+
+  if [[ -z "$answer" ]]; then
+    continue  # keep current or leave unset (will use default at runtime)
+  fi
+
+  # Coerce answer to the schema type.
+  case "$type" in
+    boolean)
+      case "$(echo "$answer" | tr '[:upper:]' '[:lower:]')" in
+        1|true|yes|y|on) coerced="true" ;;
+        0|false|no|n|off) coerced="false" ;;
+        *) echo "   invalid boolean, skipping" >&2; continue ;;
+      esac
+      pending=$(jq --arg k "$key" --argjson v "$coerced" '.[$k] = $v' <<<"$pending")
+      ;;
+    integer|number)
+      if ! [[ "$answer" =~ ^-?[0-9]+$ ]]; then
+        echo "   invalid number, skipping" >&2; continue
+      fi
+      pending=$(jq --arg k "$key" --argjson v "$answer" '.[$k] = $v' <<<"$pending")
+      ;;
+    *)
+      # String / enum — validate against enum if declared.
+      if [[ -n "$enum" ]]; then
+        legal=$(jq -r --arg k "$key" --arg v "$answer" '.properties[$k].enum | index($v) // empty' "$schema")
+        if [[ -z "$legal" ]]; then
+          echo "   $answer is not one of: $enum — skipping" >&2; continue
+        fi
+      fi
+      pending=$(jq --arg k "$key" --arg v "$answer" '.[$k] = $v' <<<"$pending")
+      ;;
+  esac
+  changes="${changes}  $key = $answer"$'\n'
+done
+
+if [[ -z "$changes" ]]; then
+  echo "No changes."
+  exit 0
+fi
+
+echo "Proposed changes:"
+echo "$changes"
+
+# Show a diff of the resulting file.
+echo "Resulting config.json:"
+jq . <<<"$pending"
+echo
+
+read -r -p "Write to $cfg_file? [y/N] " confirm </dev/tty || confirm=""
+case "$(echo "$confirm" | tr '[:upper:]' '[:lower:]')" in
+  y|yes)
+    jq . <<<"$pending" > "$cfg_file"
+    echo "wrote $cfg_file"
+    ;;
+  *)
+    echo "aborted."
+    exit 1
+    ;;
+esac
