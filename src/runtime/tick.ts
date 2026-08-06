@@ -277,9 +277,23 @@ export async function tick(ctx: TickContext): Promise<TickOutcome> {
   const semanticBody = ctx.semantic.read().trim();
   const perceptionBlob = JSON.stringify({ sensors, promises });
   const { people, projects } = ctx.entities.detect(perceptionBlob);
+  // AIC-55 — include RELATIONSHIP edges for every detected entity, so
+  // the model sees not just "Dan (person card)" but "Dan works_on ILO,
+  // reviews CS". Cap the per-entity edge list so a highly-connected
+  // entity can't blow the prompt.
+  const edgeSnippet = (ref: { kind: "person" | "project"; key: string }): string => {
+    const edges = ctx.entities.edgesFor(ref);
+    if (!edges.length) return "";
+    const lines = edges.slice(0, 8).map((e) => {
+      const other = e.from.kind === ref.kind && e.from.key === ref.key ? e.to : e.from;
+      const arrow = e.from.kind === ref.kind && e.from.key === ref.key ? "→" : "←";
+      return `- ${arrow} ${e.type} ${other.kind}:${other.key}${e.note ? ` — ${e.note}` : ""}`;
+    });
+    return `\n\n### relationships\n${lines.join("\n")}`;
+  };
   const entityCards = [
-    ...people.map((h) => `## person: ${h}\n${ctx.entities.readPerson(h).trim()}`),
-    ...projects.map((k) => `## project: ${k}\n${ctx.entities.readProject(k).trim()}`),
+    ...people.map((h) => `## person: ${h}\n${ctx.entities.readPerson(h).trim()}${edgeSnippet({ kind: "person", key: h })}`),
+    ...projects.map((k) => `## project: ${k}\n${ctx.entities.readProject(k).trim()}${edgeSnippet({ kind: "project", key: k })}`),
   ].filter((s) => s.split("\n").length > 1).join("\n\n");
 
   let augmentedPrompt = ctx.role.systemPrompt;
