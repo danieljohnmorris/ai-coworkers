@@ -28,6 +28,7 @@ import { loadCoworkerEnv } from "./runtime/credentials.ts";
 import { knownSecretsFrom } from "./runtime/secret_redaction.ts";
 import { loadHermesSkills, renderSkillsIndex } from "./adapters/hermes.ts";
 import { startWakeServer } from "./runtime/wake.ts";
+import { parseWakeMode } from "./runtime/wake_mode.ts";
 import { loadWebhooks } from "./runtime/webhooks_loader.ts";
 import { loadSensors } from "./runtime/sensors_loader.ts";
 import { McpSensorRunner } from "./runtime/mcp_sensor.ts";
@@ -179,10 +180,30 @@ async function main() {
     log.event("note", { message: "role hot-reload unavailable", error: String(err) });
   }
 
-  const baseIntervalMs = Number(coworkerEnv.TICK_INTERVAL_MS ?? 5 * 60_000);
-  const maxIntervalMs = role.cadence === "constant"
-    ? baseIntervalMs                       // no backoff when role is "constant"
-    : Number(coworkerEnv.MAX_TICK_INTERVAL_MS ?? 30 * 60_000);
+  // WAKE_MODE decides whether the periodic tick loop runs, the wake HTTP
+  // server runs, or both (default). Parsed once at startup.
+  const wakeModeParsed = parseWakeMode(coworkerEnv.WAKE_MODE);
+  if (wakeModeParsed.warning) log.stream(wakeModeParsed.warning);
+  const wakeMode = wakeModeParsed.mode;
+  log.stream(`wake_mode=${wakeMode}`);
+
+  // In webhook-only mode we take the "very-long-sleep" shortcut instead of
+  // rewriting the scheduler: base interval is pinned to 24h so the loop
+  // only fires on wake events (webhooks / /wake). Consequence: rituals and
+  // promises will only fire when a wake event triggers a tick that finds
+  // them due — acceptable for a coworker whose activity is genuinely
+  // event-driven, but do NOT choose webhook mode for anything whose
+  // liveness depends on scheduled rituals firing on time. Use "both" for
+  // that safety net.
+  const webhookOnlyIdleMs = 24 * 60 * 60_000;
+  const baseIntervalMs = wakeMode === "webhook"
+    ? webhookOnlyIdleMs
+    : Number(coworkerEnv.TICK_INTERVAL_MS ?? 5 * 60_000);
+  const maxIntervalMs = wakeMode === "webhook"
+    ? webhookOnlyIdleMs
+    : (role.cadence === "constant"
+        ? baseIntervalMs                       // no backoff when role is "constant"
+        : Number(coworkerEnv.MAX_TICK_INTERVAL_MS ?? 30 * 60_000));
   let intervalMs = baseIntervalMs;
   let consecutiveQuiet = 0;
   const stop = { flag: false };
@@ -194,7 +215,10 @@ async function main() {
   const webhooksResult = loadWebhooks(join(coworkersDir, name, "role"));
   for (const err of webhooksResult.errors) log.stream(`webhooks: error — ${err}`);
   for (const warn of webhooksResult.warnings) log.stream(`webhooks: warning — ${warn}`);
-  if (wakePort > 0) {
+  if (wakeMode === "webhook" && wakePort <= 0) {
+    log.stream(`WARN wake_mode=webhook but WAKE_PORT unset — nothing will wake this coworker`);
+  }
+  if (wakePort > 0 && wakeMode !== "tick") {
     startWakeServer(wakePort, wake, {
       secret: coworkerEnv.WAKE_SECRET,
       events,

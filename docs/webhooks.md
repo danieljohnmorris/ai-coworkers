@@ -18,6 +18,28 @@ On startup the coworker logs:
 [hh:mm:ss] alex-triage wake endpoint: http://127.0.0.1:7778/wake
 ```
 
+## Disabling the periodic tick — `WAKE_MODE=webhook`
+
+By default the coworker runs both the wake HTTP server AND the periodic
+tick loop (`WAKE_MODE=both`). If you want the cheapest steady state and
+trust your webhook coverage, set:
+
+```
+WAKE_MODE=webhook
+WAKE_PORT=7778
+```
+
+This disables the scheduled tick loop (the base interval is pinned to
+24h). Ticks then fire only on `/wake`, on matching `/webhook/*` calls,
+and at startup — webhook delivery becomes the ONLY liveness signal.
+Missed webhooks mean silent drift. Scheduled `rituals/*.json` and pending
+promises only run when a wake event happens to fire a tick; they do not
+fire on time.
+
+Belt-and-suspenders operators want `WAKE_MODE=both` (the default) so a
+webhook outage degrades into normal polling instead of silent inactivity.
+Use `WAKE_MODE=tick` on hosts with no inbound reachability.
+
 ## Test
 
 ```
@@ -37,10 +59,14 @@ woken by event — next tick immediately
 
 ```
 npm install -g smee-client
-smee -u https://smee.io/YOUR_CHANNEL -t http://127.0.0.1:7778/wake
+smee -u https://smee.io/YOUR_CHANNEL -t http://127.0.0.1:7778/webhook/linear
 ```
 
-Point Linear/Slack/GitHub webhooks at `https://smee.io/YOUR_CHANNEL`.
+Point the Linear webhook at `https://smee.io/YOUR_CHANNEL` (the `-t`
+target on the smee-client is the specific path from your
+`WEBHOOKS.json`, e.g. `/webhook/linear`, `/webhook/github`,
+`/webhook/slack`). Run one smee-client per webhook path, or use a real
+tunnel (below) if you want one public URL to route many paths.
 
 ### Production — real tunnel
 
@@ -57,7 +83,7 @@ the payload, and wakes the loop (plus hints which sensor caches to
 invalidate on the next tick). No custom code — new integrations are a JSON
 edit.
 
-Schema (top-level is an array):
+Schema (top-level is an array). Linear example:
 
 ```json
 [
@@ -69,14 +95,22 @@ Schema (top-level is an array):
       "header": "linear-signature",
       "secretEnv": "LINEAR_WEBHOOK_SECRET"
     },
-    "filter": { "jsonPath": "data.team.key", "allow": ["ILO", "AIC"] },
+    "filter": { "jsonPath": "data.team.key", "allow": ["TEAM_A", "TEAM_B"] },
     "onEvent": {
       "wake": true,
-      "invalidate": ["linear.new_issues", "linear.workspace_snapshot"]
+      "invalidate": ["linear.new_issues"]
     }
   }
 ]
 ```
+
+`filter` is optional — omit it to accept every signed request. When
+present, the value at the JSON dot-path in the parsed body must equal
+one of the strings in `allow`, otherwise the request is 202-acked
+without waking.
+
+`onEvent.invalidate` names sensor cache keys (from `SENSORS.json` or
+native sensors) to force-refresh on the resulting tick.
 
 `auth.type` is a closed set:
 

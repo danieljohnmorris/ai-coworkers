@@ -156,6 +156,12 @@ export async function connectMcp(
       const code = await oauthProvider.waitForAuthorizationCode();
       await (transport as StreamableHTTPClientTransport).finishAuth(code);
       await oauthProvider.shutdownListener();
+      // The old transport was consumed by the failed initialize; construct
+      // a fresh one that will read the now-cached tokens from the provider.
+      try { await (transport as StreamableHTTPClientTransport).close(); } catch { /* ignore */ }
+      transport = new StreamableHTTPClientTransport(new URL(cfg.url!), {
+        authProvider: oauthProvider,
+      });
       await client.connect(transport);
     } else {
       if (oauthProvider) await oauthProvider.shutdownListener();

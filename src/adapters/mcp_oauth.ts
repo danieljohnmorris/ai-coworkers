@@ -253,8 +253,21 @@ export class McpOAuthClientProvider {
     }
     const opener =
       this.opts.openBrowser ??
-      ((url: string) => {
+      (async (url: string) => {
         console.log(`\n[mcp-oauth] Open this URL to authorize:\n${url}\n`);
+        // Best-effort: spawn the OS default browser. Gated on stdin.isTTY so
+        // headless environments (vitest, CI, systemd units) never try to
+        // launch a browser. The printed URL above is the authoritative
+        // fallback for those cases.
+        if (!process.stdin.isTTY) return;
+        const { spawn } = await import("node:child_process");
+        const cmd =
+          process.platform === "darwin" ? "open"
+          : process.platform === "win32" ? "cmd"
+          : "xdg-open";
+        const args = process.platform === "win32" ? ["/c", "start", "", url] : [url];
+        try { spawn(cmd, args, { stdio: "ignore", detached: true }).unref(); }
+        catch { /* ignore — user still has the URL printed above */ }
       });
     await opener(authorizationUrl.toString());
   }
