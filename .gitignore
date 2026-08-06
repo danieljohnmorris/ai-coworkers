@@ -14,3 +14,5 @@ coworkers/*
 *.log
 .DS_Store
 dist/
+
+coverage/
