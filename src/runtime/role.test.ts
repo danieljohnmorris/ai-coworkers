@@ -57,6 +57,60 @@ describe("loadRole", () => {
     rmSync(root, { recursive: true, force: true });
   });
 
+  it("prepends the baseline prompt by default", () => {
+    const { root, name } = scaffold({ "ROLE.md": "You are Alex." });
+    const r = loadRole(root, name);
+    expect(r.baseline).toContain("## escalation");
+    expect(r.baseline).toContain("## memory-hygiene");
+    expect(r.systemPrompt.startsWith("# baseline")).toBe(true);
+    expect(r.systemPrompt).toContain("# ROLE\n\nYou are Alex.");
+    rmSync(root, { recursive: true, force: true });
+  });
+
+  it("omits the baseline when COWORKER_SKIP_BASELINE=1", () => {
+    const { root, name } = scaffold({ "ROLE.md": "You are Alex." });
+    const prev = process.env.COWORKER_SKIP_BASELINE;
+    process.env.COWORKER_SKIP_BASELINE = "1";
+    try {
+      const r = loadRole(root, name);
+      expect(r.baseline).toBe("");
+      expect(r.systemPrompt.startsWith("# baseline")).toBe(false);
+      expect(r.systemPrompt).toContain("# ROLE");
+    } finally {
+      if (prev === undefined) delete process.env.COWORKER_SKIP_BASELINE;
+      else process.env.COWORKER_SKIP_BASELINE = prev;
+    }
+    rmSync(root, { recursive: true, force: true });
+  });
+
+  it("role doc heading overrides matching baseline section", () => {
+    const { root, name } = scaffold({
+      "ROLE.md": "You are Alex.",
+      "AUTHORITY.md": "## escalation\nAsk Bob first, not the manager.",
+    });
+    const r = loadRole(root, name);
+    // Baseline should have its `## escalation` block stripped
+    expect(r.baseline).not.toContain("## escalation");
+    // But other baseline sections remain
+    expect(r.baseline).toContain("## memory-hygiene");
+    expect(r.baseline).toContain("## boundary-respect");
+    // The role's own escalation section is present via the AUTHORITY doc
+    expect(r.systemPrompt).toContain("Ask Bob first");
+    rmSync(root, { recursive: true, force: true });
+  });
+
+  it("leaves baseline sections intact when role has no matching header", () => {
+    const { root, name } = scaffold({
+      "ROLE.md": "You are Alex.",
+      "AUTHORITY.md": "## some-other-thing\nUnrelated.",
+    });
+    const r = loadRole(root, name);
+    expect(r.baseline).toContain("## escalation");
+    expect(r.baseline).toContain("## memory-hygiene");
+    expect(r.baseline).toContain("## tool-failure-discipline");
+    rmSync(root, { recursive: true, force: true });
+  });
+
   it("warns to stderr on typo'd resource-limit lines", () => {
     const { root, name } = scaffold({
       "BOUNDARIES.md": [
