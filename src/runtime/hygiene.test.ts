@@ -42,6 +42,52 @@ describe("hygiene ledger", () => {
     rmSync(dir, { recursive: true, force: true });
   });
 
+  it("sweep reaps a worktree older than maxWorktreeAgeHours", () => {
+    const db = openHygiene(join(dir, "h.db"));
+    const events = openEvents(join(dir, "e.db"));
+    const log = new Log(events, "t");
+    const wt = join(dir, "old-wt");
+    mkdirSync(wt);
+    const id = register(db, "worktree", wt, null);
+    // Backdate opened_at to 48h ago.
+    const past = new Date(Date.now() - 48 * 3600 * 1000).toISOString();
+    db.prepare("UPDATE resources SET opened_at = ?, last_used_at = ? WHERE id = ?").run(past, past, id);
+    sweep(db, { maxWorktrees: 100, maxWorktreeAgeHours: 24, maxDiskMB: 5120, killSubprocessIdleMin: 30 }, log);
+    expect(existsSync(wt)).toBe(false);
+    const status = (db.prepare("SELECT status FROM resources WHERE id = ?").get(id) as any).status;
+    expect(status).toBe("reaped");
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it("sweep SIGTERMs an idle live subprocess", async () => {
+    const { spawn } = await import("node:child_process");
+    const child = spawn("sleep", ["60"], { detached: false });
+    const db = openHygiene(join(dir, "h.db"));
+    const events = openEvents(join(dir, "e.db"));
+    const log = new Log(events, "t");
+    const id = register(db, "subprocess", String(child.pid), null);
+    const past = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+    db.prepare("UPDATE resources SET last_used_at = ? WHERE id = ?").run(past, id);
+    sweep(db, { maxWorktrees: 100, maxWorktreeAgeHours: 24, maxDiskMB: 5120, killSubprocessIdleMin: 30 }, log);
+    const status = (db.prepare("SELECT status FROM resources WHERE id = ?").get(id) as any).status;
+    expect(status).toBe("reaped");
+    // Give the child a moment to exit from the SIGTERM.
+    await new Promise((r) => setTimeout(r, 50));
+    try { child.kill("SIGKILL"); } catch {}
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it("sweep marks a dead subprocess as completed", () => {
+    const db = openHygiene(join(dir, "h.db"));
+    const events = openEvents(join(dir, "e.db"));
+    const log = new Log(events, "t");
+    const id = register(db, "subprocess", "999999", null);
+    sweep(db, { maxWorktrees: 100, maxWorktreeAgeHours: 24, maxDiskMB: 5120, killSubprocessIdleMin: 30 }, log);
+    const status = (db.prepare("SELECT status FROM resources WHERE id = ?").get(id) as any).status;
+    expect(status).toBe("completed");
+    rmSync(dir, { recursive: true, force: true });
+  });
+
   it("markStatus writes status", () => {
     const db = openHygiene(join(dir, "h.db"));
     const id = register(db, "subprocess", "999999", null);
