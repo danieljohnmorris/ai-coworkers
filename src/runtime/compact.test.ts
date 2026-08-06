@@ -52,6 +52,21 @@ describe("compactOutcome", () => {
     expect(calls).toBe(1);
   });
 
+  it("evicts oldest entries when the cache exceeds its cap", async () => {
+    let calls = 0;
+    globalThis.fetch = (async () => {
+      calls++;
+      return new Response(JSON.stringify({ choices: [{ message: { content: `s${calls}` } }] }));
+    }) as typeof fetch;
+    for (let i = 0; i < 205; i++) {
+      await compactOutcome(llm, { i, pad: "q".repeat(7000) }, 6000);
+    }
+    // The very first entry should have been evicted; recomputing it triggers a fresh LLM call.
+    const before = calls;
+    await compactOutcome(llm, { i: 0, pad: "q".repeat(7000) }, 6000);
+    expect(calls).toBeGreaterThan(before);
+  });
+
   it("falls back to plain truncation when the LLM throws", async () => {
     globalThis.fetch = (async () => new Response("boom", { status: 500 })) as typeof fetch;
     const big = { blob: "z".repeat(7000) };
