@@ -73,7 +73,9 @@ function encodeFrame(msg: unknown): string {
 }
 
 // Streaming frame parser — pulls complete messages out of a growing buffer.
-class FrameParser {
+// Exported for direct testing of the malformed-frame recovery path — a
+// runAcpTurn-level test can't easily emit a bad frame from a subprocess.
+export class FrameParser {
   private buf = Buffer.alloc(0);
 
   push(chunk: Buffer, onMessage: (m: RpcMessage) => void): void {
@@ -83,8 +85,10 @@ class FrameParser {
       if (headerEnd === -1) return;
       const header = this.buf.slice(0, headerEnd).toString("utf8");
       const m = header.match(/Content-Length:\s*(\d+)/i);
-      /* v8 ignore next 5 -- malformed-frame recovery; ACP agents never emit this in practice */
       if (!m) {
+        // Malformed frame — no Content-Length header. Advance past the
+        // delimiter and keep parsing so a hostile or buggy peer can't
+        // wedge us. See acp.test.ts "FrameParser skips a malformed frame".
         this.buf = this.buf.slice(headerEnd + 4);
         continue;
       }

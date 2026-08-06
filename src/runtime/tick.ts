@@ -218,7 +218,7 @@ export async function tick(ctx: TickContext): Promise<TickOutcome> {
       try {
         const p = JSON.parse(r.payload);
         return p.thoughts ? `[${r.ts.slice(11, 16)}] ${p.thoughts}` : "";
-      } catch { /* v8 ignore next */ return ""; }
+      } catch { return ""; }
     })
     .filter(Boolean)
     .join("\n");
