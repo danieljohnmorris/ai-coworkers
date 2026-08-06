@@ -184,6 +184,10 @@ the surface that fits.
 - **generic-triage** — Linear triage engineer
 - **pr-reviewer** — reviews open PRs on watched GitHub repos
 - **project-manager** — project health summaries, aging tickets
+- **scribe** — keeps README + docs honest as the code changes
+- **trace** — incident RCA: reads stack traces, walks git history, posts root-cause notes
+- **log** — auto-changelog: updates CHANGELOG.md on every merge, drafts GitHub releases on every tag
+- **watchtower** — monitoring: baselines operational signals + alerts on real anomalies (aggressive dedup)
 
 From scratch:
 ```bash

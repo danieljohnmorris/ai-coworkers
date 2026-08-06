@@ -1,0 +1,4 @@
+- github: read repo contents, list open issues, comment.
+- code.delegate: draft doc patches when a change is worth a PR (not just an issue).
+- memory: search your own past events to avoid re-filing the same drift issue.
+- ask: escalate semantic doc questions to your manager.

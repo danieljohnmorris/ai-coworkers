@@ -1,0 +1,4 @@
+- linear: read tickets, list untriaged, comment.
+- github: read PRs, list recent commits, comment on PRs.
+- memory: search prior incidents (memory.search) — always before writing.
+- ask: escalate ambiguous cases.
