@@ -1,0 +1,6 @@
+{
+  "name": "journal.daily",
+  "cadence": { "kind": "daily", "hourUTC": 9 },
+  "action": "journal",
+  "note": "09:00 UTC — write a daily journal entry to state/journal/."
+}

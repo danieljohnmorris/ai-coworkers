@@ -1,0 +1,6 @@
+{
+  "name": "health.snapshot",
+  "cadence": { "kind": "hourly" },
+  "action": "health_snapshot",
+  "note": "Once per hour — record a snapshot of event kinds seen."
+}
