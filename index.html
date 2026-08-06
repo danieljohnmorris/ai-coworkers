@@ -1583,6 +1583,11 @@ the surface that fits.</p>
 <td><code>src/tools/slack.ts</code></td>
 </tr>
 <tr>
+<td><strong>Linear</strong></td>
+<td><code>bin/setup-linear.sh &lt;coworker&gt;</code> → prompts for personal / service-account API key, verifies against workspace, prompts for optional ignore list + webhook secret → written to <code>coworkers/&lt;name&gt;/.env</code></td>
+<td><code>src/tools/linear.ts</code></td>
+</tr>
+<tr>
 <td><strong>Native tools</strong></td>
 <td>New <code>src/tools/&lt;name&gt;.ts</code> exporting <code>ToolDef[]</code></td>
 <td><code>src/tools/linear.ts</code></td>
@@ -1590,8 +1595,9 @@ the surface that fits.</p>
 </tbody>
 </table>
 <p><strong>Verify setup landed:</strong>
-<div class="highlight"><pre><span></span><code>bin/verify-gmail.sh<span class="w"> </span>&lt;coworker&gt;<span class="w">   </span><span class="c1"># runs one &#39;in:inbox&#39; read via Hermes google_api.py</span>
-bin/verify-slack.sh<span class="w"> </span>&lt;coworker&gt;<span class="w">   </span><span class="c1"># calls Slack auth.test with the coworker&#39;s token</span>
+<div class="highlight"><pre><span></span><code>bin/verify-gmail.sh<span class="w"> </span>&lt;coworker&gt;<span class="w">    </span><span class="c1"># runs one &#39;in:inbox&#39; read via Hermes google_api.py</span>
+bin/verify-slack.sh<span class="w"> </span>&lt;coworker&gt;<span class="w">    </span><span class="c1"># calls Slack auth.test with the coworker&#39;s token</span>
+bin/verify-linear.sh<span class="w"> </span>&lt;coworker&gt;<span class="w">   </span><span class="c1"># calls Linear GraphQL viewer + organization</span>
 </code></pre></div></p>
 <hr />
 <h2 id="coworker-templates">Coworker templates<a class="headerlink" href="#coworker-templates" title="Permanent link">&para;</a></h2>
