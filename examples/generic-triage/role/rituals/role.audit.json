@@ -1,0 +1,6 @@
+{
+  "name": "role.audit",
+  "cadence": { "kind": "daily", "hourUTC": 8 },
+  "action": "role_audit",
+  "note": "08:00 UTC — check role docs for drift. See docs/audit.md."
+}

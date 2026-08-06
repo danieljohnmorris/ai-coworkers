@@ -20,6 +20,7 @@ import { readTempo, readBudget, extractTempoGuidance } from "./tempo.ts";
 import { getCached, setCached, minInterval, invalidatePrefix } from "./sensor-cache.ts";
 import type { SemanticMemory } from "./semantic.ts";
 import { runDue, type RitualDef } from "./rituals.ts";
+import { loadRituals, type RitualAction, type RitualSpec } from "./rituals_loader.ts";
 import { dreamOnce } from "./reflect.ts";
 import { auditRoleDocs } from "./role_audit.ts";
 import { filterEnvForTool } from "./credentials.ts";
@@ -364,72 +365,19 @@ export async function tick(ctx: TickContext): Promise<TickOutcome> {
   }
 
   // 6. rituals — cheap check; only fires when due, at most one per tick.
-  const rituals: RitualDef[] = [
-    {
-      name: "reflect.weekly",
-      cadence: { kind: "weekly", weekdayUTC: 0, hourUTC: 3 }, // Sun 03:00 UTC
-      run: async () => {
-        await dreamOnce({
-          role: ctx.role,
-          events: ctx.events,
-          memory: ctx.memory,
-          semantic: ctx.semantic,
-          llm: ctx.llm,
-          log: ctx.log,
-        });
-      },
-    },
-    {
-      name: "journal.daily",
-      cadence: { kind: "daily", hourUTC: 9 },
-      run: async () => {
-        const journalDir = join(ctx.role.dir, "..", "state", "journal");
-        await writeJournal({ role: ctx.role, events: ctx.events, journalDir, llm: ctx.llm, log: ctx.log });
-      },
-    },
-    {
-      name: "role.audit",
-      cadence: { kind: "daily", hourUTC: 8 }, // 08:00 UTC — before the working day starts
-      run: async () => {
-        const stateDir = join(ctx.role.dir, "..", "state");
-        const result = auditRoleDocs({
-          roleDir: ctx.role.dir,
-          snapshotDir: join(stateDir, "audit", "snapshots"),
-          findingsLog: join(stateDir, "audit", "findings.log"),
-        });
-        const criticals = result.findings.filter((f) => f.severity === "critical");
-        const warns = result.findings.filter((f) => f.severity === "warn");
-        if (criticals.length === 0) {
-          if (warns.length) ctx.log.event("note", { audit: "role_docs", warns: warns.length });
-          return;
-        }
-        // Escalate. Persist a questions.md entry so the human sees it in-place.
-        const summary = criticals.map((c) => `- **${c.doc}.md**: ${c.message}`).join("\n");
-        ctx.log.highlight(`🚨 role.audit: ${criticals.length} critical finding(s) — see state/audit/findings.log`);
-        const questionsPath = join(stateDir, "questions.md");
-        try { mkdirSync(dirname(questionsPath), { recursive: true }); } catch { /* noop */ }
-        const block =
-          `## ${new Date().toISOString()} — from ${ctx.role.name} (role.audit)\n` +
-          `**Q:** My role docs changed in ways that look suspicious. Please review and either revert or accept via \`bin/audit-accept.sh ${ctx.role.name}\`:\n\n${summary}\n\n` +
-          `**A:** _(unanswered)_\n\n`;
-        try { appendFileSync(questionsPath, block); } catch { /* noop */ }
-      },
-    },
-    {
-      name: "health.snapshot",
-      cadence: { kind: "hourly" },
-      run: async () => {
-        const hourAgo = new Date(Date.now() - 3600_000).toISOString();
-        const rows = ctx.events
-          .prepare(
-            `SELECT kind, COUNT(*) AS n FROM events WHERE ts >= ? GROUP BY kind`
-          )
-          .all(hourAgo) as { kind: string; n: number }[];
-        const summary = Object.fromEntries(rows.map((r) => [r.kind, r.n]));
-        ctx.log.event("note", { snapshot: "hourly_health", counts: summary });
-      },
-    },
-  ];
+  // Ritual list is declarative: role/rituals/*.json files loaded on each
+  // tick (cheap; a coworker can hot-edit its rituals). Falls back to
+  // built-in defaults if the dir is absent — see rituals_loader.ts.
+  const { specs: ritualSpecs, errors: ritualErrors } = loadRituals(
+    join(ctx.role.dir, "rituals"),
+  );
+  for (const e of ritualErrors) ctx.log.event("note", { rituals_loader: "error", detail: e });
+
+  const rituals: RitualDef[] = ritualSpecs.map((spec) => ({
+    name: spec.name,
+    cadence: spec.cadence,
+    run: async () => { await dispatchRitual(spec.action, ctx); },
+  }));
   const fired = await runDue(rituals, ctx.events, ctx.role.name);
   if (fired.length) ctx.log.highlight(`ritual: ${fired.map((f) => f.name).join(", ")}`);
 
@@ -447,6 +395,69 @@ function allowedNamespace(allowed: Set<string>, toolName: string): boolean {
     if (toolName === a || toolName.startsWith(a + ".")) return true;
   }
   return false;
+}
+
+// Dispatch a ritual-action name to its implementation. Kept centralised
+// so `rituals_loader.KNOWN_ACTIONS` is the source of truth for which
+// strings are valid in a role/rituals/*.json declaration.
+async function dispatchRitual(action: RitualAction, ctx: TickContext): Promise<void> {
+  const stateDir = join(ctx.role.dir, "..", "state");
+  switch (action) {
+    case "reflect":
+      await dreamOnce({
+        role: ctx.role,
+        events: ctx.events,
+        memory: ctx.memory,
+        semantic: ctx.semantic,
+        llm: ctx.llm,
+        log: ctx.log,
+      });
+      return;
+
+    case "journal":
+      await writeJournal({
+        role: ctx.role,
+        events: ctx.events,
+        journalDir: join(stateDir, "journal"),
+        llm: ctx.llm,
+        log: ctx.log,
+      });
+      return;
+
+    case "role_audit": {
+      const result = auditRoleDocs({
+        roleDir: ctx.role.dir,
+        snapshotDir: join(stateDir, "audit", "snapshots"),
+        findingsLog: join(stateDir, "audit", "findings.log"),
+      });
+      const criticals = result.findings.filter((f) => f.severity === "critical");
+      const warns = result.findings.filter((f) => f.severity === "warn");
+      if (criticals.length === 0) {
+        if (warns.length) ctx.log.event("note", { audit: "role_docs", warns: warns.length });
+        return;
+      }
+      const summary = criticals.map((c) => `- **${c.doc}.md**: ${c.message}`).join("\n");
+      ctx.log.highlight(`🚨 role.audit: ${criticals.length} critical finding(s) — see state/audit/findings.log`);
+      const questionsPath = join(stateDir, "questions.md");
+      try { mkdirSync(dirname(questionsPath), { recursive: true }); } catch { /* noop */ }
+      const block =
+        `## ${new Date().toISOString()} — from ${ctx.role.name} (role.audit)\n` +
+        `**Q:** My role docs changed in ways that look suspicious. Please review and either revert or accept via \`bin/audit-accept.sh ${ctx.role.name}\`:\n\n${summary}\n\n` +
+        `**A:** _(unanswered)_\n\n`;
+      try { appendFileSync(questionsPath, block); } catch { /* noop */ }
+      return;
+    }
+
+    case "health_snapshot": {
+      const hourAgo = new Date(Date.now() - 3600_000).toISOString();
+      const rows = ctx.events
+        .prepare(`SELECT kind, COUNT(*) AS n FROM events WHERE ts >= ? GROUP BY kind`)
+        .all(hourAgo) as { kind: string; n: number }[];
+      const summary = Object.fromEntries(rows.map((r) => [r.kind, r.n]));
+      ctx.log.event("note", { snapshot: "hourly_health", counts: summary });
+      return;
+    }
+  }
 }
 
 // Heuristic: does a sensor's result look like it contains actionable work?

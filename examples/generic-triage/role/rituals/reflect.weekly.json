@@ -1,0 +1,6 @@
+{
+  "name": "reflect.weekly",
+  "cadence": { "kind": "weekly", "weekdayUTC": 0, "hourUTC": 3 },
+  "action": "reflect",
+  "note": "Sunday 03:00 UTC — compact the past week's events into semantic MEMORY.md."
+}
