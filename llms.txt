@@ -1,0 +1,50 @@
+# ai-coworkers
+
+> Long-running AI coworkers with roles, boundaries, and a tick loop. Not one-shot task agents — persistent processes that decide when *not* to act. TypeScript, Node ≥ 22, MIT.
+
+The distinctive thesis: agents live in a filesystem directory (role docs + state), run a game-clock tick loop (sense → perceive → deliberate → act), are gated by regex boundaries + dry-run by default, and escalate to a human inbox instead of guessing. Adapters let you plug in MCP servers, Hermes/OpenClaw skills, Vercel Eve `agent/` folders, or native tools.
+
+## Docs
+
+- [README](https://github.com/danieljohnmorris/ai-coworkers/blob/main/README.md): install, first coworker, tick loop overview, boundaries + dry-run, humans↔coworker messaging, adapter table, templates, operating notes.
+- [ADR 0001 — CoALA memory taxonomy mapping](https://github.com/danieljohnmorris/ai-coworkers/blob/main/docs/adr/0001-coala-memory-taxonomy.md): how working / episodic / semantic / entity / procedural / reflective memory map to modules in this repo.
+- [systemd deployment](https://github.com/danieljohnmorris/ai-coworkers/blob/main/docs/systemd.md): running coworkers as user services.
+- [Webhooks + external wakes](https://github.com/danieljohnmorris/ai-coworkers/blob/main/docs/webhooks.md): using the /wake endpoint to trigger ticks from Linear/Slack/GitHub webhooks.
+
+## Runtime (src/runtime/)
+
+- [tick.ts](https://github.com/danieljohnmorris/ai-coworkers/blob/main/src/runtime/tick.ts): the game clock. Budget gate → sense → perceive → quiet gate → deliberate (chained tool calls) → boundary check → act → hygiene → rituals → sleep.
+- [deliberate.ts](https://github.com/danieljohnmorris/ai-coworkers/blob/main/src/runtime/deliberate.ts): LLM-facing prompt assembly + JSON decision parsing (`{action, tool, input, thoughts, reason, pace}`).
+- [role.ts](https://github.com/danieljohnmorris/ai-coworkers/blob/main/src/runtime/role.ts): loads `role/*.md` into a system prompt + parses `BOUNDARIES.md` resource limits.
+- [boundaries.ts](https://github.com/danieljohnmorris/ai-coworkers/blob/main/src/runtime/boundaries.ts): regex-based pre-execute check against every tool call.
+- [semantic.ts](https://github.com/danieljohnmorris/ai-coworkers/blob/main/src/runtime/semantic.ts): capped `MEMORY.md` with injection scan on write.
+- [reflect.ts](https://github.com/danieljohnmorris/ai-coworkers/blob/main/src/runtime/reflect.ts): the weekly "dream" — LLM compacts the week's events into learnings, cites source event IDs (AIC-70), enforces loss guards + snapshots.
+- [inbox.ts](https://github.com/danieljohnmorris/ai-coworkers/blob/main/src/runtime/inbox.ts) & [reactions.ts](https://github.com/danieljohnmorris/ai-coworkers/blob/main/src/runtime/reactions.ts): human → coworker channels (notes + 👍/👎 reactions) with cursor-based one-time presentation.
+- [entities.ts](https://github.com/danieljohnmorris/ai-coworkers/blob/main/src/runtime/entities.ts): per-person + per-project cards, alias-aware detection in perception.
+- [rituals.ts](https://github.com/danieljohnmorris/ai-coworkers/blob/main/src/runtime/rituals.ts): due-based scheduler for hourly / daily / weekly recurring behaviors.
+- [budget.ts](https://github.com/danieljohnmorris/ai-coworkers/blob/main/src/runtime/budget.ts), [tempo.ts](https://github.com/danieljohnmorris/ai-coworkers/blob/main/src/runtime/tempo.ts), [circuit.ts](https://github.com/danieljohnmorris/ai-coworkers/blob/main/src/runtime/circuit.ts): LLM-call budgets, tempo self-awareness, per-sensor circuit breakers.
+
+## Adapters (src/adapters/)
+
+- [mcp.ts](https://github.com/danieljohnmorris/ai-coworkers/blob/main/src/adapters/mcp.ts): MCP servers via `MCP_SERVERS` env var.
+- [hermes.ts](https://github.com/danieljohnmorris/ai-coworkers/blob/main/src/adapters/hermes.ts): Hermes/OpenClaw/Anthropic-style skills folders → procedural memory.
+- [eve.ts](https://github.com/danieljohnmorris/ai-coworkers/blob/main/src/adapters/eve.ts): Vercel Eve `agent/` folder loader.
+
+## Coworker templates (examples/)
+
+- [generic-triage](https://github.com/danieljohnmorris/ai-coworkers/tree/main/examples/generic-triage): Linear triage engineer.
+- [pr-reviewer](https://github.com/danieljohnmorris/ai-coworkers/tree/main/examples/pr-reviewer): reviews open PRs across watched GitHub repos.
+- [project-manager](https://github.com/danieljohnmorris/ai-coworkers/tree/main/examples/project-manager): project health summaries, aging tickets.
+
+## Operator CLI (bin/)
+
+- `bin/note-to.sh <coworker> "msg"`: leave a note that surfaces in the next tick's perception.
+- `bin/answer.sh <coworker> "answer"`: answer a persistent question the coworker filed.
+- `bin/react.sh <coworker> 👍|👎 [note]`: reinforcement signal, surfaces once then marked read.
+- `bin/why.sh <coworker> <event-id>[,...]`: walk from a `[ev:...]` citation in MEMORY.md back to the source events.
+- `bin/review-proposal.sh <coworker> [show|accept|reject <id>]`: handle role-doc change proposals.
+- `bin/new-coworker.sh <name>` / `bin/new-coworker-interview.sh <name>`: scaffold blank or JD-interview-driven coworker.
+
+## Optional
+
+- [llms-full.txt](https://github.com/danieljohnmorris/ai-coworkers/blob/main/llms-full.txt): everything above with the linked doc bodies inlined.
