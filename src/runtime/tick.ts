@@ -55,6 +55,11 @@ export interface TickContext {
   dryRun: boolean;
   log: Log;
   forceDeliberate?: boolean;   // set by external wake — bypass quiet gate this tick
+  // Per-coworker env. When omitted, falls back to process.env for backwards
+  // compatibility with existing tests. Production callers should pass a
+  // scoped env built by loadCoworkerEnv() so multiple coworkers in one
+  // repo don't share secrets.
+  env?: NodeJS.ProcessEnv;
 }
 
 export interface TickOutcome {
@@ -111,7 +116,7 @@ export async function tick(ctx: TickContext): Promise<TickOutcome> {
       const result = await s.handler({}, {
         coworker: ctx.role.name,
         dryRun: ctx.dryRun,
-        env: filterEnvForTool(process.env, s.requiresCreds),
+        env: filterEnvForTool(ctx.env ?? process.env, s.requiresCreds),
       });
       if (minInterval(s.name) > 0) setCached(s.name, result, nowMs);
       sensors.push({ name: s.name, result });
@@ -349,7 +354,7 @@ export async function tick(ctx: TickContext): Promise<TickOutcome> {
       ctx.log.highlight(`✗ ${decision.tool} not registered`);
       break;
     }
-    const decisionCtx = { coworker: ctx.role.name, dryRun: ctx.dryRun, env: filterEnvForTool(process.env, tool.requiresCreds) };
+    const decisionCtx = { coworker: ctx.role.name, dryRun: ctx.dryRun, env: filterEnvForTool(ctx.env ?? process.env, tool.requiresCreds) };
     // AIC-43 — validate input against the tool's declared schema. Failure
     // is fed back as a chained-step outcome (not fatal) so the model can
     // correct itself on the next step.

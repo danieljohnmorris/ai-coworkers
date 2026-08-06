@@ -24,6 +24,7 @@ import { roleTools } from "./tools/role.ts";
 import { codeDelegateTools } from "./tools/code_delegate.ts";
 import { branchRoomTools } from "./tools/branch_room.ts";
 import { connectMcp, parseMcpEnv, type McpConnection } from "./adapters/mcp.ts";
+import { loadCoworkerEnv } from "./runtime/credentials.ts";
 import { loadHermesSkills, renderSkillsIndex } from "./adapters/hermes.ts";
 import { startWakeServer } from "./runtime/wake.ts";
 
@@ -52,6 +53,12 @@ async function main() {
   process.on("uncaughtException", (e) => crash("uncaughtException", e));
   process.on("unhandledRejection", (e) => crash("unhandledRejection", e));
 
+  // Per-coworker env — reads coworkers/<name>/.env (gitignored) and overlays
+  // it on the shell env. Lets Alex point at Cubitts Linear while another
+  // coworker in the same repo uses a different key, without either polluting
+  // process.env for the other. See src/runtime/credentials.ts.
+  const coworkerEnv = loadCoworkerEnv(coworkersDir, name);
+
   let role = loadRole(coworkersDir, name);
   const events = openEvents(join(stateDir, "events.db"));
   initEpisodic(events);
@@ -78,7 +85,7 @@ async function main() {
 
   // Optional MCP servers via MCP_SERVERS env var.
   const mcpConnections: McpConnection[] = [];
-  for (const serverCfg of parseMcpEnv(process.env)) {
+  for (const serverCfg of parseMcpEnv(coworkerEnv)) {
     try {
       const conn = await connectMcp(serverCfg, hygiene);
       for (const t of conn.tools) tools.register(t);
@@ -90,23 +97,23 @@ async function main() {
   }
 
   // Optional Hermes-style skills dir (defaults to ~/.hermes/skills if it exists).
-  const skillsDir = process.env.SKILLS_DIR ?? join(process.env.HOME ?? "", ".hermes", "skills");
+  const skillsDir = coworkerEnv.SKILLS_DIR ?? join(process.env.HOME ?? "", ".hermes", "skills");
   const skills = loadHermesSkills(skillsDir);
-  const activeSkills = (process.env.ACTIVE_SKILLS ?? "").split(",").map((s) => s.trim()).filter(Boolean);
+  const activeSkills = (coworkerEnv.ACTIVE_SKILLS ?? "").split(",").map((s) => s.trim()).filter(Boolean);
   const skillsIndex = renderSkillsIndex(skills, activeSkills);
   if (skills.length) log.stream(`skills: ${skills.length} loaded from ${skillsDir}`);
   if (skillsIndex) role = { ...role, systemPrompt: `${role.systemPrompt}\n\n---\n\n${skillsIndex}` };
 
   const llm = {
-    baseUrl: process.env.OLLAMA_HOST ?? "https://ollama.com",
-    apiKey: process.env.OLLAMA_API_KEY,
-    model: process.env.COWORKER_MODEL ?? "gemma4:cloud",
+    baseUrl: coworkerEnv.OLLAMA_HOST ?? "https://ollama.com",
+    apiKey: coworkerEnv.OLLAMA_API_KEY,
+    model: coworkerEnv.COWORKER_MODEL ?? "gemma4:cloud",
   };
   // AIC-47 — optional cheap-first preflight. Set TRIAGE_MODEL to a small
   // model on the same OLLAMA_HOST; when set, every tick asks it "act or
   // skip?" before spending the expensive COWORKER_MODEL prompt.
-  const triageLlm = process.env.TRIAGE_MODEL
-    ? { baseUrl: process.env.OLLAMA_HOST ?? "https://ollama.com", apiKey: process.env.OLLAMA_API_KEY, model: process.env.TRIAGE_MODEL }
+  const triageLlm = coworkerEnv.TRIAGE_MODEL
+    ? { baseUrl: coworkerEnv.OLLAMA_HOST ?? "https://ollama.com", apiKey: coworkerEnv.OLLAMA_API_KEY, model: coworkerEnv.TRIAGE_MODEL }
     : undefined;
 
   log.stream(`start coworker=${name} model=${llm.model} live=${live}`);
@@ -150,10 +157,10 @@ async function main() {
     log.event("note", { message: "role hot-reload unavailable", error: String(err) });
   }
 
-  const baseIntervalMs = Number(process.env.TICK_INTERVAL_MS ?? 5 * 60_000);
+  const baseIntervalMs = Number(coworkerEnv.TICK_INTERVAL_MS ?? 5 * 60_000);
   const maxIntervalMs = role.cadence === "constant"
     ? baseIntervalMs                       // no backoff when role is "constant"
-    : Number(process.env.MAX_TICK_INTERVAL_MS ?? 30 * 60_000);
+    : Number(coworkerEnv.MAX_TICK_INTERVAL_MS ?? 30 * 60_000);
   let intervalMs = baseIntervalMs;
   let consecutiveQuiet = 0;
   const stop = { flag: false };
@@ -161,16 +168,16 @@ async function main() {
 
   // Optional HTTP /wake endpoint (WAKE_PORT env). Lets Linear/Slack/GitHub
   // webhooks (or any curl) fire an immediate tick.
-  const wakePort = Number(process.env.WAKE_PORT ?? 0);
+  const wakePort = Number(coworkerEnv.WAKE_PORT ?? 0);
   if (wakePort > 0) {
     startWakeServer(wakePort, wake, {
-      secret: process.env.WAKE_SECRET,
+      secret: coworkerEnv.WAKE_SECRET,
       events,
       coworkerName: name,
-      metricsEnabled: process.env.METRICS_ENABLED === "1",
+      metricsEnabled: coworkerEnv.METRICS_ENABLED === "1",
     });
     log.stream(`wake endpoint: http://127.0.0.1:${wakePort}/wake`);
-    if (process.env.METRICS_ENABLED === "1") log.stream(`metrics endpoint: http://127.0.0.1:${wakePort}/metrics`);
+    if (coworkerEnv.METRICS_ENABLED === "1") log.stream(`metrics endpoint: http://127.0.0.1:${wakePort}/metrics`);
   }
   const onSig = () => {
     log.stream(`shutdown signal`);
@@ -190,6 +197,7 @@ async function main() {
         role, events, memory, hygiene, semantic, entities, inbox, reactions,
         tools, llm, triageLlm, dryRun: !live, log,
         forceDeliberate: forceNext,
+        env: coworkerEnv,
       });
       forceNext = false;
     } catch (err) {
@@ -198,7 +206,7 @@ async function main() {
     }
     // Coworker-chosen pacing hint (bounded by env limits). Overrides the
     // adaptive quiet/reset rule when explicit — the model owns the wheel.
-    const minMs = Number(process.env.MIN_TICK_INTERVAL_MS ?? 15_000);
+    const minMs = Number(coworkerEnv.MIN_TICK_INTERVAL_MS ?? 15_000);
     if (outcome.pace === "faster") {
       intervalMs = Math.max(minMs, Math.floor(intervalMs / 2));
       consecutiveQuiet = 0;
