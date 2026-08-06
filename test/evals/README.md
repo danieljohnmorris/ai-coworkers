@@ -54,3 +54,39 @@ Failing a behaviour eval means either:
    contract. Update the scenario and mention the ticket in the commit.
 
 Never delete a scenario silently.
+
+## Scored benchmark (AIC-83)
+
+The `*.eval.test.ts` files are **regression scenarios** (pass/fail).
+The **scored benchmark** in `bench.mjs` + `scenarios/*.json` is a
+different thing: a rubric-graded harness you can quote a single
+number from ("Watchtower scores 82% on the ai-coworkers SRE bench
+v1"). Modelled on Tracer-Cloud/opensre's `tests/synthetic/`.
+
+Each scenario in `scenarios/*.json` declares:
+
+- `name`, `role`, `prompt`, `sensors` — the setup
+- `expected_root_cause` — what the coworker should figure out
+- `required_evidence[]` — strings the coworker MUST cite
+- `red_herrings[]` — actions the coworker MUST NOT propose
+
+`bench.mjs` scores each on 3 criteria (weights):
+
+- **evidence_coverage** (0.40): fraction of `required_evidence`
+  found in the coworker's `reason` + `thoughts` + `input`.
+- **root_cause_match** (0.35): token-overlap ratio between the
+  coworker's response and `expected_root_cause`.
+- **red_herring_avoidance** (0.25): 1.0 with none matched, minus
+  0.5 per hit, floored at 0.
+
+Run:
+
+```bash
+make bench                    # print the leaderboard
+make bench-update-readme      # regenerate and refresh README stats line
+```
+
+Current harness uses a "perfect coworker" stub — every scenario
+scores 1.0 by construction. Rubric side is done + unit-tested
+(`bench.test.ts`); wiring a real `runScenario()` call into `bench.mjs`
+so the stub becomes an actual coworker response is the follow-up.

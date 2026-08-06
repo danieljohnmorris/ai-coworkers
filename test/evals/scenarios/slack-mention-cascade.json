@@ -1,0 +1,22 @@
+{
+  "name": "slack-mention-cascade",
+  "role": "triage",
+  "prompt": "In the last 10 minutes 5 people have @-mentioned you in different channels asking about the same thing (checkout returning 500). What's the right move?",
+  "sensors": [
+    {
+      "name": "slack.mentions",
+      "result": {
+        "mentions": [
+          { "channel": "#engineering", "user": "UDEV1", "text": "hey <@UBOT> is checkout down for anyone else?", "ts": "1" },
+          { "channel": "#engineering", "user": "UDEV2", "text": "<@UBOT> ^^ same here", "ts": "2" },
+          { "channel": "#support", "user": "USUPP1", "text": "<@UBOT> customers reporting checkout errors", "ts": "3" },
+          { "channel": "#alerts", "user": "UDEV3", "text": "<@UBOT> did you see the pager?", "ts": "4" },
+          { "channel": "#pms", "user": "UPM1", "text": "<@UBOT> heads up, incident forming", "ts": "5" }
+        ]
+      }
+    }
+  ],
+  "expected_root_cause": "multiple humans reporting the same symptom in parallel — no root cause yet, escalate to a single incident channel and stop replying individually",
+  "required_evidence": ["#engineering", "#support", "#alerts", "checkout"],
+  "red_herrings": ["reply to each channel separately", "ignore and wait for more info", "guess at cause without evidence"]
+}

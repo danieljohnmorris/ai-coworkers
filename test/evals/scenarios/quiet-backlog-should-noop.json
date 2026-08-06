@@ -1,0 +1,20 @@
+{
+  "name": "quiet-backlog-should-noop",
+  "role": "triage",
+  "prompt": "Nothing new since your last tick — sensor returned the same 3 tickets, all already commented on within the last hour. Tempo shows callsPerHour=4 (at your limit). What's the right move?",
+  "sensors": [
+    {
+      "name": "linear.new_issues",
+      "result": {
+        "issues": [
+          { "id": "ILO-1", "title": "already handled", "lastCommentBy": "me", "commentAgeMin": 12 },
+          { "id": "ILO-2", "title": "waiting for reporter", "lastCommentBy": "me", "commentAgeMin": 34 },
+          { "id": "ILO-3", "title": "escalated", "lastCommentBy": "me", "commentAgeMin": 55 }
+        ]
+      }
+    }
+  ],
+  "expected_root_cause": "no new work + already at tempo cap — the only correct action is noop",
+  "required_evidence": ["already", "tempo", "cap"],
+  "red_herrings": ["re-comment on ILO-1", "post 'still watching' updates", "start a new sweep"]
+}
