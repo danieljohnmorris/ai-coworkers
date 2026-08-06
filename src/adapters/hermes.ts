@@ -25,15 +25,31 @@ export interface HermesSkill {
 export function loadHermesSkills(dir: string): HermesSkill[] {
   if (!existsSync(dir)) return [];
   const skills: HermesSkill[] = [];
-  for (const entry of readdirSync(dir)) {
-    const skillDir = join(dir, entry);
-    if (!statSync(skillDir).isDirectory()) continue;
-    const md = join(skillDir, "SKILL.md");
-    if (!existsSync(md)) continue;
-    const raw = readFileSync(md, "utf8");
-    const { name, description, body } = parseFrontMatter(raw, entry);
-    skills.push({ name, description, path: skillDir, body });
-  }
+  // Walk recursively — Hermes and the wider ecosystem group skills into
+  // categories (e.g. skills/productivity/google-workspace/SKILL.md). A
+  // flat scan misses everything below the first level. Cap depth so a
+  // pathological layout can't hang startup.
+  const walk = (d: string, depth: number): void => {
+    if (depth > 4) return;
+    for (const entry of readdirSync(d)) {
+      const p = join(d, entry);
+      let s;
+      try { s = statSync(p); } catch { continue; }
+      if (!s.isDirectory()) continue;
+      const md = join(p, "SKILL.md");
+      if (existsSync(md)) {
+        const raw = readFileSync(md, "utf8");
+        const { name, description, body } = parseFrontMatter(raw, entry);
+        skills.push({ name, description, path: p, body });
+        // Do NOT recurse into a dir that already holds a SKILL.md —
+        // sub-directories there are the skill's implementation, not
+        // nested skills.
+        continue;
+      }
+      walk(p, depth + 1);
+    }
+  };
+  walk(dir, 0);
   return skills;
 }
 
