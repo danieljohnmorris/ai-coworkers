@@ -46,4 +46,29 @@ describe("Log.highlight + tailHighlights", () => {
     expect(tail).not.toContain("event 20");
     rmSync(dir, { recursive: true, force: true });
   });
+
+  it("LOG_FORMAT=json emits structured JSON lines", () => {
+    const events = openEvents(join(dir, "e.db"));
+    const highlightPath = join(dir, "hi.log");
+    const l = new Log(events, "cw", { highlightPath });
+    const prev = process.env.LOG_FORMAT;
+    process.env.LOG_FORMAT = "json";
+    try {
+      l.highlight("hello");
+    } finally {
+      if (prev === undefined) delete process.env.LOG_FORMAT; else process.env.LOG_FORMAT = prev;
+    }
+    const line = readFileSync(highlightPath, "utf8").trim();
+    const obj = JSON.parse(line);
+    expect(obj.msg).toBe("hello");
+    expect(obj.coworker).toBe("cw");
+    expect(obj.level).toBe("highlight");
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it("tailHighlights returns empty when read throws (path is a directory)", () => {
+    // existsSync(dir) is true but readFileSync(dir) throws EISDIR — exercises the catch.
+    expect(tailHighlights(dir)).toBe("");
+    rmSync(dir, { recursive: true, force: true });
+  });
 });
