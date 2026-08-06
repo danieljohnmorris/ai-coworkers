@@ -1,0 +1,58 @@
+#!/usr/bin/env bash
+# Review a coworker's role-change proposals.
+# Usage:
+#   bin/review-proposal.sh <coworker>                          # list proposals
+#   bin/review-proposal.sh <coworker> show <id>                # print one proposal
+#   bin/review-proposal.sh <coworker> accept <id> ["note"]     # apply to role/<DOC>.md
+#   bin/review-proposal.sh <coworker> reject <id> ["note"]
+set -euo pipefail
+name="${1:?usage: review-proposal <coworker> [show|accept|reject <id> [note]]}"
+cmd="${2:-list}"
+id="${3:-}"
+note="${4:-}"
+root="$(cd "$(dirname "$0")/.." && pwd)"
+
+# Coworker names and proposal ids are used to build filesystem paths and are
+# also interpolated into JS below via env; enforce a strict character set.
+[[ "$name" =~ ^[a-zA-Z0-9_-]+$ ]] || { echo "invalid coworker name: $name" >&2; exit 1; }
+if [ -n "$id" ]; then
+  [[ "$id" =~ ^[a-zA-Z0-9_.-]+$ ]] || { echo "invalid proposal id: $id" >&2; exit 1; }
+fi
+
+pdir="$root/coworkers/$name/state/proposals"
+
+case "$cmd" in
+  list)
+    REVIEW_ROOT="$root" REVIEW_PDIR="$pdir" REVIEW_NAME="$name" \
+    node --experimental-strip-types --no-warnings -e '
+      import(process.env.REVIEW_ROOT + "/src/runtime/role-proposals.ts").then(({ listProposals }) => {
+        const ps = listProposals(process.env.REVIEW_PDIR);
+        if (!ps.length) { console.log("no proposals from " + process.env.REVIEW_NAME); return; }
+        for (const p of ps) console.log(`${p.status.padEnd(8)} ${p.id}  [${p.doc}]  ${p.rationale.slice(0, 80)}`);
+      });'
+    ;;
+  show)
+    [ -n "$id" ] || { echo "usage: review-proposal $name show <id>" >&2; exit 1; }
+    cat "$pdir/$id.md"
+    ;;
+  accept|reject)
+    [ -n "$id" ] || { echo "usage: review-proposal $name $cmd <id> [note]" >&2; exit 1; }
+    REVIEW_ROOT="$root" REVIEW_PDIR="$pdir" REVIEW_ROLEDIR="$root/coworkers/$name/role" \
+    REVIEW_ID="$id" REVIEW_VERDICT="$cmd" REVIEW_NOTE="$note" \
+    node --experimental-strip-types --no-warnings -e '
+      import(process.env.REVIEW_ROOT + "/src/runtime/role-proposals.ts").then(({ resolveProposal }) => {
+        const r = resolveProposal({
+          proposalsDir: process.env.REVIEW_PDIR,
+          roleDir: process.env.REVIEW_ROLEDIR,
+          id: process.env.REVIEW_ID,
+          verdict: process.env.REVIEW_VERDICT,
+          note: process.env.REVIEW_NOTE || undefined,
+        });
+        console.log(r.reason);
+        if (!r.ok) process.exit(1);
+      });'
+    ;;
+  *)
+    echo "unknown command: $cmd" >&2; exit 1
+    ;;
+esac
