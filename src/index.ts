@@ -30,6 +30,8 @@ import { knownSecretsFrom } from "./runtime/secret_redaction.ts";
 import { loadHermesSkills, renderSkillsIndex } from "./adapters/hermes.ts";
 import { startWakeServer } from "./runtime/wake.ts";
 import { loadWebhooks } from "./runtime/webhooks_loader.ts";
+import { loadSensors } from "./runtime/sensors_loader.ts";
+import { McpSensorRunner } from "./runtime/mcp_sensor.ts";
 
 async function main() {
   const args = process.argv.slice(2);
@@ -92,16 +94,31 @@ async function main() {
 
   // Optional MCP servers via MCP_SERVERS env var.
   const mcpConnections: McpConnection[] = [];
+  const mcpClients = new Map<string, { callTool: (name: string, args?: unknown) => Promise<unknown> }>();
   for (const serverCfg of parseMcpEnv(coworkerEnv)) {
     try {
-      const conn = await connectMcp(serverCfg, hygiene);
+      const conn = await connectMcp(serverCfg, hygiene, stateDir, name);
       for (const t of conn.tools) tools.register(t);
       mcpConnections.push(conn);
+      mcpClients.set(serverCfg.name, {
+        callTool: async (toolName: string, args?: unknown) =>
+          conn.client.callTool({ name: toolName, arguments: (args as Record<string, unknown>) ?? {} }),
+      });
       log.stream(`mcp: connected ${serverCfg.name} (${conn.tools.length} tools)`);
     } catch (err) {
       log.stream(`mcp: failed to connect ${serverCfg.name}: ${err}`);
     }
   }
+
+  // Declarative MCP sensors — role/SENSORS.json turns "poll an MCP tool
+  // periodically, cache, diff, invalidate on webhook" into config.
+  const sensorsResult = loadSensors(join(coworkersDir, name, "role"));
+  for (const err of sensorsResult.errors) log.stream(`sensors: error — ${err}`);
+  for (const warn of sensorsResult.warnings) log.stream(`sensors: warning — ${warn}`);
+  const mcpSensorRunner = sensorsResult.specs.length > 0
+    ? new McpSensorRunner({ specs: sensorsResult.specs, mcpClients })
+    : undefined;
+  if (mcpSensorRunner) log.stream(`mcp sensors: ${sensorsResult.specs.length} declared`);
 
   // Optional Hermes-style skills dir (defaults to ~/.hermes/skills if it exists).
   const skillsDir = coworkerEnv.SKILLS_DIR ?? join(process.env.HOME ?? "", ".hermes", "skills");
@@ -187,6 +204,7 @@ async function main() {
       metricsEnabled: coworkerEnv.METRICS_ENABLED === "1",
       webhooks: webhooksResult.specs,
       env: coworkerEnv,
+      ...(mcpSensorRunner ? { onSensorInvalidate: (n: string) => mcpSensorRunner.invalidate(n) } : {}),
     });
     log.stream(`wake endpoint: http://127.0.0.1:${wakePort}/wake`);
     if (coworkerEnv.METRICS_ENABLED === "1") log.stream(`metrics endpoint: http://127.0.0.1:${wakePort}/metrics`);
@@ -214,6 +232,7 @@ async function main() {
         tools, llm, triageLlm, dryRun: !live, log,
         forceDeliberate: forceNext,
         env: coworkerEnv,
+        ...(mcpSensorRunner ? { mcpSensors: mcpSensorRunner } : {}),
       });
       forceNext = false;
     } catch (err) {

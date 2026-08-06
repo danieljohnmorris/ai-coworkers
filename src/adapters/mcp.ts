@@ -13,10 +13,12 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
+import { UnauthorizedError } from "@modelcontextprotocol/sdk/client/auth.js";
 import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
 import type { ToolDef, ToolCtx } from "../runtime/tools.ts";
 import type { DatabaseSync } from "node:sqlite";
 import { register, markStatus } from "../runtime/hygiene.ts";
+import { createOAuthProvider, type McpOAuthClientProvider } from "./mcp_oauth.ts";
 
 export interface McpServerConfig {
   name: string;                              // prefix for the registered tools, e.g. "github"
@@ -28,6 +30,11 @@ export interface McpServerConfig {
   url?: string;
   headers?: Record<string, string>;          // static request headers (e.g. "Authorization")
   bearerEnv?: string;                        // env var whose value becomes "Authorization: Bearer <value>"
+  oauth?: {
+    scopes?: string[];                       // requested scopes; defaults to whatever server metadata says
+    redirectPort?: number;                   // loopback listener port; 0/omitted = free port
+    callbackHost?: string;                   // default "127.0.0.1"
+  };
 }
 
 export interface McpConnection {
@@ -49,6 +56,18 @@ export function validateMcpConfig(cfg: McpServerConfig): "stdio" | "http" {
     throw new Error(
       `MCP server "${cfg.name}": neither "command" nor "url" set — provide exactly one.`,
     );
+  }
+  if (cfg.oauth) {
+    if (!hasUrl) {
+      throw new Error(
+        `MCP server "${cfg.name}": "oauth" requires "url" (stdio transport does not support OAuth).`,
+      );
+    }
+    if (cfg.bearerEnv) {
+      throw new Error(
+        `MCP server "${cfg.name}": "oauth" and "bearerEnv" are mutually exclusive — pick one.`,
+      );
+    }
   }
   return hasCommand ? "stdio" : "http";
 }
@@ -76,18 +95,40 @@ export function buildHttpHeaders(
 export async function connectMcp(
   cfg: McpServerConfig,
   hygieneDb?: DatabaseSync,
+  coworkerStateDir?: string,
+  coworkerName?: string,
 ): Promise<McpConnection> {
   const kind = validateMcpConfig(cfg);
 
   let transport: Transport;
   let hygieneKind: "subprocess" | "http_client";
   let hygieneHandle: string;
+  let oauthProvider: McpOAuthClientProvider | null = null;
 
   if (kind === "http") {
-    const headers = buildHttpHeaders(cfg, process.env);
-    transport = new StreamableHTTPClientTransport(new URL(cfg.url!), {
-      requestInit: { headers },
-    });
+    if (cfg.oauth) {
+      if (!coworkerStateDir) {
+        throw new Error(
+          `MCP server "${cfg.name}": oauth requires coworkerStateDir to persist tokens.`,
+        );
+      }
+      oauthProvider = createOAuthProvider({
+        serverName: cfg.name,
+        coworkerName: coworkerName ?? "coworker",
+        coworkerStateDir,
+        scopes: cfg.oauth.scopes,
+        redirectPort: cfg.oauth.redirectPort,
+        callbackHost: cfg.oauth.callbackHost,
+      });
+      transport = new StreamableHTTPClientTransport(new URL(cfg.url!), {
+        authProvider: oauthProvider,
+      });
+    } else {
+      const headers = buildHttpHeaders(cfg, process.env);
+      transport = new StreamableHTTPClientTransport(new URL(cfg.url!), {
+        requestInit: { headers },
+      });
+    }
     hygieneKind = "http_client";
     hygieneHandle = `mcp:${cfg.name}:${cfg.url}`;
   } else {
@@ -104,7 +145,23 @@ export async function connectMcp(
     { name: `ai-coworkers/${cfg.name}`, version: "0.1.0" },
     { capabilities: {} },
   );
-  await client.connect(transport);
+  try {
+    await client.connect(transport);
+  } catch (err) {
+    if (err instanceof UnauthorizedError && oauthProvider) {
+      // SDK's auth flow needs a browser round-trip. Wait for the loopback
+      // listener to receive the authorization code, then exchange it and
+      // reconnect. On success the provider persists tokens; a future
+      // restart will find them cached and skip the browser flow entirely.
+      const code = await oauthProvider.waitForAuthorizationCode();
+      await (transport as StreamableHTTPClientTransport).finishAuth(code);
+      await oauthProvider.shutdownListener();
+      await client.connect(transport);
+    } else {
+      if (oauthProvider) await oauthProvider.shutdownListener();
+      throw err;
+    }
+  }
   // AIC-44 — register the transport in the hygiene ledger so we don't
   // accumulate orphan MCP connections across restarts. For stdio the SDK
   // doesn't expose the child pid; we register the server name as a stable

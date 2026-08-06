@@ -113,6 +113,22 @@ describe("validateMcpConfig", () => {
       /neither "command" nor "url"/,
     );
   });
+
+  it("throws when oauth is set without url", () => {
+    expect(() =>
+      validateMcpConfig({ name: "x", command: "c", oauth: {} } as McpServerConfig),
+    ).toThrow(/oauth" requires "url"/);
+  });
+
+  it("throws when oauth and bearerEnv are both set", () => {
+    expect(() =>
+      validateMcpConfig({ name: "x", url: "https://e/mcp", bearerEnv: "T", oauth: {} }),
+    ).toThrow(/mutually exclusive/);
+  });
+
+  it("accepts url + oauth", () => {
+    expect(validateMcpConfig({ name: "x", url: "https://e/mcp", oauth: {} })).toBe("http");
+  });
 });
 
 describe("buildHttpHeaders", () => {
@@ -276,6 +292,100 @@ describe("connectMcp (mocked transports)", () => {
     clientClose.mockRejectedValueOnce(new Error("boom"));
     const conn = await connectMcp({ name: "s", command: "echo" });
     await expect(conn.close()).resolves.toBeUndefined();
+  });
+
+  it("wires an OAuth authProvider when cfg.oauth is set", async () => {
+    const { connectMcp } = await import("./mcp.ts");
+    const { mkdtempSync, rmSync } = await import("node:fs");
+    const { tmpdir } = await import("node:os");
+    const { join } = await import("node:path");
+    const dir = mkdtempSync(join(tmpdir(), "mcp-oauth-wire-"));
+    try {
+      const conn = await connectMcp(
+        { name: "linear", url: "https://mcp.linear.app/mcp", oauth: { scopes: ["read"] } },
+        undefined,
+        dir,
+        "cw",
+      );
+      expect(httpCtor).toHaveBeenCalledTimes(1);
+      const [url, opts] = httpCtor.mock.calls[0] as [URL, { authProvider?: unknown; requestInit?: unknown }];
+      expect(url.href).toBe("https://mcp.linear.app/mcp");
+      expect(opts.authProvider).toBeDefined();
+      expect(opts.requestInit).toBeUndefined();
+      await conn.close();
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("throws when oauth is set but coworkerStateDir is missing", async () => {
+    const { connectMcp } = await import("./mcp.ts");
+    await expect(
+      connectMcp({ name: "x", url: "https://e/mcp", oauth: {} }),
+    ).rejects.toThrow(/coworkerStateDir/);
+  });
+
+  it("throws (validation) when oauth + bearerEnv both set", async () => {
+    const { connectMcp } = await import("./mcp.ts");
+    await expect(
+      connectMcp({ name: "x", url: "https://e/mcp", bearerEnv: "T", oauth: {} }),
+    ).rejects.toThrow(/mutually exclusive/);
+  });
+
+  it("retries connect + calls finishAuth when SDK throws UnauthorizedError", async () => {
+    const { connectMcp } = await import("./mcp.ts");
+    const { UnauthorizedError } = await import("@modelcontextprotocol/sdk/client/auth.js");
+    const { mkdtempSync, rmSync } = await import("node:fs");
+    const { tmpdir } = await import("node:os");
+    const { join } = await import("node:path");
+    const dir = mkdtempSync(join(tmpdir(), "mcp-oauth-flow-"));
+
+    // First connect throws Unauthorized; second succeeds.
+    clientConnect.mockRejectedValueOnce(new UnauthorizedError("need auth"));
+    // Stub finishAuth on the constructed transport by mocking the transport class.
+    const finishAuth = vi.fn(async () => {});
+    // Replace the HTTP transport mock's returned instance to expose finishAuth
+    // and a waitForCode-style provider capture via listenerFactory.
+    // Because the SDK isn't real here, we intercept via the transport ctor:
+    //   route: mock httpCtor to record opts.authProvider, then push finishAuth
+    //   into the returned instance.
+    try {
+      // Patch the mocked transport class in-place for this test.
+      const streamable = await import("@modelcontextprotocol/sdk/client/streamableHttp.js");
+      // Replace class with a stub that also has finishAuth.
+      (streamable as unknown as { StreamableHTTPClientTransport: unknown }).StreamableHTTPClientTransport = class {
+        finishAuth = finishAuth;
+        constructor(url: URL, opts: { authProvider?: { redirectToAuthorization: (u: URL) => Promise<void>; waitForAuthorizationCode: () => Promise<string>; shutdownListener: () => Promise<void> } }) {
+          httpCtor(url, opts);
+          // Simulate the SDK triggering the auth redirect + code arriving.
+          queueMicrotask(async () => {
+            const provider = opts.authProvider;
+            if (!provider) return;
+            // Stub listener behavior: skip real HTTP; pretend the code arrived.
+            (provider as unknown as { listener: unknown }).listener = {
+              waitForCode: async () => "the-code",
+              stop: async () => {},
+            };
+          });
+        }
+      };
+      const conn = await connectMcp(
+        { name: "linear", url: "https://mcp.linear.app/mcp", oauth: {} },
+        undefined,
+        dir,
+        "cw",
+      );
+      expect(finishAuth).toHaveBeenCalledWith("the-code");
+      expect(clientConnect).toHaveBeenCalledTimes(2);
+      await conn.close();
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+      // Restore transport mock for other tests.
+      const streamable = await import("@modelcontextprotocol/sdk/client/streamableHttp.js");
+      (streamable as unknown as { StreamableHTTPClientTransport: unknown }).StreamableHTTPClientTransport = class {
+        constructor(url: URL, opts: unknown) { httpCtor(url, opts); }
+      };
+    }
   });
 
   it("falls back to defaults when SDK tool lacks description/inputSchema", async () => {
