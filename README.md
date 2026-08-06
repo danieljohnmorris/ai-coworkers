@@ -56,6 +56,74 @@ you can watch a coworker for a day before granting live access.
 
 ---
 
+## Setup
+
+Full walkthrough: [AGENTS.md](AGENTS.md) · [docs/webhooks.md](docs/webhooks.md)
+
+### 1. Env
+
+Create `.env` at the repo root (gitignored):
+
+```
+OLLAMA_API_KEY=...          # or any OpenAI-compatible endpoint
+COWORKER_MODEL=gemma4:cloud # optional; default shown
+TRIAGE_MODEL=               # optional; cheap-first preflight
+```
+
+Per-coworker overrides go in `coworkers/<name>/.env` and win over the shell env.
+
+### 2. Pick a template
+
+```bash
+cp -r examples/generic-triage coworkers/my-triage
+```
+
+Available: `generic-triage`, `pr-reviewer`, `project-manager`, `scribe`, `trace`, `log`, `watchtower`. Or scaffold from scratch with `bin/new-coworker.sh <name>` (blank) or `bin/new-coworker-interview.sh <name>` (JD-style Q&A).
+
+### 3. Connect a service
+
+Each script prompts for tokens and writes them to `coworkers/<name>/.env`:
+
+```bash
+bin/setup-linear.sh my-triage    &&  bin/verify-linear.sh my-triage
+bin/setup-slack.sh  my-triage    &&  bin/verify-slack.sh  my-triage
+bin/setup-gmail.sh  my-triage    &&  bin/verify-gmail.sh  my-triage
+```
+
+### 4. Optional: webhooks (sub-second reactions)
+
+Set `WAKE_PORT=7778` (and `WAKE_SECRET` for auth) in the coworker's `.env`, then declare inbound webhooks in `coworkers/<name>/role/WEBHOOKS.json`. Closed-set signature verifiers: `hmac-sha256`, `github-sha256`, `slack-v0`, `none`. See [docs/webhooks.md](docs/webhooks.md) for schema + tunnel setup.
+
+### 5. Optional: MCP servers (extra tools)
+
+One env var per fleet or per coworker:
+
+```
+MCP_SERVERS='[{"name":"github","command":"npx","args":["-y","@modelcontextprotocol/server-github"]}]'
+```
+
+Every listed tool registers as `mcp.<name>.<tool>`. See `src/adapters/mcp.ts`.
+
+### 6. Optional: metrics
+
+```
+METRICS_ENABLED=1
+```
+
+Prometheus endpoint served on the wake port at `/metrics` (requires `WAKE_PORT` set).
+
+### 7. Go live
+
+Watch in dry-run for a day, then promote:
+
+```bash
+node --experimental-strip-types --no-warnings src/index.ts my-triage --live
+```
+
+For long-running deployment see [docs/systemd.md](docs/systemd.md).
+
+---
+
 ## Watch it think
 
 Excerpt from a real `highlights.log` (ticket ids anonymised):
