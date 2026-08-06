@@ -325,15 +325,54 @@ MCP_SERVERS='[
 ]'
 ```
 
-Full per-server config: `{ name, command?, args?, env?, url?, headers?, bearerEnv? }`.
+Full per-server config: `{ name, command?, args?, env?, url?, headers?, bearerEnv?, oauth? }`.
 `command` XOR `url`; setting both, neither, or a missing `bearerEnv`
-throws a clear error at connect time.
+throws a clear error at connect time. `oauth` requires `url` and is
+mutually exclusive with `bearerEnv`.
 
-**Caveat**: OAuth-based remote MCPs (e.g. Linear's remote MCP server) are
-**not supported yet** — they need OAuth 2.1 + dynamic client registration
-and refresh-token handling. Bearer tokens (`bearerEnv`) and static
-`headers` cover any server whose auth is a long-lived credential; OAuth
-support is tracked as a follow-up.
+### OAuth-based MCP servers
+
+Remote MCP servers that require OAuth 2.1 (e.g. Linear's
+`https://mcp.linear.app/mcp`) are supported via the `oauth` block:
+
+```
+MCP_SERVERS='[
+  {"name":"linear","url":"https://mcp.linear.app/mcp","oauth":{"scopes":["read","write"]}}
+]'
+```
+
+Optional fields: `oauth.redirectPort` (loopback listener port; default
+picks a free port), `oauth.callbackHost` (default `127.0.0.1`).
+
+Flow on first connect:
+
+1. The runtime opens a Streamable HTTP transport with an OAuth client
+   provider. The server returns 401 with a `WWW-Authenticate` header
+   pointing at the authorization-server metadata endpoint.
+2. The SDK fetches metadata (RFC 8414 / RFC 9728), does Dynamic Client
+   Registration (RFC 7591) to obtain a `client_id`, generates a PKCE
+   verifier (RFC 7636), and prints the authorization URL to stdout.
+3. Open the URL in a browser, consent, and the AS redirects to
+   `http://127.0.0.1:<port>/callback?code=…`. The runtime's loopback
+   listener captures the code and exchanges it for access + refresh
+   tokens.
+4. Tokens (and the DCR client info + PKCE state) land on disk at
+   `coworkers/<name>/state/mcp-tokens/<server>.json` (mode `0600`).
+   Subsequent restarts reuse the cached client + refresh flow — no
+   browser prompt.
+
+If the refresh token is rejected (server revoked it, tenant deleted,
+scope changed), the SDK will re-invoke the browser flow. To force a
+fresh authorization, delete
+`coworkers/<name>/state/mcp-tokens/<server>.json` and restart.
+
+**Headless caveat**: OAuth-based MCPs are best for interactive setup and
+OK-but-fragile for long-running headless systemd processes. A refresh
+failure at 3am means silent breakage until an operator opens the printed
+URL from a machine with a browser. If the server also supports a
+long-lived personal API key (bearer token / API token — Linear does),
+prefer `bearerEnv` for headless deployments and reserve `oauth` for
+interactive workstations.
 
 MCP tools are all registered as `kind: "action"` — MCP doesn't distinguish
 read vs write, so gate anything sensitive via `BOUNDARIES.md` /
@@ -355,6 +394,66 @@ tick is skipped without spending a single LLM token. This is why an idle
 coworker costs nothing to run. Webhooks bypass the gate (`forceNext =
 true` in `src/index.ts`) — an external event guarantees the model sees
 this tick.
+
+### Declarative MCP sensors
+
+Sensors can also be declared in JSON at
+`coworkers/<name>/role/SENSORS.json`. Each spec turns an MCP tool call
+into a cached, diff-aware read that feeds `Perception.sensors[]` alongside
+native sensors — no TypeScript needed. Top-level is an array:
+
+```json
+[
+  {
+    "name": "github.review_requests",
+    "mcp": "github",
+    "tool": "list_pulls",
+    "args": { "state": "open", "review_requested": "@me" },
+    "cacheMs": 60000,
+    "summarise": "count"
+  }
+]
+```
+
+Fields:
+
+| Field | Required | Notes |
+|---|---|---|
+| `name` | yes | Unique per coworker. Also the key webhook specs target via `onEvent.invalidate`. |
+| `mcp` | yes | Matches an `MCP_SERVERS` entry name. |
+| `tool` | yes | MCP tool name on that server. |
+| `args` | no | Object passed to the tool. |
+| `cacheMs` | no | Non-negative integer. Default `0` (call every tick). |
+| `summarise` | no | Shape reducer — see below. |
+
+`summarise` variants — keeps the perception blob small:
+
+- `"identity"` (default) — full result.
+  ```json
+  { "summarise": "identity" }   // result: { "issues": [...], "meta": {...} }
+  ```
+- `"count"` — first array in the result, returned as `{ count: n }`.
+  ```json
+  { "summarise": "count" }      // result: { "count": 3 }
+  ```
+- `"first"` — first element of the first array in the result.
+  ```json
+  { "summarise": "first" }      // result: { "id": 42, "title": "..." }
+  ```
+- `"a.b.c"` — dotted path; returns the subtree at that path.
+  ```json
+  { "summarise": "data.issues" } // result: [ ... ]
+  ```
+
+Webhook coupling: a `WEBHOOKS.json` entry can list a declarative sensor
+in `onEvent.invalidate`. When the webhook fires, the runtime drops the
+cached value AND marks the next tick's diff as `changed` for that sensor
+— so a webhook that says "this changed" always beats a JSON-equal poll
+result. This is the same integration point native sensors already use via
+`invalidatePrefix` in `sensor-cache.ts`.
+
+Missing `SENSORS.json` = no declarative sensors, no errors. Validation
+errors are logged on startup and the offending spec is skipped.
 
 ---
 
