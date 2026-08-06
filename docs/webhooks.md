@@ -48,7 +48,7 @@ Use Cloudflare Tunnel, Tailscale Funnel, or similar to expose the wake port.
 Always set `WAKE_SECRET` and configure the webhook provider to send it as an
 `x-wake-secret` header (or use their signing scheme + a small adapter).
 
-## Linear webhook — native adapter (AIC-36)
+## Linear webhook — native adapter
 
 Point Linear at `POST /linear-webhook` on the same `WAKE_PORT`; the runtime
 verifies the HMAC signature, filters by team, and wakes only on matching
