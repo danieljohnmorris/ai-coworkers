@@ -20,9 +20,27 @@ Requires Node ≥ 22 (uses native `node:sqlite`, `--experimental-strip-types`).
 git clone https://github.com/danieljohnmorris/ai-coworkers
 cd ai-coworkers
 npm install
-npm test              # 376 tests, ~2s
-npm run test:cov      # ~97% line coverage
+npm test              # ~480 tests, ~2s
+npm run test:cov      # ~99% line coverage
+
+# Enable the pre-commit hook that blocks accidental secret commits:
+git config core.hooksPath .githooks
 ```
+
+The pre-commit hook runs `bin/scan-secrets.mjs --staged` and blocks the
+commit if any staged file matches a credential-shape (Bearer tokens,
+Linear `lin_api_*`, Slack `xoxb-*`, GitHub `ghp_*`, Anthropic `sk-ant-*`,
+OpenAI `sk-*`, AWS `AKIA*`, Google `AIza*`, PEM private keys). You can
+also run it ad-hoc:
+
+```bash
+node --experimental-strip-types --no-warnings bin/scan-secrets.mjs --tree     # all tracked files
+node --experimental-strip-types --no-warnings bin/scan-secrets.mjs --history  # every blob ever
+```
+
+If a real secret ever lands in git: rotate at the source *first*, then
+purge from history with [git-filter-repo](https://github.com/newren/git-filter-repo).
+Never rely on `git rm` alone.
 
 ## Running a coworker locally
 
