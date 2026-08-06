@@ -1,10 +1,10 @@
 # ai-coworkers
 
 [![ci](https://github.com/danieljohnmorris/ai-coworkers/actions/workflows/ci.yml/badge.svg)](https://github.com/danieljohnmorris/ai-coworkers/actions/workflows/ci.yml)
-[![coverage](https://img.shields.io/badge/coverage-99.8%25-brightgreen)](#tests)
+[![coverage](https://img.shields.io/badge/coverage-98.1%25-brightgreen)](#tests)
 [![node](https://img.shields.io/badge/node-%E2%89%A522-brightgreen)](https://nodejs.org)
 [![license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
-[![tests](https://img.shields.io/badge/tests-496-brightgreen)](#tests)
+[![tests](https://img.shields.io/badge/tests-557-brightgreen)](#tests)
 
 Long-running AI coworkers with **roles**, **boundaries**, and a **tick loop**.
 Not one-shot task agents — persistent processes that decide when *not* to act.
@@ -19,7 +19,7 @@ to **dry-run**, and **escalates to a human inbox** instead of guessing.
 
 | LOC | tests | coverage | adapters | memory tiers |
 |---|---|---|---|---|
-| ~6.5k | 496 | 99.8% lines · 98% statements · 92% branches | MCP · Hermes · Eve · ACP · native | working · episodic · semantic · entity · procedural · reflective |
+| ~6.5k | 557 | 98.1% lines · 95.8% statements · 90.9% branches | MCP · Hermes · Eve · ACP · native | working · episodic · semantic · entity · procedural · reflective |
 
 > _(TODO: 15-sec asciinema of a coworker deciding not to act — the whole thesis in one clip.)_
 
@@ -254,8 +254,8 @@ Hermes/OpenClaw (SOUL/USER/MEMORY files, skills, dreams), ElizaOS
 ## Tests
 
 ```bash
-npm test              # 496 tests, ~2s
-npm run test:cov      # 99.8% lines · 98% statements · 99.7% functions · 92% branches
+npm test              # 557 tests, ~2s
+npm run test:cov      # 98.1% lines · 95.8% statements · 97.1% functions · 90.9% branches
 ```
 
 Fake LLM + fake API fixtures in `test/fixtures.ts` exercise the tick pipeline

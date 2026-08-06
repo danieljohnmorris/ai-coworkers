@@ -48,32 +48,76 @@ Use Cloudflare Tunnel, Tailscale Funnel, or similar to expose the wake port.
 Always set `WAKE_SECRET` and configure the webhook provider to send it as an
 `x-wake-secret` header (or use their signing scheme + a small adapter).
 
-## Linear webhook — native adapter
+## Declarative webhooks
 
-Point Linear at `POST /linear-webhook` on the same `WAKE_PORT`; the runtime
-verifies the HMAC signature, filters by team, and wakes only on matching
-events.
+Any coworker can declare inbound webhooks in
+`coworkers/<name>/role/WEBHOOKS.json`. The runtime loads them on startup,
+verifies signatures with a closed set of named verifiers, optionally filters
+the payload, and wakes the loop (plus hints which sensor caches to
+invalidate on the next tick). No custom code — new integrations are a JSON
+edit.
 
-Env:
+Schema (top-level is an array):
 
+```json
+[
+  {
+    "name": "linear",
+    "path": "/webhook/linear",
+    "auth": {
+      "type": "hmac-sha256",
+      "header": "linear-signature",
+      "secretEnv": "LINEAR_WEBHOOK_SECRET"
+    },
+    "filter": { "jsonPath": "data.team.key", "allow": ["ILO", "AIC"] },
+    "onEvent": {
+      "wake": true,
+      "invalidate": ["linear.new_issues", "linear.workspace_snapshot"]
+    }
+  }
+]
 ```
-LINEAR_WEBHOOK_SECRET=<same secret Linear signs with>
-LINEAR_WATCHED_TEAMS=ILO,AIC    # optional; unset = accept every team
-```
 
-Linear settings → API → Webhooks → New:
-- URL: `https://your-tunnel/linear-webhook`
-- Events: Issue create, Issue update, Comment create
-- Secret: whatever you set as `LINEAR_WEBHOOK_SECRET`
+`auth.type` is a closed set:
+
+| type            | header (default)         | notes |
+|-----------------|--------------------------|-------|
+| `hmac-sha256`   | required — you name it   | HMAC-SHA256(body), hex-compare. |
+| `github-sha256` | `x-hub-signature-256`    | Strips `sha256=` prefix before compare. |
+| `slack-v0`      | `x-slack-signature`      | Slack v0 scheme; enforces `|now-ts| ≤ maxAgeSeconds` (default 300). |
+| `none`          | —                        | Always accepts. Emits a startup warning. |
 
 Return codes:
-- `200` — signature valid, team matched, coworker woken.
-- `202` — signature valid, team NOT in `LINEAR_WATCHED_TEAMS`; ack, no wake.
+- `200` — signature valid, filter matched (if any), coworker woken.
+- `202` — signature valid, filter did not match; ack, no wake.
 - `401` — missing / bad signature.
-- `503` — `LINEAR_WEBHOOK_SECRET` not set on the coworker's side.
+- `404` — no webhook spec for that path.
+- `503` — spec's `secretEnv` is not set in the process env.
 
-Setting `LINEAR_WEBHOOK_SECRET` also binds the wake server to `0.0.0.0`
-so the tunnel can reach it, whether or not `WAKE_SECRET` is also set.
+If any webhook is configured the wake server binds to `0.0.0.0` so the
+tunnel can reach it.
+
+### Adding GitHub
+
+```json
+{
+  "name": "github",
+  "path": "/webhook/github",
+  "auth": { "type": "github-sha256", "secretEnv": "GITHUB_WEBHOOK_SECRET" },
+  "onEvent": { "wake": true, "invalidate": ["github.open_prs"] }
+}
+```
+
+### Adding Slack
+
+```json
+{
+  "name": "slack",
+  "path": "/webhook/slack",
+  "auth": { "type": "slack-v0", "secretEnv": "SLACK_SIGNING_SECRET", "maxAgeSeconds": 300 },
+  "onEvent": { "wake": true }
+}
+```
 
 ## Generic wake fallback
 
