@@ -2,6 +2,9 @@
 
 [![ci](https://github.com/danieljohnmorris/ai-coworkers/actions/workflows/ci.yml/badge.svg)](https://github.com/danieljohnmorris/ai-coworkers/actions/workflows/ci.yml)
 [![coverage](https://img.shields.io/badge/coverage-97.8%25-brightgreen)](#tests)
+[![node](https://img.shields.io/badge/node-%E2%89%A522-brightgreen)](https://nodejs.org)
+[![license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+[![tests](https://img.shields.io/badge/tests-279-brightgreen)](#tests)
 
 Long-running AI coworkers with **roles**, **boundaries**, and a **tick loop**.
 Not one-shot task agents — persistent processes that decide when *not* to act.
@@ -10,7 +13,11 @@ Unlike Hermes / ElizaOS (single-agent, chat-native) or CrewAI (task
 orchestration), ai-coworkers models **roles with hard boundaries**, defaults
 to **dry-run**, and **escalates to a human inbox** instead of guessing.
 
-MIT, TypeScript, Node ≥ 22, ~3 kLOC, 170 tests.
+| LOC | tests | coverage | adapters | memory tiers |
+|---|---|---|---|---|
+| ~4.2k | 279 | 97.8% | MCP · Hermes · Eve · native | working · episodic · semantic · entity · procedural · reflective |
+
+> _(TODO: 15-sec asciinema of a coworker deciding not to act — the whole thesis in one clip.)_
 
 ---
 
@@ -21,12 +28,73 @@ git clone https://github.com/danieljohnmorris/ai-coworkers
 cd ai-coworkers && npm install
 ```
 
-Set two env vars in `.env`:
+Two env vars in `.env`:
 
 ```
 OLLAMA_API_KEY=...    # or any OpenAI-compatible endpoint
-LINEAR_API_KEY=...    # optional — only if you want the Linear coworker
+LINEAR_API_KEY=...    # optional — only the Linear coworker needs it
 ```
+
+Run it:
+
+```bash
+node --experimental-strip-types --no-warnings src/index.ts alex-triage
+# add --live to allow write actions to actually execute
+```
+
+Default is **dry-run**. Every write returns `{dryRun: true, would: {...}}` so
+you can watch a coworker for a day before granting live access.
+
+---
+
+## Watch it think
+
+Real excerpt from `highlights.log`:
+
+```
+[22:57:51] 📬 note from manager: The linear.set_labels tool is fixed.
+                                Please retry AIC-36.
+[22:57:54] 💭 Dan confirmed linear.set_labels is fixed. AIC-36 (webhook
+             adapter) needs 'Feature' label. I have the UUID and label ID
+             from previous failed attempts. Retrying now.
+[22:57:54] → linear.set_labels: {"issueId":"e6ce...","labelIds":["98d9..."]}
+[22:57:56] 💭 AIC-36 labeled 'Feature' successfully. Backlog catch-up
+             continues, but this specific task is done.
+```
+
+`💭` lines are the coworker's private thoughts — a running notebook that
+threads across ticks. `→` lines are actions. Both interleave in one file a
+human can skim.
+
+---
+
+## The tick loop
+
+```
+    ┌──────────────────────────────────────────────────────────────┐
+    │                                                              │
+    ▼                                                              │
+  budget → sense → perceive → [quiet gate] ─── skip ──────► sleep ─┘
+                                   │                          ▲
+                                   ▼ (something to do)        │
+                              deliberate ─── noop ────────────┤
+                                   │                          │
+                                   ▼ (chosen tool)            │
+                              boundaries ─── block ───────────┤
+                                   │                          │
+                                   ▼                          │
+                                 act ──── loop up to N tools ─┤
+                                   │                          │
+                                   ▼                          │
+                              hygiene · rituals · record ─────┘
+```
+
+- **Sense** — read-only sensors (Linear, GitHub, Slack, self-status), cached.
+- **Perceive** — world-state + tempo + budget + operator notes + own recent thoughts.
+- **Quiet gate** — nothing changed, no work, no ritual/promise due → skip the LLM. Zero cost.
+- **Deliberate** — model returns `{thoughts, action, reason, pace}`, may chain up to `MAX_TOOLS_PER_TICK`.
+- **Boundaries** — every action checked against `BOUNDARIES.md` before execute.
+- **Adaptive interval** — quiet/noop ticks double the sleep up to a cap; activity or `/wake` resets. Model may set `pace: faster/slower`.
 
 ---
 
@@ -53,62 +121,11 @@ coworkers/alex-triage/
     highlights.log     actions + thoughts + escalations only
 ```
 
-The `role/` docs are the whole config. Edit markdown → restart → new behavior.
-No YAML, no code changes for behavior tuning.
-
-Run it:
-
-```bash
-node --experimental-strip-types --no-warnings src/index.ts alex-triage
-# Add --live to allow write actions to actually execute.
-```
-
-Default is **dry-run**. Every write returns `{dryRun: true, would: {...}}` so
-you can watch the coworker for a day before granting it live access.
-
----
-
-## Watch it think
-
-Real excerpt from `highlights.log`:
-
-```
-[22:57:51] 📬 note from manager: The linear.set_labels tool is fixed.
-                                Please retry AIC-36.
-[22:57:54] 💭 Dan confirmed linear.set_labels is fixed. AIC-36 (webhook
-             adapter) needs 'Feature' label. I have the UUID and label ID
-             from previous failed attempts. Retrying now.
-[22:57:54] → linear.set_labels: {"issueId":"e6ce...","labelIds":["98d9..."]}
-[22:57:56] 💭 AIC-36 labeled 'Feature' successfully. Backlog catch-up
-             continues, but this specific task is done.
-```
-
-The `💭` lines are the coworker's private thoughts — a running notebook that
-threads across ticks. The `→` lines are actions. Both interleave in one file
-the human can skim.
-
----
-
-## The tick loop
-
-Each coworker is a long-running process that repeats:
-
-1. **Sense** — read-only sensors (Linear, GitHub, Slack, self-status). Cached.
-2. **Perceive** — assemble world-state, tempo (self-awareness), budget usage, operator notes, own recent thoughts.
-3. **Quiet gate** — if nothing changed *and* no work sensed *and* no ritual/promise due, skip the LLM call entirely. Zero cost.
-4. **Deliberate + chain** — model returns `{thoughts, action, reason, pace}`. Multiple tool calls per tick (Hermes/Eliza-style), until it says `noop "done"` or hits `MAX_TOOLS_PER_TICK`.
-5. **Boundaries** — every action checked against `BOUNDARIES.md` before executing.
-6. **Record** — structured event log + narrative `highlights.log` for humans + `MEMORY.md` for the coworker.
-7. **Adaptive interval** — after quiet/noop ticks, sleep doubles up to a cap. Any activity or `/wake` resets. Model may set `pace: faster/slower` to override.
-
-Details: [docs/tick-loop.md](docs/tick-loop.md) (TODO).
+Edit markdown → restart → new behavior. No YAML, no code changes for tuning.
 
 ---
 
 ## Boundaries + dry-run
-
-Every action is checked against the coworker's own `BOUNDARIES.md` before it
-runs. Boundaries look like:
 
 ```md
 ## Must not touch
@@ -122,37 +139,27 @@ runs. Boundaries look like:
 - Max LLM calls per 5h window: 200
 ```
 
-Rejected calls log `boundary.block` events (visible in `highlights.log`) and
-never reach the target system. Dry-run is on until you pass `--live`, and
-individual coworkers can be promoted independently.
+Rejected calls log `boundary.block` (visible in `highlights.log`) and never
+reach the target system. Coworkers get promoted to `--live` independently.
 
 ---
 
 ## Humans ↔ coworker
 
-**You → coworker** (leave a note that surfaces in the next tick's prompt):
-
+**You → coworker** — leaves a note that surfaces in the next tick's prompt:
 ```bash
 bin/note-to.sh alex-triage "Prioritise ILO parser bugs today"
 ```
 
-**Coworker → you** (persistent question log they see until answered):
-
-```
-Alex called `ask` with to="manager": "Is `perf` the right label for
-memory-usage tickets, or should we split into `perf-mem` and `perf-cpu`?"
-```
-
-Answer in-place:
-
+**Coworker → you** — persistent question log they see until answered:
 ```bash
 bin/answer.sh alex-triage "Keep it as perf, don't split yet."
 ```
 
-**Coworker → coworker** (peer inbox): `ask` with `to="coworker:sam"`.
-**Coworker → Slack / Linear / GitHub**: `ask` with `to="slack:#triage"` /
-`to="linear:ILO-42"` / `to="github:owner/repo#123"`. The channel of
-reply is contextual — the coworker picks the surface that fits.
+**Coworker → coworker / Slack / Linear / GitHub** — one `ask` tool with
+`to="coworker:sam"` · `to="slack:#triage"` · `to="linear:ILO-42"` ·
+`to="github:owner/repo#123"`. The channel is contextual — the coworker picks
+the surface that fits.
 
 ---
 
@@ -163,21 +170,19 @@ reply is contextual — the coworker picks the surface that fits.
 | **MCP servers** | `MCP_SERVERS='[{"name":"github","command":"npx","args":["-y","@modelcontextprotocol/server-github"]}]'` | `src/adapters/mcp.ts` |
 | **Hermes / OpenClaw / Anthropic skills** | Drop under `~/.hermes/skills/`; add name to `ACTIVE_SKILLS=` to inline the full body | `src/adapters/hermes.ts` |
 | **Vercel Eve `agent/` folder** | Point loader at Eve-shaped directory | `src/adapters/eve.ts` |
-| **Native tools** | New `src/tools/<name>.ts` exporting `ToolDef[]` | `src/tools/linear.ts` for reference |
-
-More: [docs/webhooks.md](docs/webhooks.md), [docs/systemd.md](docs/systemd.md).
+| **Native tools** | New `src/tools/<name>.ts` exporting `ToolDef[]` | `src/tools/linear.ts` |
 
 ---
 
 ## Coworker templates
 
-Ready to `cp -r examples/<name> coworkers/<yourname>`:
+`cp -r examples/<name> coworkers/<yourname>`:
 
 - **generic-triage** — Linear triage engineer
-- **pr-reviewer** — reviews open PRs on a set of GitHub repos
+- **pr-reviewer** — reviews open PRs on watched GitHub repos
 - **project-manager** — project health summaries, aging tickets
 
-Generate from scratch:
+From scratch:
 ```bash
 bin/new-coworker.sh <name>              # blank template
 bin/new-coworker-interview.sh <name>    # JD-style Q&A → writes role docs
@@ -185,50 +190,50 @@ bin/new-coworker-interview.sh <name>    # JD-style Q&A → writes role docs
 
 ---
 
-## Operating a coworker
+## Operating
 
 ```bash
 tail -f coworkers/<name>/state/highlights.log   # actions + thoughts + escalations
-tail -f coworkers/<name>/state/stream.log       # everything, one line per tick
-sqlite3 coworkers/<name>/state/events.db "SELECT ts, kind, substr(payload,1,150) \
-  FROM events ORDER BY id DESC LIMIT 20"
-```
+tail -f coworkers/<name>/state/stream.log       # everything
+sqlite3 coworkers/<name>/state/events.db \
+  "SELECT ts, kind, substr(payload,1,150) FROM events ORDER BY id DESC LIMIT 20"
 
-Fleet dashboard for multiple coworkers:
-```bash
-node --experimental-strip-types src/dashboard.ts
-# http://localhost:7777
+node --experimental-strip-types src/dashboard.ts     # fleet view on :7777
 ```
-
-systemd deployment: [docs/systemd.md](docs/systemd.md).
 
 ---
 
-## Design lineage
+## Docs
 
-Ideas borrowed from:
+**Getting started**
+- [Install & first coworker](docs/getting-started.md) (TODO)
+- [Writing role docs](docs/role-docs.md) (TODO)
 
-- **Hermes / OpenClaw** — `SOUL.md`/`USER.md`/`MEMORY.md` file convention, skills as procedural memory, dreaming ritual
-- **ElizaOS** — providers-as-sensors, actions, evaluators-as-reflection
-- **Generative Agents (Stanford)** — sense → reflect → plan → act → memory stream
-- **MemGPT / Letta** — tiered memory, scheduled compaction
-- **Vercel Eve** — filesystem-first configuration, `agent/` layout
-- **Claude Code / Pi** — multi-step tool-use loops within a turn
-- **CoALA (arXiv:2309.02427)** — working / episodic / semantic / entity / procedural / reflective memory taxonomy
+**Architecture**
+- [Tick loop internals](docs/tick-loop.md) (TODO)
+- [Memory taxonomy (CoALA mapping)](docs/adr/0001-coala-memory-taxonomy.md)
+- [Boundary model](docs/boundaries.md) (TODO)
 
-CoALA vocabulary maps to modules in [`docs/adr/0001-coala-memory-taxonomy.md`](docs/adr/0001-coala-memory-taxonomy.md).
+**Operations**
+- [systemd deployment](docs/systemd.md)
+- [Webhooks & external wakes](docs/webhooks.md)
+
+**Design lineage** — Hermes/OpenClaw (SOUL/USER/MEMORY files, skills, dreams),
+ElizaOS (providers·actions·evaluators), Generative Agents (Stanford),
+MemGPT/Letta (tiered memory), Vercel Eve (filesystem-first), Claude Code / Pi
+(multi-tool turns), [CoALA](https://arxiv.org/abs/2309.02427) (memory taxonomy).
 
 ---
 
 ## Tests
 
 ```bash
-npm test              # 170 tests
-npm run test:cov      # coverage report (90%+ on lines/statements/functions)
+npm test              # 279 tests
+npm run test:cov      # 97.8% lines · 96% functions · 87% branches
 ```
 
-Fake LLM + fake API fixtures in `test/fixtures.ts` let you exercise the tick
-pipeline without touching real services.
+Fake LLM + fake API fixtures in `test/fixtures.ts` exercise the tick pipeline
+without touching real services.
 
 ---
 
@@ -236,6 +241,6 @@ pipeline without touching real services.
 
 Early. Runtime is stable and battle-tested against real Linear. Coding
 coworker (`code.delegate`) is scaffolded but not yet wired to a real coding
-harness. See open tickets: [linear.app/ilo-lang/team/AIC](https://linear.app/ilo-lang/team/AIC).
+harness. Open work: [linear.app/ilo-lang/team/AIC](https://linear.app/ilo-lang/team/AIC).
 
 MIT.
