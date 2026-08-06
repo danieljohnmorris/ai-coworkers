@@ -258,7 +258,7 @@ async function main() {
     }
   }
   log.event("note", { message: "shutdown" });
-  // AIC-44 — cleanly close all MCP subprocesses before exiting.
+  // AIC-44 — cleanly close all MCP connections (stdio subprocesses and HTTP clients) before exiting.
   for (const c of mcpConnections) await c.close();
   process.exit(0);
 }

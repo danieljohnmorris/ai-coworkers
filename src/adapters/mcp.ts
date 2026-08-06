@@ -1,24 +1,33 @@
-// MCP bridge — spawn a Model Context Protocol server as a subprocess, list
-// its tools, register each as a ToolDef in our registry. This is the biggest
-// single ecosystem unlock: Linear, Slack, GitHub, Notion, Gmail, filesystem,
-// browser automation, etc. all ship official MCP servers.
+// MCP bridge — connect to a Model Context Protocol server (either as a
+// stdio subprocess or over Streamable HTTP), list its tools, register each
+// as a ToolDef in our registry. This is the biggest single ecosystem
+// unlock: Linear, Slack, GitHub, Notion, Gmail, filesystem, browser
+// automation, etc. all ship official MCP servers.
 //
 // A single .env variable declares the servers to load:
 //   MCP_SERVERS='[{"name":"github","command":"npx","args":["@modelcontextprotocol/server-github"]}]'
+//   MCP_SERVERS='[{"name":"remote","url":"https://mcp.example.com/mcp","bearerEnv":"EXAMPLE_TOKEN"}]'
 //
 // Or via a config file at coworkers/<name>/mcp.json (per-coworker scoping).
 
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
+import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
+import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
 import type { ToolDef, ToolCtx } from "../runtime/tools.ts";
 import type { DatabaseSync } from "node:sqlite";
 import { register, markStatus } from "../runtime/hygiene.ts";
 
 export interface McpServerConfig {
   name: string;                              // prefix for the registered tools, e.g. "github"
-  command: string;                           // executable
+  // stdio transport — subprocess to spawn:
+  command?: string;
   args?: string[];
   env?: Record<string, string>;
+  // http transport — streamable HTTP endpoint:
+  url?: string;
+  headers?: Record<string, string>;          // static request headers (e.g. "Authorization")
+  bearerEnv?: string;                        // env var whose value becomes "Authorization: Bearer <value>"
 }
 
 export interface McpConnection {
@@ -27,28 +36,84 @@ export interface McpConnection {
   close(): Promise<void>;
 }
 
+// Validate that exactly one of {command, url} is set. Throws a clear error.
+export function validateMcpConfig(cfg: McpServerConfig): "stdio" | "http" {
+  const hasCommand = typeof cfg.command === "string" && cfg.command.length > 0;
+  const hasUrl = typeof cfg.url === "string" && cfg.url.length > 0;
+  if (hasCommand && hasUrl) {
+    throw new Error(
+      `MCP server "${cfg.name}": both "command" and "url" set — provide exactly one.`,
+    );
+  }
+  if (!hasCommand && !hasUrl) {
+    throw new Error(
+      `MCP server "${cfg.name}": neither "command" nor "url" set — provide exactly one.`,
+    );
+  }
+  return hasCommand ? "stdio" : "http";
+}
+
+// Build the header map for an HTTP MCP transport. Resolves bearerEnv against
+// the given process env; throws a clear error naming the missing var if the
+// env var is unset. Pure — no I/O.
+export function buildHttpHeaders(
+  cfg: McpServerConfig,
+  env: NodeJS.ProcessEnv,
+): Record<string, string> {
+  const headers: Record<string, string> = { ...(cfg.headers ?? {}) };
+  if (cfg.bearerEnv) {
+    const val = env[cfg.bearerEnv];
+    if (!val) {
+      throw new Error(
+        `MCP server "${cfg.name}": bearerEnv "${cfg.bearerEnv}" is not set in the process env.`,
+      );
+    }
+    headers["Authorization"] = `Bearer ${val}`;
+  }
+  return headers;
+}
+
 export async function connectMcp(
   cfg: McpServerConfig,
   hygieneDb?: DatabaseSync,
 ): Promise<McpConnection> {
-  const transport = new StdioClientTransport({
-    command: cfg.command,
-    args: cfg.args ?? [],
-    env: { ...process.env, ...(cfg.env ?? {}) } as Record<string, string>,
-  });
+  const kind = validateMcpConfig(cfg);
+
+  let transport: Transport;
+  let hygieneKind: "subprocess" | "http_client";
+  let hygieneHandle: string;
+
+  if (kind === "http") {
+    const headers = buildHttpHeaders(cfg, process.env);
+    transport = new StreamableHTTPClientTransport(new URL(cfg.url!), {
+      requestInit: { headers },
+    });
+    hygieneKind = "http_client";
+    hygieneHandle = `mcp:${cfg.name}:${cfg.url}`;
+  } else {
+    transport = new StdioClientTransport({
+      command: cfg.command!,
+      args: cfg.args ?? [],
+      env: { ...process.env, ...(cfg.env ?? {}) } as Record<string, string>,
+    });
+    hygieneKind = "subprocess";
+    hygieneHandle = `mcp:${cfg.name}`;
+  }
+
   const client = new Client(
     { name: `ai-coworkers/${cfg.name}`, version: "0.1.0" },
     { capabilities: {} },
   );
   await client.connect(transport);
-  // AIC-44 — register the transport process in the hygiene ledger so we
-  // don't accumulate orphan MCP servers across restarts. The SDK doesn't
-  // expose the child pid; we register the server name as a stable handle
-  // and rely on the caller's close() for reaping. hygieneSweep can still
-  // audit "how many MCP servers are believed alive".
+  // AIC-44 — register the transport in the hygiene ledger so we don't
+  // accumulate orphan MCP connections across restarts. For stdio the SDK
+  // doesn't expose the child pid; we register the server name as a stable
+  // handle. For http there's no subprocess — we register kind="http_client"
+  // with the URL as the handle so hygieneSweep can still audit "how many
+  // MCP connections are believed alive".
   let hygieneId: number | null = null;
   if (hygieneDb) {
-    hygieneId = register(hygieneDb, "subprocess", `mcp:${cfg.name}`, null);
+    hygieneId = register(hygieneDb, hygieneKind, hygieneHandle, null);
   }
   const listed = await client.listTools();
   const tools: ToolDef[] = listed.tools.map((t) => ({
@@ -75,6 +140,7 @@ export async function connectMcp(
 }
 
 // Parse MCP_SERVERS env var into typed configs. Returns [] on unset or malformed.
+// Accepts either stdio ({name, command, ...}) or http ({name, url, ...}) entries.
 export function parseMcpEnv(env: NodeJS.ProcessEnv): McpServerConfig[] {
   const raw = env.MCP_SERVERS;
   if (!raw) return [];
@@ -82,7 +148,8 @@ export function parseMcpEnv(env: NodeJS.ProcessEnv): McpServerConfig[] {
     const arr = JSON.parse(raw);
     if (!Array.isArray(arr)) return [];
     return arr.filter((s): s is McpServerConfig =>
-      typeof s?.name === "string" && typeof s?.command === "string");
+      typeof s?.name === "string" &&
+      (typeof s?.command === "string" || typeof s?.url === "string"));
   } catch {
     return [];
   }

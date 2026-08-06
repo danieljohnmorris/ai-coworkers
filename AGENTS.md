@@ -286,7 +286,12 @@ prod): [docs/webhooks.md](docs/webhooks.md).
 ## MCP servers
 
 Any MCP-compatible server registers its tools as `mcp.<name>.<tool>`. One
-env var per fleet (or per coworker, since `.env` is per-coworker):
+env var per fleet (or per coworker, since `.env` is per-coworker). Two
+transports are supported: **stdio** (spawn a subprocess) and **http**
+(Streamable HTTP endpoint). Exactly one of `command` or `url` must be set
+per entry.
+
+Stdio (local subprocess):
 
 ```
 MCP_SERVERS='[
@@ -295,12 +300,40 @@ MCP_SERVERS='[
 ]'
 ```
 
-Each server config: `{ name, command, args?, env? }`.
+HTTP, unauthenticated:
 
-**Caveat**: OAuth-based remote MCPs (e.g. Linear's remote MCP server) need
-refresh-token handling. The current transport in `src/adapters/mcp.ts` is
-stdio-only — verify `src/adapters/mcp.ts` before assuming remote OAuth
-works. Local stdio servers are the well-trodden path.
+```
+MCP_SERVERS='[
+  {"name":"public","url":"https://mcp.example.com/mcp"}
+]'
+```
+
+HTTP with a bearer token sourced from an env var (recommended for
+authenticated remote MCPs that use static tokens):
+
+```
+MCP_SERVERS='[
+  {"name":"remote","url":"https://mcp.example.com/mcp","bearerEnv":"EXAMPLE_TOKEN"}
+]'
+```
+
+HTTP with arbitrary static headers:
+
+```
+MCP_SERVERS='[
+  {"name":"remote","url":"https://mcp.example.com/mcp","headers":{"X-Api-Key":"…","X-Trace":"…"}}
+]'
+```
+
+Full per-server config: `{ name, command?, args?, env?, url?, headers?, bearerEnv? }`.
+`command` XOR `url`; setting both, neither, or a missing `bearerEnv`
+throws a clear error at connect time.
+
+**Caveat**: OAuth-based remote MCPs (e.g. Linear's remote MCP server) are
+**not supported yet** — they need OAuth 2.1 + dynamic client registration
+and refresh-token handling. Bearer tokens (`bearerEnv`) and static
+`headers` cover any server whose auth is a long-lived credential; OAuth
+support is tracked as a follow-up.
 
 MCP tools are all registered as `kind: "action"` — MCP doesn't distinguish
 read vs write, so gate anything sensitive via `BOUNDARIES.md` /
