@@ -82,11 +82,17 @@ Each scenario in `scenarios/*.json` declares:
 Run:
 
 ```bash
-make bench                    # print the leaderboard
-make bench-update-readme      # regenerate and refresh README stats line
+OLLAMA_API_KEY=... make bench       # print the leaderboard
+make bench-update-readme            # regenerate and refresh README stats line
 ```
 
-Current harness uses a "perfect coworker" stub — every scenario
-scores 1.0 by construction. Rubric side is done + unit-tested
-(`bench.test.ts`); wiring a real `runScenario()` call into `bench.mjs`
-so the stub becomes an actual coworker response is the follow-up.
+`bench.mjs` spins up a real coworker per scenario, wires the scenario
+sensors, drops the prompt into the inbox, runs one tick against a
+**real LLM** (from `OLLAMA_API_KEY` + `BENCH_MODEL` / `COWORKER_MODEL`),
+and scores the coworker's actual `reason` + `thoughts` + `action.input`.
+No stubs — if `OLLAMA_API_KEY` isn't set the bench exits with a clear
+message rather than pretending to score anything. Override the model
+with `--model <name>` or `BENCH_MODEL=<name>`.
+
+`score()` is exported + unit-tested independently (`bench.test.ts`) so
+the rubric can be verified without spending LLM tokens.
