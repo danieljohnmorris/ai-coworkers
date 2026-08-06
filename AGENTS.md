@@ -485,6 +485,12 @@ Promote to live per coworker by passing `--live` on the command line.
 Watch a coworker in dry-run for a day before granting live access — the
 "would" payloads let you verify intent without side effects.
 
+At startup the coworker prints a 3-line ASCII banner announcing **LIVE**
+or **DRY-RUN**, sets the terminal window/tab title to
+`<name> [LIVE|dry]`, and prefixes every action line in `highlights.log`
+with `[LIVE]` or `[dry]`. So the mode is visible from the tab, from the
+log tail, and from every write. `bin/status.sh <name>` echoes it too.
+
 `BOUNDARIES.md` also caps resources:
 
 ```md
@@ -565,6 +571,10 @@ need on-schedule rituals, use `both`.
 Concrete checklist after starting a coworker:
 
 ```bash
+# 0. One-shot status readout — pid/etime, LIVE-or-DRY-RUN mode, wake port
+#    listen state, ticks today, last action, recent sensor errors.
+bin/status.sh <name>
+
 # 1. Process is up and ticking
 tail -f coworkers/<name>/state/stream.log
 

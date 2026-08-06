@@ -14,7 +14,7 @@ import { checkAction } from "./boundaries.ts";
 import type { Role } from "./role.ts";
 import { sweep, activeCount } from "./hygiene.ts";
 import { pendingPromises, recentRollups } from "./memory.ts";
-import { Log } from "./log.ts";
+import { Log, modeTag } from "./log.ts";
 import type { ToolRegistry } from "./tools.ts";
 import { readTempo, readBudget, extractTempoGuidance } from "./tempo.ts";
 import { getCached, setCached, minInterval, invalidatePrefix } from "./sensor-cache.ts";
@@ -447,7 +447,7 @@ export async function tick(ctx: TickContext): Promise<TickOutcome> {
         : decision.input;
       // AIC-46 — retry transient failures (5xx, 429, ECONNRESET) before giving up.
       outcome = await retryAsync(() => tool.handler(runInput, decisionCtx));
-      ctx.log.highlight(`→ ${tool.name}${ctx.dryRun ? " (dry-run)" : ""}: ${JSON.stringify(decision.input).slice(0, 120)}`);
+      ctx.log.highlight(`${modeTag(!ctx.dryRun)} → ${tool.name}${ctx.dryRun ? " (dry-run)" : ""}: ${JSON.stringify(decision.input).slice(0, 120)}`);
       ctx.log.event("note", { tool: tool.name, outcome, step });
       ranAnyAction = true;
       // Any successful write to an external system means cached reads of that

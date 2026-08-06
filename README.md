@@ -98,6 +98,14 @@ the first tick open a browser to consent. See
 
 Set `WAKE_PORT=7778` (and `WAKE_SECRET` for auth) in the coworker's `.env`, then declare inbound webhooks in `coworkers/<name>/role/WEBHOOKS.json`. Closed-set signature verifiers: `hmac-sha256`, `github-sha256`, `slack-v0`, `none`. See [docs/webhooks.md](docs/webhooks.md) for schema + tunnel setup.
 
+Choose an activity mode via `WAKE_MODE`:
+
+| mode | tick loop | wake server | when to use |
+|---|---|---|---|
+| `tick` | on | off | no inbound reachability (behind NAT, no tunnel) |
+| `webhook` | off (24h floor) | on | cheapest steady state; you trust webhook coverage |
+| `both` (default) | on | on | belt-and-suspenders — webhooks fire fast, polling catches gaps |
+
 ### 5. Optional: MCP servers (extra tools)
 
 One env var per fleet or per coworker:
