@@ -21,10 +21,12 @@ import { getCached, setCached, minInterval, invalidatePrefix } from "./sensor-ca
 import type { SemanticMemory } from "./semantic.ts";
 import { runDue, type RitualDef } from "./rituals.ts";
 import { dreamOnce } from "./reflect.ts";
+import { auditRoleDocs } from "./role_audit.ts";
 import { writeJournal } from "./journal.ts";
 import { matchIntents } from "./intents.ts";
 import { tailHighlights } from "./log.ts";
-import { join } from "node:path";
+import { join, dirname } from "node:path";
+import { appendFileSync, mkdirSync } from "node:fs";
 import type { EntityStore } from "./entities.ts";
 import type { Inbox } from "./inbox.ts";
 import { renderReactions, type Reactions } from "./reactions.ts";
@@ -382,6 +384,34 @@ export async function tick(ctx: TickContext): Promise<TickOutcome> {
       run: async () => {
         const journalDir = join(ctx.role.dir, "..", "state", "journal");
         await writeJournal({ role: ctx.role, events: ctx.events, journalDir, llm: ctx.llm, log: ctx.log });
+      },
+    },
+    {
+      name: "role.audit",
+      cadence: { kind: "daily", hourUTC: 8 }, // 08:00 UTC — before the working day starts
+      run: async () => {
+        const stateDir = join(ctx.role.dir, "..", "state");
+        const result = auditRoleDocs({
+          roleDir: ctx.role.dir,
+          snapshotDir: join(stateDir, "audit", "snapshots"),
+          findingsLog: join(stateDir, "audit", "findings.log"),
+        });
+        const criticals = result.findings.filter((f) => f.severity === "critical");
+        const warns = result.findings.filter((f) => f.severity === "warn");
+        if (criticals.length === 0) {
+          if (warns.length) ctx.log.event("note", { audit: "role_docs", warns: warns.length });
+          return;
+        }
+        // Escalate. Persist a questions.md entry so the human sees it in-place.
+        const summary = criticals.map((c) => `- **${c.doc}.md**: ${c.message}`).join("\n");
+        ctx.log.highlight(`🚨 role.audit: ${criticals.length} critical finding(s) — see state/audit/findings.log`);
+        const questionsPath = join(stateDir, "questions.md");
+        try { mkdirSync(dirname(questionsPath), { recursive: true }); } catch { /* noop */ }
+        const block =
+          `## ${new Date().toISOString()} — from ${ctx.role.name} (role.audit)\n` +
+          `**Q:** My role docs changed in ways that look suspicious. Please review and either revert or accept via \`bin/audit-accept.sh ${ctx.role.name}\`:\n\n${summary}\n\n` +
+          `**A:** _(unanswered)_\n\n`;
+        try { appendFileSync(questionsPath, block); } catch { /* noop */ }
       },
     },
     {
