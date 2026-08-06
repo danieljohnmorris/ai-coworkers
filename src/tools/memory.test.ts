@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { memorySearch } from "./memory.ts";
+import { memorySearch, memoryRecall } from "./memory.ts";
 import { openEvents } from "../runtime/log.ts";
 import { initEpisodic } from "../runtime/episodic.ts";
 import { mkdirSync, mkdtempSync, rmSync, symlinkSync } from "node:fs";
@@ -34,6 +34,25 @@ describe("memory.search tool", () => {
     const r = await memorySearch.handler({ query: "TEST-1" }, ctx) as any;
     expect(r.count).toBeGreaterThanOrEqual(1);
     expect(r.results[0].kind).toBe("action");
+  });
+
+  it("memory.recall falls back to raw hits when summariser fails", async () => {
+    const ctx: ToolCtx = { coworker: NAME, dryRun: false, env: {} as NodeJS.ProcessEnv };
+    const original = globalThis.fetch;
+    globalThis.fetch = (async () => new Response("nope", { status: 500 })) as typeof fetch;
+    try {
+      const r = await memoryRecall.handler({ query: "TEST-1", purpose: "verify" }, ctx) as any;
+      expect(r.hitCount).toBeGreaterThanOrEqual(1);
+      expect(r.summary).toMatch(/summariser failed|Raw hits/);
+    } finally {
+      globalThis.fetch = original;
+    }
+  });
+
+  it("memory.recall returns 'no prior events matched' on empty search", async () => {
+    const ctx: ToolCtx = { coworker: NAME, dryRun: false, env: {} as NodeJS.ProcessEnv };
+    const r = await memoryRecall.handler({ query: "zzz-nothing-matches" }, ctx) as any;
+    expect(r.hitCount).toBe(0);
   });
 
   it("returns empty on unmatched query", async () => {

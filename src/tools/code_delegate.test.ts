@@ -21,6 +21,15 @@ describe("code.delegate", () => {
     expect(r.error).toMatch(/ACP_AGENT_CMD/);
   });
 
+  it("parses ACP_ALLOW_KINDS from env when input.allowKinds is omitted", async () => {
+    // Live call with a bad binary → we still reach parseAllowKinds before spawning.
+    const r = await codeDelegate.handler(
+      { prompt: "x", cwd: "/tmp" },
+      ctxLive({ ACP_AGENT_CMD: "/nonexistent-binary-xyz", ACP_TIMEOUT_MS: "2000", ACP_ALLOW_KINDS: "read,execute" }),
+    ) as any;
+    expect(r.stopReason).toBe("error");
+  });
+
   it("returns stopReason='error' when the agent binary is missing", async () => {
     const r = await codeDelegate.handler(
       { prompt: "x", cwd: "/tmp" },

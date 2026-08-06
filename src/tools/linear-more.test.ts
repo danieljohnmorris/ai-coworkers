@@ -73,6 +73,32 @@ describe("linearUntaggedIssues", () => {
   });
 });
 
+describe("linearUntaggedIssues pagination", () => {
+  it("follows pageInfo.endCursor when hasNextPage is true", async () => {
+    let page = 0;
+    globalThis.fetch = (async () => {
+      page++;
+      if (page === 1) {
+        return new Response(JSON.stringify({
+          data: { issues: {
+            nodes: [{ id: "u1", identifier: "ILO-1", title: "p1", team: { key: "ILO" }, state: { type: "backlog" }, labels: { nodes: [] } }],
+            pageInfo: { hasNextPage: true, endCursor: "c1" },
+          } },
+        }));
+      }
+      return new Response(JSON.stringify({
+        data: { issues: {
+          nodes: [{ id: "u2", identifier: "ILO-2", title: "p2", team: { key: "ILO" }, state: { type: "backlog" }, labels: { nodes: [] } }],
+          pageInfo: { hasNextPage: false, endCursor: null },
+        } },
+      }));
+    }) as typeof fetch;
+    const r = await linearUntaggedIssues.handler({}, ctxLive({ LINEAR_API_KEY: "k" })) as any;
+    expect(r.totalUntagged).toBe(2);
+    expect(page).toBe(2);
+  });
+});
+
 describe("linearSearchIssues", () => {
   it("returns matching issues", async () => {
     const r = await linearSearchIssues.handler({ query: "parser" }, ctxLive({ LINEAR_API_KEY: "k" })) as any;

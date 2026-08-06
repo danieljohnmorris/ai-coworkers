@@ -29,6 +29,27 @@ describe("summariseForTriage", () => {
     expect(s).toContain("slack.mentions: mentions=0");
   });
 
+  it("renders sensor with no array fields as key list", () => {
+    const s = summariseForTriage(emptyPerception({
+      sensors: [{ name: "s.no_arrays", result: { a: 1, b: 2, c: 3 } }],
+    }));
+    expect(s).toContain("s.no_arrays: a,b,c");
+  });
+
+  it("renders sensor error line", () => {
+    const s = summariseForTriage(emptyPerception({
+      sensors: [{ name: "s.err", result: null, error: "boom" }],
+    }));
+    expect(s).toContain("s.err: error(boom)");
+  });
+
+  it("renders sensor result that is not an object at all", () => {
+    const s = summariseForTriage(emptyPerception({
+      sensors: [{ name: "s.scalar", result: 42 }],
+    }));
+    expect(s).toContain("s.scalar: 42");
+  });
+
   it("surfaces inbox + reactions when present", () => {
     const s = summariseForTriage(emptyPerception({
       inboxUnread: "please look at ILO-42",

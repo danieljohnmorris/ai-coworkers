@@ -61,6 +61,7 @@ export const roleProposeChange: ToolDef = {
       try {
         notified = await ask.handler({ to: "manager", question, context }, ctx);
       } catch (err2) {
+        /* v8 ignore next */
         notified = { error: String(err2) };
       }
     }

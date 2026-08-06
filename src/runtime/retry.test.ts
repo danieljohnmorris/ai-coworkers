@@ -13,6 +13,14 @@ describe("isTransient", () => {
     expect(isTransient(new Error("socket ECONNRESET"))).toBe(true);
     expect(isTransient(new Error("connection ETIMEDOUT"))).toBe(true);
   });
+  it("returns true for abort/hang-up errors", () => {
+    expect(isTransient(new Error("socket hang up"))).toBe(true);
+    expect(isTransient(new Error("The operation was aborted"))).toBe(true);
+  });
+  it("handles non-Error thrown values (plain string)", () => {
+    expect(isTransient("HTTP 503 down")).toBe(true);
+    expect(isTransient("nope")).toBe(false);
+  });
   it("returns false for deterministic errors", () => {
     expect(isTransient(new Error("Linear 401: unauthorized"))).toBe(false);
     expect(isTransient(new Error("Linear 404: not found"))).toBe(false);

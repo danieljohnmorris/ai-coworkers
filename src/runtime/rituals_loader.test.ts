@@ -65,6 +65,46 @@ describe("loadRituals", () => {
     expect(r.errors.some((e) => /bad JSON/.test(e))).toBe(true);
   });
 
+  it("accepts a valid weekly cadence", () => {
+    writeJson("a.json", { name: "w", cadence: { kind: "weekly", weekdayUTC: 3, hourUTC: 12 }, action: "reflect" });
+    const r = loadRituals(dir);
+    expect(r.errors).toEqual([]);
+    expect(r.specs).toHaveLength(1);
+  });
+
+  it("rejects non-object ritual definitions", () => {
+    writeFileSync(join(dir, "a.json"), JSON.stringify("just-a-string"));
+    writeFileSync(join(dir, "b.json"), JSON.stringify({ name: "" }));
+    writeFileSync(join(dir, "c.json"), JSON.stringify({ name: "n" })); // no cadence
+    writeFileSync(join(dir, "d.json"), JSON.stringify({ name: "n", cadence: {} })); // no action
+    const r = loadRituals(dir);
+    expect(r.errors.length).toBeGreaterThanOrEqual(4);
+  });
+
+  it("rejects weekly.hourUTC out of range", () => {
+    writeJson("bad.json", { name: "x", cadence: { kind: "weekly", weekdayUTC: 0, hourUTC: 99 }, action: "reflect" });
+    const r = loadRituals(dir);
+    expect(r.errors.some((e) => /hourUTC/.test(e))).toBe(true);
+  });
+
+  it("rejects daily.minuteUTC out of range", () => {
+    writeJson("bad.json", { name: "x", cadence: { kind: "daily", hourUTC: 9, minuteUTC: 99 }, action: "reflect" });
+    const r = loadRituals(dir);
+    expect(r.errors.some((e) => /minuteUTC/.test(e))).toBe(true);
+  });
+
+  it("rejects unknown cadence.kind", () => {
+    writeJson("bad.json", { name: "x", cadence: { kind: "yearly" }, action: "reflect" });
+    const r = loadRituals(dir);
+    expect(r.errors.some((e) => /unknown cadence.kind/.test(e))).toBe(true);
+  });
+
+  it("rejects 'every' cadence with non-positive ms", () => {
+    writeJson("bad.json", { name: "x", cadence: { kind: "every", ms: 0 }, action: "reflect" });
+    const r = loadRituals(dir);
+    expect(r.errors.some((e) => /positive ms/.test(e))).toBe(true);
+  });
+
   it("accepts a valid 'every ms' cadence", () => {
     writeJson("a.json", { name: "x", cadence: { kind: "every", ms: 5000 }, action: "reflect" });
     const r = loadRituals(dir);

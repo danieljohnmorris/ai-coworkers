@@ -25,6 +25,10 @@ describe("isDue", () => {
     expect(isDue({ kind: "hourly" }, last, now)).toBe(false);
   });
 
+  it("every: never-run is due", () => {
+    expect(isDue({ kind: "every", ms: 60_000 }, null, new Date())).toBe(true);
+  });
+
   it("every: due after exact interval", () => {
     const now = new Date("2026-01-01T12:00:00Z");
     expect(isDue({ kind: "every", ms: 60_000 }, new Date(now.getTime() - 60_000), now)).toBe(true);

@@ -48,6 +48,14 @@ describe("openReactions", () => {
     expect(r.read()).toHaveLength(1);
   });
 
+  it("treats a corrupt cursor file as offset 0", () => {
+    const path = join(dir, "reactions.log");
+    const r = openReactions(path);
+    r.append({ verdict: "👍" });
+    require("node:fs").writeFileSync(path + ".cursor", "not-a-number");
+    expect(r.unread()).toHaveLength(1);
+  });
+
   it("uses the provided ts when append is called with one", () => {
     const r = openReactions(join(dir, "reactions.log"));
     r.append({ verdict: "👍", ts: "2026-01-01T00:00:00.000Z" });

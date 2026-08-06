@@ -31,6 +31,13 @@ describe("validateInput", () => {
     expect(r.ok).toBe(false);
     expect(r.errors[0]).toMatch(/bad schema/);
   });
+  it("formats error with (root) when instancePath is empty", () => {
+    // Missing required top-level field → instancePath === "" → falls back to "(root)".
+    const r = validateInput(schema, {}) as any;
+    expect(r.ok).toBe(false);
+    expect(r.errors.some((e: string) => e.startsWith("(root):"))).toBe(true);
+  });
+
   it("caches compiled validators", () => {
     // Two calls with the same schema should not throw or explode
     for (let i = 0; i < 20; i++) {

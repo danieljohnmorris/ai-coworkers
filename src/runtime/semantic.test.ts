@@ -46,6 +46,15 @@ describe("openSemantic", () => {
     rmSync(dir, { recursive: true, force: true });
   });
 
+  it("preserves an existing MEMORY.md on open (does not blank it)", () => {
+    const path = join(dir, "MEMORY.md");
+    require("node:fs").mkdirSync(dir, { recursive: true });
+    require("node:fs").writeFileSync(path, "pre-existing content");
+    const m = openSemantic(path);
+    expect(m.read()).toBe("pre-existing content");
+    rmSync(dir, { recursive: true, force: true });
+  });
+
   it("overwrites on repeated accepted writes (not appends)", () => {
     const path = join(dir, "MEMORY.md");
     const m = openSemantic(path, 1024);

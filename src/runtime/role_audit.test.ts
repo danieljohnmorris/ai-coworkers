@@ -105,6 +105,23 @@ describe("auditRoleDocs", () => {
     expect(r.findings.some((f) => f.severity === "critical" && /empty/.test(f.message))).toBe(true);
   });
 
+  it("notes a plain content change on a non-BOUNDARIES doc", () => {
+    writeFileSync(join(paths.roleDir, "ROLE.md"), "original role");
+    auditRoleDocs(paths);
+    writeFileSync(join(paths.roleDir, "ROLE.md"), "revised role text");
+    const r = auditRoleDocs(paths);
+    expect(r.findings.some((f) => f.doc === "ROLE" && /content changed/.test(f.message))).toBe(true);
+  });
+
+  it("critical: cap removed entirely", () => {
+    seedBoundaries("## Must not touch\n- secret\n\n## Resource limits\n- Max LLM calls per day: 500");
+    auditRoleDocs(paths);
+    // Remove the cap line entirely.
+    seedBoundaries("## Must not touch\n- secret\n\n## Resource limits\n");
+    const r = auditRoleDocs(paths);
+    expect(r.findings.some((f) => f.severity === "critical" && /removed entirely/.test(f.message))).toBe(true);
+  });
+
   it("appends every run's outcome to findings.log", () => {
     seedBoundaries("## Must not touch\n- secret\n");
     auditRoleDocs(paths);

@@ -52,6 +52,12 @@ describe("parseDecision", () => {
     expect(r.input.body).toBe("hi");
   });
 
+  it("returns noop when {...} block never closes (extractFirstJsonObject fallthrough)", () => {
+    const r = parseDecision("{ this is broken and never closes") as any;
+    expect(r.action).toBe("noop");
+    expect(r.reason).toMatch(/unparseable/);
+  });
+
   it("returns noop + rawOutput on truly unparseable text", () => {
     const raw = "I refuse to output JSON, sorry.";
     const r = parseDecision(raw) as any;
@@ -110,6 +116,17 @@ describe("deliberate — prompt compaction", () => {
     expect(deliberatePrompt).toContain("[COMPACTED —");
     expect(deliberatePrompt).toContain("short summary");
     expect(deliberatePrompt).not.toContain("x".repeat(500));
+  });
+
+  it("includes rate-limit section in the prompt when rateLimits is non-empty", async () => {
+    let prompt = "";
+    globalThis.fetch = (async (_url: string, init?: RequestInit) => {
+      prompt = JSON.parse(String(init?.body)).messages.at(-1).content;
+      return new Response(JSON.stringify({ choices: [{ message: { content: '{"action":"noop","reason":"ok"}' } }] }));
+    }) as typeof fetch;
+    await deliberate(role, { ...perception, rateLimits: [{ prefix: "linear", untilIso: "2026-08-06T00:05:00Z", reason: "429 from linear.new_issues" }] }, [], llm, []);
+    expect(prompt).toContain("EXTERNAL SERVICES BACKED OFF");
+    expect(prompt).toContain("linear until");
   });
 
   it("leaves small prior-step outcomes verbatim (no LLM call for compaction)", async () => {
