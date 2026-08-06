@@ -1403,6 +1403,7 @@
 <a href="#tests"><img alt="tests" src="https://img.shields.io/badge/tests-496-brightgreen" /></a></p>
 <p>Long-running AI coworkers with <strong>roles</strong>, <strong>boundaries</strong>, and a <strong>tick loop</strong>.
 Not one-shot task agents — persistent processes that decide when <em>not</em> to act.</p>
+<p><strong>Small harness, meant to be forked.</strong> Inspired by the Pi CLI philosophy of shipping a compact, readable runtime rather than a framework: ~6.5k lines you can adopt, fork, and adapt to your team's shape without fighting an opinionated abstraction layer. Every design choice has an ADR (<code>docs/adr/</code>) so you can disagree and rewrite that piece in isolation.</p>
 <p><strong>Runs your existing agent artifacts.</strong> Point ai-coworkers at your Claude Code / OpenClaw / NanoClaw SOUL.md, Hermes skills, or Vercel Eve <code>agent/</code> folder — the adapters load them in-place. Delegate coding work to any <a href="https://agentclientprotocol.com">ACP</a>-conformant agent (Goose, Codex, Claude Code) via <code>code.delegate</code>. Expose any <a href="https://modelcontextprotocol.io">MCP</a> server through a coworker with one env var.</p>
 <p>Unlike Hermes / ElizaOS (single-agent, chat-native) or CrewAI (task
 orchestration), ai-coworkers models <strong>roles with hard boundaries</strong>, defaults
@@ -1636,10 +1637,11 @@ node<span class="w"> </span>--experimental-strip-types<span class="w"> </span>sr
 <p><strong>Operations</strong>
 - <a href="docs/systemd.md">systemd deployment</a>
 - <a href="docs/webhooks.md">Webhooks &amp; external wakes</a></p>
-<p><strong>Design lineage</strong> — Hermes/OpenClaw (SOUL/USER/MEMORY files, skills, dreams),
-ElizaOS (providers·actions·evaluators), Generative Agents (Stanford),
-MemGPT/Letta (tiered memory), Vercel Eve (filesystem-first), Claude Code / Pi
-(multi-tool turns), <a href="https://arxiv.org/abs/2309.02427">CoALA</a> (memory taxonomy).</p>
+<p><strong>Design lineage</strong> — Pi CLI (small forkable harness &gt; opinionated framework),
+Hermes/OpenClaw (SOUL/USER/MEMORY files, skills, dreams), ElizaOS
+(providers·actions·evaluators), Generative Agents (Stanford), MemGPT/Letta
+(tiered memory), Vercel Eve (filesystem-first), Claude Code (multi-tool turns),
+<a href="https://arxiv.org/abs/2309.02427">CoALA</a> (memory taxonomy).</p>
 <hr />
 <h2 id="tests">Tests<a class="headerlink" href="#tests" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code>npm<span class="w"> </span><span class="nb">test</span><span class="w">              </span><span class="c1"># 496 tests, ~2s</span>
