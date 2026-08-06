@@ -72,6 +72,57 @@ is fully self-executing prose (a subset).
 our adapter on 2026-08-06 (see `src/adapters/hermes.test.ts` recursion
 test).
 
+### Gmail + Google Workspace — per-coworker setup
+
+For a specific coworker to send / read email, run once as the operator:
+
+```bash
+bin/setup-gmail.sh <coworker>
+```
+
+The script wraps Hermes's `google-workspace/scripts/setup.py`, following
+its documented three-step agent-driven flow but with the operator in the
+loop instead of a chat model:
+
+1. Prompts you for the path to a `credentials.json` downloaded from
+   [Google Cloud Console](https://console.cloud.google.com/apis/credentials)
+   (Desktop-app OAuth client type; enable Gmail / Calendar / Drive /
+   Sheets / Docs APIs on the project).
+2. Prints the OAuth URL — you visit, authorize, paste back the code.
+3. Verifies + reports the token path.
+
+Token lands at `coworkers/<name>/state/hermes-home/google_token.json`
+(scoped via `HERMES_HOME` env). Each coworker gets its own token —
+running the script for `alex` doesn't affect `bob`. The
+[`gmail.search` / `gmail.get` / `gmail.send` / `gmail.reply` tools in
+`src/tools/gmail.ts`] shell out to Hermes's `google_api.py` with the
+same `HERMES_HOME`, so the tools pick up the cached token automatically.
+
+If a coworker's TOOLS.md declares `- gmail` but setup hasn't run, the
+tools return `{warning: "Gmail not configured — run bin/setup-gmail.sh
+<coworker>"}` instead of throwing — coworker just skips gmail work
+until the operator runs setup.
+
+### Slack — per-coworker setup
+
+```bash
+bin/setup-slack.sh <coworker>
+```
+
+Wraps `hermes slack manifest`. Steps:
+
+1. Writes the app manifest to `/tmp/slack-manifest-<coworker>.json`.
+2. Walks you through creating the Slack App at
+   [api.slack.com/apps](https://api.slack.com/apps) → "From an app
+   manifest" → pick workspace → paste → install.
+3. Prompts for the Bot Token (`xoxb-…`), optional App Token
+   (`xapp-…` for Socket Mode), optional watched-channel IDs.
+4. Writes them to `coworkers/<name>/.env` (gitignored).
+
+Existing native `src/tools/slack.ts` picks the tokens up on next
+restart. No new tool code needed — the setup step is what was
+missing.
+
 ## Path B — MCP servers
 
 The [Model Context Protocol](https://modelcontextprotocol.io) ecosystem
