@@ -719,6 +719,31 @@ describe("tick — inbox + entities + rituals", () => {
     expect(names).toContain("health.snapshot");
   });
 
+  it("does not invoke the entity evaluator when evaluatorLlm is absent (EXTRACT_ENTITIES gate)", async () => {
+    const ctx = makeCtx(dir, { tools: "- fake" });
+    // Deliberate + one action so the evaluator would have material to work with.
+    mockFetchSequence([{ action: "noop", reason: "done" }]);
+    await tick(ctx);
+    const runs = ctx.events.prepare(`SELECT id FROM events WHERE kind='evaluator.run'`).all();
+    const errs = ctx.events.prepare(`SELECT id FROM events WHERE kind='evaluator.error'`).all();
+    expect(runs.length).toBe(0);
+    expect(errs.length).toBe(0);
+  });
+
+  it("invokes the entity evaluator when evaluatorLlm is set", async () => {
+    const ctx = makeCtx(dir, { tools: "- fake" });
+    const evaluatorLlm: LLMConfig = { baseUrl: "http://x", apiKey: "k", model: "cheap-eval" };
+    // Two fetch replies: one for deliberate (noop), one for the evaluator.
+    mockFetchSequence([
+      { action: "noop", reason: "done" },
+      { people: [], projects: [], workspaceFacts: [] },
+    ]);
+    await tick({ ...ctx, evaluatorLlm });
+    const runs = ctx.events.prepare(`SELECT payload FROM events WHERE kind='evaluator.run'`).all() as any[];
+    expect(runs.length).toBe(1);
+    expect(JSON.parse(runs[0].payload).model).toBe("cheap-eval");
+  });
+
   it("recentThoughts skips malformed deliberate payloads without crashing", async () => {
     const ctx = makeCtx(dir, { tools: "- fake" });
     // Insert a deliberate row with non-JSON payload; the recentThoughts

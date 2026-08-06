@@ -9,6 +9,20 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 ## [Unreleased]
 
 ### Added
+- **Entity evaluator** (`src/runtime/evaluator.ts`) — opt-in per-tick
+  hook that extracts people, projects, and durable workspace facts
+  from perception + actions + thoughts and writes them into the
+  existing entity markdown files and `state/notes.md`. Uses the cheap
+  `TRIAGE_MODEL` if set, else `COWORKER_MODEL`. Enable with
+  `EXTRACT_ENTITIES=1`. Curated (non-auto) entity files are never
+  touched; auto-generated files are appended to with dedup. Cost is
+  logged as `evaluator.run` (with token counts); failures as
+  `evaluator.error` — the evaluator never crashes the tick.
+- **ADR 0006 — filesystem-first storage** (`docs/adr/0006-filesystem-first-storage.md`)
+  codifies the design commitment that entity notes, workspace facts,
+  memory scratchpads, event logs, and role docs are all
+  human-readable files on disk (markdown + SQLite for indexes only)
+  rather than rows in a knowledge graph or relational schema.
 - **Framework-owned baseline prompt** prepended to every coworker's
   system prompt. Covers universal hygiene (tool categories, escalation
   via `ask to="manager"`, memory-note discipline, retry-once tool-failure

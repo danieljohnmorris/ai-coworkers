@@ -68,6 +68,7 @@ Every variable actually read by `src/`:
 | `OLLAMA_HOST` | no | `https://ollama.com` | LLM base URL (OpenAI-compatible). |
 | `COWORKER_MODEL` | no | `gemma4:cloud` | Main deliberation model. |
 | `TRIAGE_MODEL` | no | unset | If set, a cheap-first preflight model asked "act or skip?" before the expensive prompt each tick. |
+| `EXTRACT_ENTITIES` | no | unset | Set to `1` to enable the per-tick entity evaluator (extracts people, projects, workspace facts into the existing entity + notes files). Uses `TRIAGE_MODEL` if set, else `COWORKER_MODEL`. Default off. See [Entity evaluator](#entity-evaluator). |
 | `TICK_INTERVAL_MS` | no | `300000` | Base tick interval (5 min). |
 | `MIN_TICK_INTERVAL_MS` | no | `15000` | Floor when the model asks to `pace: faster`. |
 | `MAX_TICK_INTERVAL_MS` | no | `1800000` | Cap for adaptive backoff (30 min). Ignored when the role sets `Cadence: constant`. |
@@ -549,6 +550,39 @@ Once a role adds any file to `role/rituals/`, the full built-in set
 is replaced by the on-disk list — so if you want to keep the others,
 copy them across too. See `examples/generic-triage/role/rituals/`
 for the canonical set.
+
+### Entity evaluator
+
+Opt-in per-tick hook (`src/runtime/evaluator.ts`) that extracts
+**people**, **projects**, and durable **workspace facts** from what
+the coworker just perceived, thought, and did, and writes them into
+the existing filesystem-first stores — no new schema, no new
+storage. See [ADR 0006 — filesystem-first storage](docs/adr/0006-filesystem-first-storage.md)
+for why entities are markdown files rather than graph edges.
+
+Enable with `EXTRACT_ENTITIES=1` in the coworker's `.env`. Model is
+`TRIAGE_MODEL` (if set) else `COWORKER_MODEL` — cheap-first, never a
+new required env var. Runs after `deliberate` on every tick; the
+prompt is terse and returns empty arrays on uneventful ticks.
+
+Write rules:
+
+- `state/entities/people/<handle>.md` and
+  `state/entities/projects/<key>.md` — created if absent with an
+  `## auto-generated` heading and the extracted one-liner.
+- If the entity file already exists **and** contains the
+  `## auto-generated` heading, new one-liners are appended (deduped).
+- If the file exists **without** that heading, it is treated as
+  human-curated and never touched. Humans have full ownership; the
+  evaluator writes only where it has explicit permission.
+- Workspace facts append to `state/notes.md` (same shape as
+  `memory.note`) tagged `[auto]`, deduped against the tail of the
+  file.
+
+Cost + failure are observable: an `evaluator.run` event records
+prompt/completion tokens and per-write counts; an `evaluator.error`
+event records swallowed failures. The evaluator never crashes the
+tick.
 
 ---
 
