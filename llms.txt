@@ -40,6 +40,10 @@ The distinctive thesis: agents live in a filesystem directory (role docs + state
 - [generic-triage](https://github.com/danieljohnmorris/ai-coworkers/tree/main/examples/generic-triage): Linear triage engineer.
 - [pr-reviewer](https://github.com/danieljohnmorris/ai-coworkers/tree/main/examples/pr-reviewer): reviews open PRs across watched GitHub repos.
 - [project-manager](https://github.com/danieljohnmorris/ai-coworkers/tree/main/examples/project-manager): project health summaries, aging tickets.
+- [scribe](https://github.com/danieljohnmorris/ai-coworkers/tree/main/examples/scribe): keeps README + docs honest as the code changes.
+- [trace](https://github.com/danieljohnmorris/ai-coworkers/tree/main/examples/trace): incident RCA — reads traces, walks git history, posts root-cause notes.
+- [log](https://github.com/danieljohnmorris/ai-coworkers/tree/main/examples/log): auto-changelog — updates CHANGELOG.md on merge, drafts GitHub releases on tag.
+- [watchtower](https://github.com/danieljohnmorris/ai-coworkers/tree/main/examples/watchtower): monitoring — baselines operational signals and alerts on real anomalies, with aggressive dedup.
 
 ## Operator CLI (bin/)
 

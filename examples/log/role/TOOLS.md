@@ -1,0 +1,4 @@
+- github: read commits, PRs, tags; draft releases; comment on PRs.
+- code.delegate: apply CHANGELOG.md patches (never edit directly).
+- memory: track `last_processed_sha` and prior release notes.
+- ask: escalate BREAKING / semver questions.
