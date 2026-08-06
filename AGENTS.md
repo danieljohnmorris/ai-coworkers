@@ -777,6 +777,41 @@ before writing to `events.db`.
 
 ---
 
+## Safety rules for AI agents working on this repo
+
+Read these before touching anything. The previous PR lost hours of live
+coworker state because an agent "cleaned up" a scratch directory it had
+created inside `coworkers/`. These rules exist to make that impossible
+to repeat.
+
+- **Never `git clean`, in any form.** Not `-f`, not `-d`, not `-x`, not
+  "just to reset the worktree". If you need a clean state, delete the
+  specific files you created, by exact path, one command per file.
+- **Never `rm -rf` inside `coworkers/`, `state/`, or any coworker-owned
+  directory.** If a specific file must go (a stale `.bak`, an obsolete
+  config), delete it by exact path, one file per command — never a
+  recursive wildcard.
+- **Never create test artifacts inside `coworkers/`.** Test coworker
+  directories belong in `/tmp/aicw-test-<random>/`. If you need a
+  coworker to test against, copy an example there: `cp -r
+  examples/generic-triage /tmp/aicw-test-$$/`. Do not commit anything
+  under `coworkers/` from an automated run.
+- **Verify with `ls coworkers/` before ending your task.** If any
+  coworker directory that existed at the start of your task has
+  vanished, STOP IMMEDIATELY and report — do not attempt cleanup or
+  recovery, and do not run any further destructive command.
+- **If you need to reset a subprocess or worktree, use the specific
+  mechanism** (kill by pid, remove a single named file). Never a
+  blanket cleanup command.
+- **`.env` files are gitignored on purpose** — they are the operator's
+  per-machine state. Never delete or regenerate a coworker's `.env`
+  without an explicit user instruction naming that file.
+
+If any of these rules conflict with a task instruction, stop and ask.
+A lost coworker directory is not recoverable from git.
+
+---
+
 ## Contributing / making changes
 
 - Read [CONTRIBUTING.md](CONTRIBUTING.md) and [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).

@@ -1,0 +1,6 @@
+{
+  "name": "state.backup",
+  "cadence": { "kind": "daily", "hourUTC": 3, "minuteUTC": 30 },
+  "action": "state_backup",
+  "note": "03:30 UTC daily — snapshot state/ to state.bak/ via bin/backup-state.sh. Requires the 'state_backup' ritual action to be wired in src/runtime/rituals_loader.ts + tick.ts; until then the loader will skip this entry with an 'unknown action' warning."
+}
