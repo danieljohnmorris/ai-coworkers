@@ -464,6 +464,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../comparison/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Comparison with other harnesses
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../dedicated-linear-user/" class="md-nav__link">
         
   
@@ -1193,9 +1221,8 @@ skills live in a git repo (this one, or a fork) that every machine
 pulls from.</p>
 <ul>
 <li>Deploy = <code>git pull &amp;&amp; systemctl --user restart &lt;coworker&gt;@*.service</code>.</li>
-<li>Role changes propagate on next pull; the hot-reload watcher
-  (AIC-58) picks them up without a restart if the machine already
-  has the file open.</li>
+<li>Role changes propagate on next pull; the hot-reload watcher picks
+  them up without a restart if the machine already has the file open.</li>
 <li>State stays local — no cross-machine race conditions on events.db.</li>
 <li>Each machine's metrics endpoint is its own scrape target for
   Prometheus.</li>

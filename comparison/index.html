@@ -1,0 +1,1914 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Long-running AI coworkers with roles, boundaries, and a tick loop.">
+      
+      
+      
+        <link rel="canonical" href="https://danieljohnmorris.github.io/ai-coworkers/comparison/">
+      
+      
+        <link rel="prev" href="../migration/">
+      
+      
+        <link rel="next" href="../dedicated-linear-user/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>Comparison with other harnesses - ai-coworkers</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#comparison-ai-coworkers-vs-the-rest" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="ai-coworkers" class="md-header__button md-logo" aria-label="ai-coworkers" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            ai-coworkers
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Comparison with other harnesses
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/danieljohnmorris/ai-coworkers" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    danieljohnmorris/ai-coworkers
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="ai-coworkers" class="md-nav__button md-logo" aria-label="ai-coworkers" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    ai-coworkers
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/danieljohnmorris/ai-coworkers" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    danieljohnmorris/ai-coworkers
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contributing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Concepts
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Concepts
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tool-cookbook/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tool cookbook (Hermes / MCP / native)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../migration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Migration from other frameworks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Comparison with other harnesses
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Comparison with other harnesses
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#the-one-sentence-positioning" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The one-sentence positioning
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#feature-matrix" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Feature matrix
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#per-framework-honest-read" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Per-framework honest read
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Per-framework honest read">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#buzz-block" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Buzz (Block)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#hermes-nous-research" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Hermes (Nous Research)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#openclaw-nanoclaw-soulclaw" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        OpenClaw / NanoClaw / SoulClaw
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#vercel-eve" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Vercel Eve
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#elizaos" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ElizaOS
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#opensre-tracer-cloud" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        OpenSRE (Tracer-Cloud)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#anthropic-managed-agents" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Anthropic Managed Agents
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#crewai" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CrewAI
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#langgraph" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        LangGraph
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dimensions-where-ai-coworkers-is-genuinely-alone-as-far-as-weve-found" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Dimensions where ai-coworkers is genuinely alone (as far as we've found)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dimensions-where-were-behind" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Dimensions where we're behind
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#when-to-pick-us" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        When to pick us
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#when-to-pick-someone-else" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        When to pick someone else
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#contributing-to-this-doc" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Contributing to this doc
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dedicated-linear-user/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dedicated Linear identity
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Operations
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Operations
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../systemd/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    systemd deployment
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../multi-machine/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Multi-machine deployment
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../webhooks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Webhooks + external wakes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../release-process/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Release process
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture (ADRs)
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture (ADRs)
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0001-coala-memory-taxonomy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0001 — CoALA memory taxonomy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0002-acp-code-delegate/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0002 — ACP for code.delegate
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0003-container-isolation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0003 — Container isolation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0004-events-db-single-file/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0004 — Single events.db
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/0005-evaluators-services/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0005 — Evaluators + services
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#the-one-sentence-positioning" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The one-sentence positioning
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#feature-matrix" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Feature matrix
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#per-framework-honest-read" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Per-framework honest read
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Per-framework honest read">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#buzz-block" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Buzz (Block)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#hermes-nous-research" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Hermes (Nous Research)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#openclaw-nanoclaw-soulclaw" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        OpenClaw / NanoClaw / SoulClaw
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#vercel-eve" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Vercel Eve
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#elizaos" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ElizaOS
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#opensre-tracer-cloud" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        OpenSRE (Tracer-Cloud)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#anthropic-managed-agents" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Anthropic Managed Agents
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#crewai" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CrewAI
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#langgraph" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        LangGraph
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dimensions-where-ai-coworkers-is-genuinely-alone-as-far-as-weve-found" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Dimensions where ai-coworkers is genuinely alone (as far as we've found)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dimensions-where-were-behind" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Dimensions where we're behind
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#when-to-pick-us" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        When to pick us
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#when-to-pick-someone-else" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        When to pick someone else
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#contributing-to-this-doc" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Contributing to this doc
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/danieljohnmorris/ai-coworkers/edit/main/docs/comparison.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="comparison-ai-coworkers-vs-the-rest">Comparison — ai-coworkers vs the rest<a class="headerlink" href="#comparison-ai-coworkers-vs-the-rest" title="Permanent link">&para;</a></h1>
+<p>An honest, non-marketing read of where ai-coworkers sits in a crowded
+space. Written for a visitor comparing frameworks; kept fair to each.
+If we're beaten on a dimension, we say so.</p>
+<p>Last refreshed: 2026-08-06.</p>
+<h2 id="the-one-sentence-positioning">The one-sentence positioning<a class="headerlink" href="#the-one-sentence-positioning" title="Permanent link">&para;</a></h2>
+<p><strong>ai-coworkers</strong> is a <strong>small, filesystem-first, tick-driven</strong> runtime
+for <strong>long-running AI agents with hard boundaries</strong>. It optimises for
+"the agent works safely while nobody's watching" — including <em>deciding
+not to act</em> — rather than "the agent answers when spoken to."</p>
+<p>If you want a chat interface for agents → <strong>Buzz</strong>.
+If you want the widest coding-agent ecosystem → <strong>Claude Code / Codex / Goose</strong> (we speak their protocol, ACP).
+If you want dozens of pre-built domain skills → <strong>Hermes</strong> (we import them).
+If you want incident response as a product → <strong>OpenSRE</strong>.
+If you want an opinionated multi-agent orchestrator → <strong>CrewAI / LangGraph</strong>.
+If you want a persistent worker that runs quietly under <code>BOUNDARIES.md</code>,
+gates every write, and escalates to a human inbox when unsure →
+<strong>ai-coworkers</strong>.</p>
+<h2 id="feature-matrix">Feature matrix<a class="headerlink" href="#feature-matrix" title="Permanent link">&para;</a></h2>
+<p>Legend: ✓ present · ~ partial · — absent · ? not documented</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th style="text-align: center;">ai-coworkers</th>
+<th style="text-align: center;">Buzz</th>
+<th style="text-align: center;">Hermes</th>
+<th style="text-align: center;">OpenClaw / NanoClaw</th>
+<th style="text-align: center;">Vercel Eve</th>
+<th style="text-align: center;">ElizaOS</th>
+<th style="text-align: center;">OpenSRE</th>
+<th style="text-align: center;">Anthropic MA</th>
+<th style="text-align: center;">CrewAI</th>
+<th style="text-align: center;">LangGraph</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Runtime shape</strong></td>
+<td style="text-align: center;">tick loop</td>
+<td style="text-align: center;">chat/rooms</td>
+<td style="text-align: center;">request/response</td>
+<td style="text-align: center;">message-dispatch</td>
+<td style="text-align: center;">request/response</td>
+<td style="text-align: center;">event loop</td>
+<td style="text-align: center;">alert-driven</td>
+<td style="text-align: center;">scheduler + reactive</td>
+<td style="text-align: center;">task DAG</td>
+<td style="text-align: center;">graph traversal</td>
+</tr>
+<tr>
+<td><strong>Decides when NOT to act</strong></td>
+<td style="text-align: center;">✓ quiet gate + adaptive backoff</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">~ scheduler idle</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">—</td>
+</tr>
+<tr>
+<td><strong>Filesystem-first config</strong></td>
+<td style="text-align: center;">✓ <code>role/*.md</code></td>
+<td style="text-align: center;">— (Nostr events)</td>
+<td style="text-align: center;">✓ SKILL.md files</td>
+<td style="text-align: center;">✓ SOUL.md / AGENTS.md</td>
+<td style="text-align: center;">✓ <code>agent/</code> folder</td>
+<td style="text-align: center;">— (plugin registry)</td>
+<td style="text-align: center;">~ .env + Python</td>
+<td style="text-align: center;">~ config JSON</td>
+<td style="text-align: center;">— (Python code)</td>
+<td style="text-align: center;">— (Python code)</td>
+</tr>
+<tr>
+<td><strong>Hard boundary regex + dry-run default</strong></td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">— (identity scopes)</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">~ (NanoClaw containers)</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">— (deliberately, per AGENTS.md)</td>
+<td style="text-align: center;">~ tool permissions</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">—</td>
+</tr>
+<tr>
+<td><strong>Multi-tier memory</strong></td>
+<td style="text-align: center;">✓ 6-tier (CoALA)</td>
+<td style="text-align: center;">~ event log</td>
+<td style="text-align: center;">~ MEMORY.md + skills</td>
+<td style="text-align: center;">~ 4-tier (SoulClaw fork)</td>
+<td style="text-align: center;">~ instructions.md</td>
+<td style="text-align: center;">~ providers</td>
+<td style="text-align: center;">~ session</td>
+<td style="text-align: center;">~ dreaming</td>
+<td style="text-align: center;">~ shared</td>
+<td style="text-align: center;">~ state graph</td>
+</tr>
+<tr>
+<td><strong>Reflect / dreaming ritual</strong></td>
+<td style="text-align: center;">✓ weekly compact + citations</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">~</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">~ evaluators</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">✓ dreaming pass</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">—</td>
+</tr>
+<tr>
+<td><strong>Human ↔ agent channels</strong></td>
+<td style="text-align: center;">✓ inbox + questions + reactions + signed notes</td>
+<td style="text-align: center;">✓ chat rooms</td>
+<td style="text-align: center;">~ chat surfaces</td>
+<td style="text-align: center;">~ platform adapters</td>
+<td style="text-align: center;">~ HTTP/Slack channels</td>
+<td style="text-align: center;">~</td>
+<td style="text-align: center;">~ Slack / PD / Telegram</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">—</td>
+</tr>
+<tr>
+<td><strong>Cross-framework artifact import</strong></td>
+<td style="text-align: center;">✓ Hermes / OpenClaw / Eve loaders</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">—</td>
+</tr>
+<tr>
+<td><strong>ACP (coding-agent) protocol</strong></td>
+<td style="text-align: center;">✓ client</td>
+<td style="text-align: center;">✓ (buzz-cli harness)</td>
+<td style="text-align: center;">✓ via skills</td>
+<td style="text-align: center;">~</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">—</td>
+</tr>
+<tr>
+<td><strong>MCP tool protocol</strong></td>
+<td style="text-align: center;">✓ client</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">~</td>
+<td style="text-align: center;">~</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">~</td>
+</tr>
+<tr>
+<td><strong>Per-tool credential filtering</strong></td>
+<td style="text-align: center;">✓ <code>requiresCreds</code></td>
+<td style="text-align: center;">~ identity scopes</td>
+<td style="text-align: center;">~</td>
+<td style="text-align: center;">~</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">?</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">—</td>
+</tr>
+<tr>
+<td><strong>Secret redaction at persistence</strong></td>
+<td style="text-align: center;">✓ same list as pre-commit hook</td>
+<td style="text-align: center;">?</td>
+<td style="text-align: center;">?</td>
+<td style="text-align: center;">?</td>
+<td style="text-align: center;">?</td>
+<td style="text-align: center;">?</td>
+<td style="text-align: center;">~ PII masking</td>
+<td style="text-align: center;">?</td>
+<td style="text-align: center;">?</td>
+<td style="text-align: center;">?</td>
+</tr>
+<tr>
+<td><strong>Reversible identifier masking pre-LLM</strong></td>
+<td style="text-align: center;">✓ opt-in <code>PII_MASK=1</code></td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">✓ (their original idea)</td>
+<td style="text-align: center;">?</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">—</td>
+</tr>
+<tr>
+<td><strong>Subprocess sandbox for delegated agents</strong></td>
+<td style="text-align: center;">✓ bwrap / firejail</td>
+<td style="text-align: center;">?</td>
+<td style="text-align: center;">?</td>
+<td style="text-align: center;">✓ containers (NanoClaw)</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">~ platform/sandbox/</td>
+<td style="text-align: center;">?</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">—</td>
+</tr>
+<tr>
+<td><strong>Rate-limit awareness per external API</strong></td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">?</td>
+<td style="text-align: center;">?</td>
+<td style="text-align: center;">?</td>
+<td style="text-align: center;">?</td>
+<td style="text-align: center;">?</td>
+<td style="text-align: center;">?</td>
+<td style="text-align: center;">?</td>
+<td style="text-align: center;">?</td>
+<td style="text-align: center;">?</td>
+</tr>
+<tr>
+<td><strong>Prometheus metrics endpoint</strong></td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">?</td>
+<td style="text-align: center;">?</td>
+<td style="text-align: center;">?</td>
+<td style="text-align: center;">?</td>
+<td style="text-align: center;">?</td>
+<td style="text-align: center;">~ opt-out PostHog</td>
+<td style="text-align: center;">?</td>
+<td style="text-align: center;">?</td>
+<td style="text-align: center;">?</td>
+</tr>
+<tr>
+<td><strong>Scored benchmark of agent behaviour</strong></td>
+<td style="text-align: center;">✓ small (3 scenarios)</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">✓ big (tests/synthetic/)</td>
+<td style="text-align: center;">?</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">—</td>
+</tr>
+<tr>
+<td><strong>Long-running-agent focus</strong></td>
+<td style="text-align: center;">✓ core thesis</td>
+<td style="text-align: center;">~</td>
+<td style="text-align: center;">~</td>
+<td style="text-align: center;">~</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">~</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">~</td>
+</tr>
+<tr>
+<td><strong>Multi-agent per host</strong></td>
+<td style="text-align: center;">✓ one dir per coworker</td>
+<td style="text-align: center;">✓ per identity</td>
+<td style="text-align: center;">~</td>
+<td style="text-align: center;">✓ per agent group</td>
+<td style="text-align: center;">✓ per <code>agent/</code></td>
+<td style="text-align: center;">✓ per plugin</td>
+<td style="text-align: center;">— (single agent)</td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓ multi-role crew</td>
+<td style="text-align: center;">✓ multi-node</td>
+</tr>
+<tr>
+<td><strong>Small forkable harness (Pi CLI philosophy)</strong></td>
+<td style="text-align: center;">✓ ~6.5k LOC</td>
+<td style="text-align: center;">— (Rust relay + Tauri desktop)</td>
+<td style="text-align: center;">— (large)</td>
+<td style="text-align: center;">~ (NanoClaw is small; OpenClaw is 500k LOC)</td>
+<td style="text-align: center;">~</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">~ (Python monorepo)</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">—</td>
+</tr>
+<tr>
+<td><strong>Primary language</strong></td>
+<td style="text-align: center;">TypeScript / Node ≥22</td>
+<td style="text-align: center;">Rust + TS</td>
+<td style="text-align: center;">Python</td>
+<td style="text-align: center;">Python + TS (Nano)</td>
+<td style="text-align: center;">TypeScript</td>
+<td style="text-align: center;">TypeScript</td>
+<td style="text-align: center;">Python</td>
+<td style="text-align: center;">?</td>
+<td style="text-align: center;">Python</td>
+<td style="text-align: center;">Python</td>
+</tr>
+<tr>
+<td><strong>License</strong></td>
+<td style="text-align: center;">MIT</td>
+<td style="text-align: center;">Apache 2.0</td>
+<td style="text-align: center;">Apache 2.0</td>
+<td style="text-align: center;">mix</td>
+<td style="text-align: center;">?</td>
+<td style="text-align: center;">?</td>
+<td style="text-align: center;">?</td>
+<td style="text-align: center;">proprietary</td>
+<td style="text-align: center;">MIT</td>
+<td style="text-align: center;">MIT</td>
+</tr>
+</tbody>
+</table>
+<h2 id="per-framework-honest-read">Per-framework honest read<a class="headerlink" href="#per-framework-honest-read" title="Permanent link">&para;</a></h2>
+<h3 id="buzz-block">Buzz (Block)<a class="headerlink" href="#buzz-block" title="Permanent link">&para;</a></h3>
+<p><strong>Shape:</strong> Nostr relay + Tauri desktop client. Every message / reaction /
+workflow step / git event is a signed event in one log; agents get their
+own keypair alongside humans. Ships <code>buzz-cli</code> with an ACP harness for
+Goose / Codex / Claude Code.</p>
+<p><strong>They win on:</strong> cryptographic identity per agent (portable across
+relays), chat-native UX, git-events-in-the-room ("branch as room"),
+open-source Slack alternative.</p>
+<p><strong>We win on:</strong> boundary regex + dry-run + quiet gate. Buzz agents are
+chat participants — they don't have a "run silently for hours making no
+noise" mode.</p>
+<p><strong>Read our:</strong> <a href="../adr/0002-acp-code-delegate/"><code>ADR 0002</code></a> — we adopted
+their ACP.</p>
+<h3 id="hermes-nous-research">Hermes (Nous Research)<a class="headerlink" href="#hermes-nous-research" title="Permanent link">&para;</a></h3>
+<p><strong>Shape:</strong> Python skill-based agent runtime. 72+ SKILL.md-style skills
+(email, google-workspace, github, apple, creative, research, dev).
+Rich CLI, secret managers (Bitwarden / 1Password), Slack + WhatsApp +
+Discord gateway plugins.</p>
+<p><strong>They win on:</strong> breadth of pre-built domain skills, agent-driven OAuth
+walkthroughs (you tell the agent "set up Gmail" and it walks you
+through GCP setup), secrets manager integration.</p>
+<p><strong>We win on:</strong> boundary layer + tick loop. Hermes has no equivalent to
+<code>BOUNDARIES.md</code>; the interactive-shell planner is explicitly non-denying
+per their AGENTS.md footguns ("do not reintroduce a planner denial").</p>
+<p><strong>Read our:</strong> <a href="../src/adapters/hermes.ts"><code>src/adapters/hermes.ts</code></a> — we
+load every Hermes skill as procedural memory. <code>bin/setup-gmail.sh</code> +
+<code>bin/setup-slack.sh</code> wrap their setup CLIs.</p>
+<h3 id="openclaw-nanoclaw-soulclaw">OpenClaw / NanoClaw / SoulClaw<a class="headerlink" href="#openclaw-nanoclaw-soulclaw" title="Permanent link">&para;</a></h3>
+<p><strong>Shape:</strong> OpenClaw = large agent monorepo (~500k LOC per README). NanoClaw
+= container-isolated lightweight fork ("understandability over features").
+SoulClaw = memory-tiered fork with drift detection.</p>
+<p><strong>They win on:</strong> container isolation as the primitive (NanoClaw's whole
+model), skills marketplace (ClawHub), forkability as an explicit design
+value (NanoClaw again).</p>
+<p><strong>We win on:</strong> tick loop, hard boundaries, filesystem-first config.
+NanoClaw is closer to our shape than either parent.</p>
+<p><strong>Read our:</strong> <a href="../adr/0003-container-isolation/"><code>ADR 0003</code></a> — we ship
+subprocess sandboxing (bwrap/firejail); per-tool container isolation is
+deferred.</p>
+<h3 id="vercel-eve">Vercel Eve<a class="headerlink" href="#vercel-eve" title="Permanent link">&para;</a></h3>
+<p><strong>Shape:</strong> Filesystem-first agent framework with a canonical <code>agent/</code>
+layout (<code>instructions.md</code>, <code>tools/</code>, <code>skills/</code>, <code>channels/</code>,
+<code>schedules/</code>).</p>
+<p><strong>They win on:</strong> clean per-agent folder structure with <code>channels/</code> +
+<code>schedules/</code> as first-class primitives.</p>
+<p><strong>We win on:</strong> tick loop, boundaries, multi-tier memory. Eve is a
+per-request agent framework; ai-coworkers is a persistent-process one.</p>
+<p><strong>Read our:</strong> <a href="../src/adapters/eve.ts"><code>src/adapters/eve.ts</code></a> — we
+surface Eve tool names as procedural memory (executable-adapter gap
+noted in the source).</p>
+<h3 id="elizaos">ElizaOS<a class="headerlink" href="#elizaos" title="Permanent link">&para;</a></h3>
+<p><strong>Shape:</strong> Four-primitive plugin model (actions / providers / evaluators
+/ services). Bootable OS variants (Linux, Android), on-device Eliza-1 /
+Gemma model family, non-custodial wallet integration.</p>
+<p><strong>They win on:</strong> genuine four-primitive vocabulary (we're missing
+evaluators + services), on-device model story, wallet story.</p>
+<p><strong>We win on:</strong> tick loop, boundaries, filesystem-first. Eliza treats
+each agent as a persistent character; we treat each as a bounded
+worker.</p>
+<p><strong>Read our:</strong> <a href="../adr/0005-evaluators-services/"><code>ADR 0005</code></a> — we've
+designed evaluators + services borrowing from ElizaOS's vocabulary
+and staged them for implementation.</p>
+<h3 id="opensre-tracer-cloud">OpenSRE (Tracer-Cloud)<a class="headerlink" href="#opensre-tracer-cloud" title="Permanent link">&para;</a></h3>
+<p><strong>Shape:</strong> Python SRE agent. Alert-driven; on alert, fetches context
+(logs / metrics / traces / deploys), masks PII, runs a tool-calling
+loop, generates an investigation report. 60+ integrations pre-wired.
+Scored synthetic RCA suites.</p>
+<p><strong>They win on:</strong> breadth of observability integrations, scored RL-eval
+scenarios, reversible identifier masking (we adopted this — see
+<a href="../src/runtime/pii_mask.ts"><code>src/runtime/pii_mask.ts</code></a>).</p>
+<p><strong>We win on:</strong> deliberate boundary + dry-run model. Their AGENTS.md
+explicitly forbids reintroducing a planner denial: "the interactive-
+shell action planner never denies a turn." That's a different safety
+philosophy.</p>
+<p><strong>Read our:</strong> <a href="../examples/watchtower/role/">Watchtower template</a> — our
+SRE-role coworker is a subset of what OpenSRE does, wrapped in our
+boundary + tempo model.</p>
+<h3 id="anthropic-managed-agents">Anthropic Managed Agents<a class="headerlink" href="#anthropic-managed-agents" title="Permanent link">&para;</a></h3>
+<p><strong>Shape:</strong> Hosted agent runtime on top of the Claude Agent SDK.
+Scheduler + dreaming (like our reflect) + rubric-based outcome grading
+(we've adopted the concept via <code>test/evals/bench.mjs</code>).</p>
+<p><strong>They win on:</strong> hosted management, rubric grading, deep integration
+with Claude models.</p>
+<p><strong>We win on:</strong> self-hostable, adapter to any OpenAI-compatible LLM, one
+directory per coworker, no vendor lock.</p>
+<p><strong>Read our:</strong> <a href="../test/evals/bench.mjs"><code>test/evals/bench.mjs</code></a> —
+rubric-graded benchmark harness inspired by their pattern.</p>
+<h3 id="crewai">CrewAI<a class="headerlink" href="#crewai" title="Permanent link">&para;</a></h3>
+<p><strong>Shape:</strong> Multi-agent role orchestration. Python. Focus on
+"crews" (teams of agents with different roles collaborating on a
+task).</p>
+<p><strong>They win on:</strong> multi-agent-per-task shape, wide adoption, Python
+ecosystem.</p>
+<p><strong>We win on:</strong> long-running-per-role vs task-crews. CrewAI runs when
+you invoke it; ai-coworkers runs continuously. Different problem.</p>
+<h3 id="langgraph">LangGraph<a class="headerlink" href="#langgraph" title="Permanent link">&para;</a></h3>
+<p><strong>Shape:</strong> Graph-based agent orchestration. Python. Focus on
+"nodes" (agents) and "edges" (state transitions).</p>
+<p><strong>They win on:</strong> explicit state-machine model for complex flows, wide
+adoption, LangChain ecosystem.</p>
+<p><strong>We win on:</strong> we don't force a graph. The tick loop + boundaries do
+what a state machine would express, without you having to write one.</p>
+<h2 id="dimensions-where-ai-coworkers-is-genuinely-alone-as-far-as-weve-found">Dimensions where ai-coworkers is genuinely alone (as far as we've found)<a class="headerlink" href="#dimensions-where-ai-coworkers-is-genuinely-alone-as-far-as-weve-found" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Regex-based <code>BOUNDARIES.md</code> pre-execute checks against every tool call</li>
+<li><code>role.audit</code> ritual — treats the config file itself as an untrusted
+  mutable surface + escalates on drift</li>
+<li>Six-tier memory taxonomy grounded in CoALA + event-ID provenance
+  (<code>[ev:...]</code> citations walkable via <code>bin/why.sh</code>)</li>
+<li>Cursor-based one-time presentation of inbox notes + reactions (both
+  seen once, then marked read — humans can leave feedback without it
+  dominating perception forever)</li>
+<li>Quiet gate + adaptive tempo — deciding <em>not to act</em></li>
+<li>Cross-framework import scripts (Hermes / OpenClaw / Eve → ai-coworker)</li>
+</ul>
+<h2 id="dimensions-where-were-behind">Dimensions where we're behind<a class="headerlink" href="#dimensions-where-were-behind" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Buzz</strong> — chat-native UX, cryptographic identity, cross-org / cross-
+  machine event log</li>
+<li><strong>Hermes</strong> — breadth of pre-built domain skills, agent-driven OAuth
+  walkthroughs (we wrap theirs; we don't yet author our own)</li>
+<li><strong>NanoClaw</strong> — container isolation as the default primitive (we have
+  it opt-in only)</li>
+<li><strong>OpenSRE</strong> — depth of observability integrations, size of scored
+  benchmark suite</li>
+<li><strong>CrewAI / LangGraph</strong> — multi-agent orchestration patterns</li>
+</ul>
+<h2 id="when-to-pick-us">When to pick us<a class="headerlink" href="#when-to-pick-us" title="Permanent link">&para;</a></h2>
+<p>You want a persistent worker that:</p>
+<ul>
+<li>Runs quietly, decides not to act more often than it acts</li>
+<li>Has hard limits you can read in a <code>BOUNDARIES.md</code> (not code, not YAML)</li>
+<li>Reuses whatever ecosystem tooling you already have (Hermes skills,
+  MCP servers, ACP coding agents)</li>
+<li>Escalates to a human inbox when it's not sure</li>
+<li>You can fork in an afternoon (~6.5k lines of TypeScript, no build
+  step) and adapt to your team's shape</li>
+</ul>
+<h2 id="when-to-pick-someone-else">When to pick someone else<a class="headerlink" href="#when-to-pick-someone-else" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Your primary UX is chat → <strong>Buzz</strong></li>
+<li>You want a rich pre-built skills library and don't need boundaries →
+  <strong>Hermes</strong></li>
+<li>You want dedicated SRE incident-response tooling as a product →
+  <strong>OpenSRE</strong></li>
+<li>You want a multi-agent crew on a discrete task → <strong>CrewAI</strong></li>
+<li>You want a graph-modelled agent flow → <strong>LangGraph</strong></li>
+</ul>
+<h2 id="contributing-to-this-doc">Contributing to this doc<a class="headerlink" href="#contributing-to-this-doc" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Found something wrong?</strong> File a PR; be specific about what changed
+  in the compared framework and cite a source (repo file, docs URL).</li>
+<li><strong>Framework missing?</strong> Add a row + a paragraph, following the shape
+  above.</li>
+<li><strong>Think we're wrong about ourselves?</strong> File a PR — the goal here is
+  honest positioning, not marketing.</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.instant", "navigation.tracking", "navigation.top", "content.code.copy", "content.action.edit"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>

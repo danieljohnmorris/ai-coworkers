@@ -13,7 +13,7 @@
         <link rel="canonical" href="https://danieljohnmorris.github.io/ai-coworkers/dedicated-linear-user/">
       
       
-        <link rel="prev" href="../migration/">
+        <link rel="prev" href="../comparison/">
       
       
         <link rel="next" href="../systemd/">
@@ -463,6 +463,34 @@
                 
   
   
+  
+  
+    <li class="md-nav__item">
+      <a href="../comparison/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Comparison with other harnesses
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
     
   
   
@@ -526,10 +554,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#set-up-a-service-account-linear-seats-permitting" class="md-nav__link">
+  <a href="#recommended-consent-as-a-dedicated-linear-user" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Set up a service account (Linear seats permitting)
+        Recommended: consent as a dedicated Linear user
       
     </span>
   </a>
@@ -537,10 +565,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#set-up-a-linear-oauth-app-if-you-cant-add-a-seat" class="md-nav__link">
+  <a href="#rotation-and-revocation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Set up a Linear OAuth app (if you can't add a seat)
+        Rotation and revocation
       
     </span>
   </a>
@@ -570,10 +598,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#rotation" class="md-nav__link">
+  <a href="#headless-deployments" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Rotation
+        Headless deployments
       
     </span>
   </a>
@@ -983,10 +1011,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#set-up-a-service-account-linear-seats-permitting" class="md-nav__link">
+  <a href="#recommended-consent-as-a-dedicated-linear-user" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Set up a service account (Linear seats permitting)
+        Recommended: consent as a dedicated Linear user
       
     </span>
   </a>
@@ -994,10 +1022,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#set-up-a-linear-oauth-app-if-you-cant-add-a-seat" class="md-nav__link">
+  <a href="#rotation-and-revocation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Set up a Linear OAuth app (if you can't add a seat)
+        Rotation and revocation
       
     </span>
   </a>
@@ -1027,10 +1055,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#rotation" class="md-nav__link">
+  <a href="#headless-deployments" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Rotation
+        Headless deployments
       
     </span>
   </a>
@@ -1063,18 +1091,24 @@
 
 
 <h1 id="give-your-coworker-a-dedicated-linear-identity">Give your coworker a dedicated Linear identity<a class="headerlink" href="#give-your-coworker-a-dedicated-linear-identity" title="Permanent link">&para;</a></h1>
-<p>By default <code>LINEAR_API_KEY</code> uses your personal Linear API key, which
-means every ticket comment the coworker posts shows up under your name.
-Bad on three axes:</p>
+<p>Since the migration to Linear's remote MCP server
+(<code>https://mcp.linear.app/mcp</code>), auth is OAuth 2.1 with Dynamic Client
+Registration — no more static <code>LINEAR_API_KEY</code>. Whoever completes the
+browser consent on first connect is the identity every subsequent tool
+call runs as, until the refresh token is revoked or the cached tokens
+are deleted.</p>
+<p>That matters for three reasons:</p>
 <ul>
 <li><strong>Confusing to teammates</strong> — humans can't tell "Dan asked a real
-  question" from "Dan's coworker asked an automated question".</li>
-<li><strong>Wrong audit trail</strong> — Linear's activity log attributes everything
-  to you, so your prior-year contribution stats are polluted.</li>
+  question" from "Dan's coworker asked an automated question" if both
+  post as Dan.</li>
+<li><strong>Wrong audit trail</strong> — Linear's activity log attributes every
+  comment/label change to whoever consented. If you consent as
+  yourself, your contribution stats get polluted.</li>
 <li><strong>Rate-limit collision</strong> — you and the coworker share one quota. A
   chatty coworker can back you out of the API.</li>
 </ul>
-<h2 id="set-up-a-service-account-linear-seats-permitting">Set up a service account (Linear seats permitting)<a class="headerlink" href="#set-up-a-service-account-linear-seats-permitting" title="Permanent link">&para;</a></h2>
+<h2 id="recommended-consent-as-a-dedicated-linear-user">Recommended: consent as a dedicated Linear user<a class="headerlink" href="#recommended-consent-as-a-dedicated-linear-user" title="Permanent link">&para;</a></h2>
 <p>Cheapest, cleanest option:</p>
 <ol>
 <li>Invite a new member to your Linear workspace with an email you
@@ -1082,32 +1116,40 @@ Bad on three axes:</p>
 <li>Complete signup as that user in a private browser window.</li>
 <li>Set their display name to something obviously non-human:
    <strong>Alex (ai-coworker)</strong> or similar.</li>
-<li>Give them the minimum permissions needed. Most coworkers only need
-   <em>Member</em> on the teams whose issues they'll touch — no admin.</li>
-<li>As that user, go to <strong>Settings → API → Personal API keys</strong>, generate
-   a key, copy the value into <code>~/.bashrc</code> as <code>LINEAR_API_KEY</code> (or your
-   coworker's <code>.env</code>).</li>
+<li>Give them the minimum permissions needed. Most triage coworkers only
+   need <em>Member</em> on the teams whose issues they'll touch — no admin.</li>
+<li>Add the Linear MCP server entry to the coworker's <code>.env</code> (see the
+   <a href="../AGENTS.md#oauth-based-mcp-servers">OAuth-based MCP servers section of AGENTS.md</a>):</li>
 </ol>
-<h2 id="set-up-a-linear-oauth-app-if-you-cant-add-a-seat">Set up a Linear OAuth app (if you can't add a seat)<a class="headerlink" href="#set-up-a-linear-oauth-app-if-you-cant-add-a-seat" title="Permanent link">&para;</a></h2>
-<p>If your Linear plan is at the seat limit or you want the coworker to
-act across multiple workspaces:</p>
+<div class="highlight"><pre><span></span><code>MCP_SERVERS=&#39;[{&quot;name&quot;:&quot;linear&quot;,&quot;url&quot;:&quot;https://mcp.linear.app/mcp&quot;,&quot;oauth&quot;:{&quot;scopes&quot;:[&quot;read&quot;,&quot;write&quot;]}}]&#39;
+</code></pre></div>
 <ol>
-<li><strong>Settings → API → OAuth applications → New</strong>.</li>
-<li>Redirect URL: your coworker's <code>/wake</code> endpoint (or any callback you
-   own; the token only needs to be captured once).</li>
-<li>Scopes: <code>read</code>, <code>write</code> (the current tools need issue read/write and
-   comment create).</li>
-<li>Do the OAuth dance once; store the resulting access token as
-   <code>LINEAR_API_KEY</code>.</li>
+<li>Start the coworker. On first tick it will print an authorization URL
+   to stdout. Open it <strong>in a private/incognito browser window logged in
+   as the dedicated Linear user</strong> — not your normal browser session —
+   and consent.</li>
+<li>Tokens land at
+   <code>coworkers/&lt;name&gt;/state/mcp-tokens/linear.json</code> (mode 0600). Every
+   future tick reuses them silently.</li>
 </ol>
-<p>OAuth tokens show up in Linear's activity log under the app's name, not
-under any human, which is usually the right behaviour for a bot.</p>
+<p>The Linear activity log will now attribute every action to the
+dedicated user, not to you.</p>
+<h2 id="rotation-and-revocation">Rotation and revocation<a class="headerlink" href="#rotation-and-revocation" title="Permanent link">&para;</a></h2>
+<ul>
+<li>To force a fresh browser flow (e.g. after changing scopes), delete
+  <code>coworkers/&lt;name&gt;/state/mcp-tokens/linear.json</code> and restart.</li>
+<li>To revoke the coworker's access entirely, go to Linear <strong>Settings →
+  API → Authorized applications</strong> as the dedicated user and revoke the
+  ai-coworkers entry.</li>
+<li>Rotating no longer means editing an env var; there is no long-lived
+  API key to leak.</li>
+</ul>
 <h2 id="naming-convention-that-has-held-up">Naming convention that has held up<a class="headerlink" href="#naming-convention-that-has-held-up" title="Permanent link">&para;</a></h2>
 <p>Give each coworker a first-name identity — Alex, Sam, Watchtower, etc.
 — and reference that name in:</p>
 <ul>
 <li><code>role/ROLE.md</code> (the persona)</li>
-<li>The Linear display name of the service account</li>
+<li>The Linear display name of the dedicated user</li>
 <li>Slack (if a bot user exists)</li>
 <li><code>/wake</code> webhook subject headers where applicable</li>
 </ul>
@@ -1115,20 +1157,25 @@ under any human, which is usually the right behaviour for a bot.</p>
 triage" faster when the same name shows up in every surface.</p>
 <h2 id="what-not-to-do">What NOT to do<a class="headerlink" href="#what-not-to-do" title="Permanent link">&para;</a></h2>
 <ul>
-<li>Don't share one Linear API key across multiple coworkers. If one
-  gets rate-limited or has to be rotated, they all break at once.</li>
-<li>Don't give the service account admin permissions. Boundaries.md is
+<li>Don't consent as yourself unless you genuinely want the coworker to
+  act <em>as you</em> in Linear's audit log.</li>
+<li>Don't share one Linear identity across multiple coworkers. If one
+  gets rate-limited or has its refresh token revoked, they all break
+  at once.</li>
+<li>Don't give the dedicated user admin permissions. BOUNDARIES.md is
   our defence in depth, but tighter Linear permissions are cheaper
   than a boundary regex that fails open.</li>
-<li>Don't skip the display name. <code>LINEAR_API_KEY user 3</code> posting on
-  every ticket is exactly the "who is this bot and why is it
-  commenting" complaint you'll get from your team.</li>
 </ul>
-<h2 id="rotation">Rotation<a class="headerlink" href="#rotation" title="Permanent link">&para;</a></h2>
-<p><code>bin/why.sh</code> doesn't include the API key it hits — safe to share.
-Nothing in this repo persists the key beyond your <code>.env</code>. Rotate by
-generating a new key in Linear settings, updating <code>.env</code>, and
-restarting the coworker. Old key becomes invalid immediately.</p>
+<h2 id="headless-deployments">Headless deployments<a class="headerlink" href="#headless-deployments" title="Permanent link">&para;</a></h2>
+<p>OAuth-based MCPs are great on interactive workstations and fragile on
+headless boxes. A refresh-token rejection at 3am means silent breakage
+until an operator opens the printed URL from a machine with a browser.
+See the "Headless caveat" in
+<a href="../AGENTS.md#oauth-based-mcp-servers">AGENTS.md</a> for the trade-off.
+The current recommendation for headless production is: do the OAuth
+consent once on a workstation, copy
+<code>coworkers/&lt;name&gt;/state/mcp-tokens/linear.json</code> to the headless box,
+and hope refresh continues to work.</p>
 
 
 

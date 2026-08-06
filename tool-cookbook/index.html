@@ -618,6 +618,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../comparison/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Comparison with other harnesses
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../dedicated-linear-user/" class="md-nav__link">
         
   
@@ -1337,15 +1365,18 @@ one doing setup, MCP is fine.</p>
 - You want the tool to compose with our own state (event log, hygiene,
   entities) in ways an external subprocess cannot.</p>
 <p>Add <code>src/tools/&lt;name&gt;.ts</code> exporting <code>ToolDef[]</code>; register in
-<code>src/index.ts</code>. See <code>src/tools/linear.ts</code> for the canonical shape.</p>
+<code>src/index.ts</code>. See <code>src/tools/github.ts</code> for the canonical shape (the
+former <code>src/tools/linear.ts</code> was deleted in favour of the remote Linear
+MCP server — see AGENTS.md § Linear).</p>
 <h2 id="slack-the-exception">Slack — the exception<a class="headerlink" href="#slack-the-exception" title="Permanent link">&para;</a></h2>
 <p>Native <code>slack.ts</code> exists because we built it before MCP had a solid
 Slack server. It is stable and shipped. If you want to consolidate to
 Hermes or MCP, either works — no strong reason to migrate unless you
 need features the native path does not cover.</p>
 <h2 id="credential-handling">Credential handling<a class="headerlink" href="#credential-handling" title="Permanent link">&para;</a></h2>
-<p>Under AIC-74, native tools declare <code>requiresCreds</code> and receive a filtered
-env. MCP servers currently receive the whole coworker env — scope
+<p>Native tools declare <code>requiresCreds</code> and receive a filtered env
+(see <a href="../src/runtime/credentials.ts"><code>src/runtime/credentials.ts</code></a>).
+MCP servers currently receive the whole coworker env — scope
 sensitive tokens inside the MCP block's own <code>env</code>:</p>
 <div class="highlight"><pre><span></span><code>{&quot;name&quot;:&quot;gmail&quot;,&quot;command&quot;:&quot;npx&quot;,&quot;args&quot;:[...], &quot;env&quot;:{&quot;GMAIL_OAUTH_TOKEN&quot;:&quot;...&quot;}}
 </code></pre></div>

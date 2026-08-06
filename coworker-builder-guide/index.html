@@ -10,13 +10,9 @@
       
       
       
-        <link rel="canonical" href="https://danieljohnmorris.github.io/ai-coworkers/systemd/">
+        <link rel="canonical" href="https://danieljohnmorris.github.io/ai-coworkers/coworker-builder-guide/">
       
       
-        <link rel="prev" href="../dedicated-linear-user/">
-      
-      
-        <link rel="next" href="../multi-machine/">
       
       
         
@@ -27,7 +23,7 @@
     
     
       
-        <title>systemd deployment - ai-coworkers</title>
+        <title>Coworker builder guide - ai-coworkers</title>
       
     
     
@@ -68,7 +64,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#running-a-coworker-as-a-systemd-user-service" class="md-skip">
+        <a href="#coworker-builder-guide" class="md-skip">
           Skip to content
         </a>
       
@@ -104,7 +100,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              systemd deployment
+              Coworker builder guide
             
           </span>
         </div>
@@ -524,20 +520,18 @@
       
   
   
-    
   
   
-  
     
     
     
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
         
           
           <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
@@ -558,7 +552,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_4">
             <span class="md-nav__icon md-icon"></span>
             
@@ -573,37 +567,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    systemd deployment
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../systemd/" class="md-nav__link">
         
   
   
@@ -619,114 +586,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#install-one-time" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Install (one-time)
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#environment-file" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Environment file
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#enable-and-start-a-coworker" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Enable and start a coworker
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#follow-the-logs" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Follow the logs
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#restart-on-failure-semantics" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Restart-on-failure semantics
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#run-multiple-coworkers-on-the-same-machine" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Run multiple coworkers on the same machine
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#enable-lingering-start-on-boot-without-login" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Enable lingering (start on boot without login)
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#stop-and-disable" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Stop and disable
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1044,10 +903,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#install-one-time" class="md-nav__link">
+  <a href="#what-is-a-coworker" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Install (one-time)
+        What is a coworker?
       
     </span>
   </a>
@@ -1055,10 +914,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#environment-file" class="md-nav__link">
+  <a href="#make-one" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Environment file
+        Make one
       
     </span>
   </a>
@@ -1066,10 +925,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#enable-and-start-a-coworker" class="md-nav__link">
+  <a href="#configure-it" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Enable and start a coworker
+        Configure it
       
     </span>
   </a>
@@ -1077,10 +936,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#follow-the-logs" class="md-nav__link">
+  <a href="#connect-a-service" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Follow the logs
+        Connect a service
       
     </span>
   </a>
@@ -1088,10 +947,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#restart-on-failure-semantics" class="md-nav__link">
+  <a href="#watch-it-work" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Restart-on-failure semantics
+        Watch it work
       
     </span>
   </a>
@@ -1099,10 +958,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#run-multiple-coworkers-on-the-same-machine" class="md-nav__link">
+  <a href="#when-it-goes-wrong" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Run multiple coworkers on the same machine
+        When it goes wrong
       
     </span>
   </a>
@@ -1110,10 +969,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#enable-lingering-start-on-boot-without-login" class="md-nav__link">
+  <a href="#get-help-from-your-ai" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Enable lingering (start on boot without login)
+        Get help from your AI
       
     </span>
   </a>
@@ -1121,10 +980,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#stop-and-disable" class="md-nav__link">
+  <a href="#where-to-go-next" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Stop and disable
+        Where to go next
       
     </span>
   </a>
@@ -1148,7 +1007,7 @@
 
 
   
-    <a href="https://github.com/danieljohnmorris/ai-coworkers/edit/main/docs/systemd.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+    <a href="https://github.com/danieljohnmorris/ai-coworkers/edit/main/docs/coworker-builder-guide.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
     </a>
@@ -1156,55 +1015,143 @@
   
 
 
-<h1 id="running-a-coworker-as-a-systemd-user-service">Running a coworker as a systemd user service<a class="headerlink" href="#running-a-coworker-as-a-systemd-user-service" title="Permanent link">&para;</a></h1>
-<p>The template at <code>templates/systemd/coworker@.service</code> is a parameterized unit:
-one file, many coworkers, each named after its directory under <code>coworkers/</code>.</p>
-<h2 id="install-one-time">Install (one-time)<a class="headerlink" href="#install-one-time" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code>mkdir -p ~/.config/systemd/user
-cp templates/systemd/coworker@.service ~/.config/systemd/user/
-systemctl --user daemon-reload
+<h1 id="coworker-builder-guide">Coworker builder guide<a class="headerlink" href="#coworker-builder-guide" title="Permanent link">&para;</a></h1>
+<p>This is the front door for people who want to <strong>build a coworker</strong> rather
+than work on the harness itself. No engineering background assumed. If you
+can edit a text file and paste a command into a terminal, you can get a
+coworker running.</p>
+<p>For the technical overview of the whole system, see <a href="../README.md">README.md</a>.
+For the AI assistant or engineer working alongside you, the setup guide is
+<a href="../AGENTS.md">AGENTS.md</a>.</p>
+<hr />
+<h2 id="what-is-a-coworker">What is a coworker?<a class="headerlink" href="#what-is-a-coworker" title="Permanent link">&para;</a></h2>
+<p>A coworker is a small autonomous helper that runs continuously in the
+background — like an intern who never sleeps. It watches the world through
+<strong>read-only sensors</strong> (your Linear tickets, your Slack mentions, a GitHub
+repo, a Gmail inbox), thinks about what it saw, and occasionally takes an
+action — <strong>but only within the boundaries you set</strong>. If it's unsure, it
+asks you. If it hits a limit, it stops. It leaves a trail so you can
+always see what it decided and why.</p>
+<p>Every coworker lives in its own directory. That directory holds a few
+markdown files describing who it is and what it may do, a JSON config for
+behavioural settings, and a <code>state/</code> folder where it keeps its notes and
+logs.</p>
+<h2 id="make-one">Make one<a class="headerlink" href="#make-one" title="Permanent link">&para;</a></h2>
+<p>Pick a starting template that resembles what you want:</p>
+<div class="highlight"><pre><span></span><code>cp -r examples/generic-triage coworkers/alex
 </code></pre></div>
-<h2 id="environment-file">Environment file<a class="headerlink" href="#environment-file" title="Permanent link">&para;</a></h2>
-<p>The unit reads env vars from <code>~/ai-coworkers/.env</code> (already gitignored).
-Ensure it exports at minimum:</p>
-<div class="highlight"><pre><span></span><code>OLLAMA_API_KEY=...
-COWORKER_MODEL=gemma4:cloud
-TICK_INTERVAL_MS=300000   # 5min
+<p>The <code>examples/</code> folder has templates for ticket triage, PR review, project
+management, incident tracing, changelog writing, and a couple more. Copy
+the one closest to your intent and rename the copy.</p>
+<p>If you'd rather have the whole thing generated interactively — template
+choice, service integrations, and behaviour knobs — run the master
+wizard:</p>
+<div class="highlight"><pre><span></span><code>bin/aicw new alex --wizard
 </code></pre></div>
-<p>Linear is no longer a static API key — it's an OAuth-based MCP server.
-Add it to <code>MCP_SERVERS</code> (see below) and do the browser consent once.</p>
-<p>Add <code>MCP_SERVERS=...</code> and <code>SKILLS_DIR=...</code> if you're using adapters.</p>
-<h2 id="enable-and-start-a-coworker">Enable and start a coworker<a class="headerlink" href="#enable-and-start-a-coworker" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code>systemctl --user enable  coworker@alex-triage.service
-systemctl --user start   coworker@alex-triage.service
-systemctl --user status  coworker@alex-triage.service
+<p>For a blank skeleton without the interview, drop the <code>--wizard</code>:</p>
+<div class="highlight"><pre><span></span><code>bin/aicw new alex
 </code></pre></div>
-<h2 id="follow-the-logs">Follow the logs<a class="headerlink" href="#follow-the-logs" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code>journalctl --user -u coworker@alex-triage.service -f
+<p>or the JD-style interview:</p>
+<div class="highlight"><pre><span></span><code>bin/aicw new-interview alex
 </code></pre></div>
-<p>For the full structured event log (SQLite):</p>
-<div class="highlight"><pre><span></span><code>sqlite3 ~/ai-coworkers/coworkers/alex-triage/state/events.db \
-  &quot;SELECT ts, kind, substr(payload,1,150) FROM events ORDER BY id DESC LIMIT 20&quot;
+<p>If you scaffolded without <code>--wizard</code>, configure the coworker's behaviour
+after the fact:</p>
+<div class="highlight"><pre><span></span><code>bin/aicw configure alex
 </code></pre></div>
-<h2 id="restart-on-failure-semantics">Restart-on-failure semantics<a class="headerlink" href="#restart-on-failure-semantics" title="Permanent link">&para;</a></h2>
-<p>The unit sets <code>Restart=on-failure</code> with <code>RestartSec=10s</code>. If the process exits
-non-zero, systemd will restart it after 10 seconds. Crash log lives at
-<code>coworkers/&lt;name&gt;/state/crash.log</code>; the events db keeps a per-tick timeline.</p>
-<h2 id="run-multiple-coworkers-on-the-same-machine">Run multiple coworkers on the same machine<a class="headerlink" href="#run-multiple-coworkers-on-the-same-machine" title="Permanent link">&para;</a></h2>
-<p>Each becomes its own unit instance:</p>
-<div class="highlight"><pre><span></span><code>systemctl --user enable --now coworker@alex-triage.service
-systemctl --user enable --now coworker@sam-pr-reviewer.service
-systemctl --user enable --now coworker@priya-pm.service
+<p>The older <code>bin/new-coworker.sh</code> and <code>bin/configure.sh</code> names still work
+via deprecated symlinks.</p>
+<p>The wizard walks you through each setting one at a time, shows you what it
+means, and offers a sensible default. Press Enter to accept a default;
+type a value to change it.</p>
+<h2 id="configure-it">Configure it<a class="headerlink" href="#configure-it" title="Permanent link">&para;</a></h2>
+<p>Two things you'll edit:</p>
+<p><strong>Behaviour</strong> — <code>coworkers/alex/config.json</code>. Managed by the wizard
+above. Controls things like how the coworker wakes up, how many tools it
+may call in one turn, whether it masks sensitive identifiers before
+thinking about them. You never have to hand-edit this file; the wizard
+does it for you.</p>
+<p><strong>Personality and authority</strong> — the markdown files under
+<code>coworkers/alex/role/</code>. These describe who the coworker is, what it owns,
+what it may decide alone versus escalate, what it must never touch, and
+what recurring rituals it runs (a daily standup summary, a weekly cleanup,
+etc.). Open them in any text editor and write in plain English. There is
+<strong>no compile step</strong> — save the file and the coworker picks up the change
+on its next tick.</p>
+<p>The most important role file is <code>BOUNDARIES.md</code>. Read it. Adjust it. This
+is where you tell the coworker what it must never do (delete tickets,
+send emails on your behalf, touch a particular project) and where you
+cap its resources (max LLM calls per day, max background jobs). The
+coworker checks every action against this file before running it.</p>
+<h2 id="connect-a-service">Connect a service<a class="headerlink" href="#connect-a-service" title="Permanent link">&para;</a></h2>
+<p>Coworkers can talk to Linear, Slack, Gmail, GitHub, and anything with an
+MCP server. Each service has its own setup script:</p>
+<div class="highlight"><pre><span></span><code>bin/aicw slack alex
+bin/aicw gmail alex
+
+# For any other MCP server, webhook, or sensor, use the generic wizards:
+bin/aicw connect alex &lt;server-name&gt;       # add an MCP server to .env
+bin/aicw webhook alex &lt;name&gt;              # declare an inbound webhook
+bin/aicw sensors alex &lt;name&gt;              # declare a declarative MCP sensor
 </code></pre></div>
-<p>They share nothing except the runtime code and <code>.env</code> — separate SQLite dbs,
-separate memory, separate boundaries.</p>
-<h2 id="enable-lingering-start-on-boot-without-login">Enable lingering (start on boot without login)<a class="headerlink" href="#enable-lingering-start-on-boot-without-login" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code>loginctl enable-linger $USER
+<p>Linear is set up by editing <code>coworkers/alex/.env</code> and adding an MCP
+server line — the coworker's first tick prints a URL you open in a
+browser to authorise. See AGENTS.md for the exact snippet.</p>
+<p>Secrets (API keys, tokens) always go in the coworker's <code>.env</code> file, never
+in <code>config.json</code>. The setup scripts handle this for you.</p>
+<h2 id="watch-it-work">Watch it work<a class="headerlink" href="#watch-it-work" title="Permanent link">&para;</a></h2>
+<p>Start the coworker in safe mode (nothing it does will actually happen —
+you see what it <em>would</em> have done):</p>
+<div class="highlight"><pre><span></span><code>node --experimental-strip-types --no-warnings src/index.ts alex
 </code></pre></div>
-<h2 id="stop-and-disable">Stop and disable<a class="headerlink" href="#stop-and-disable" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code>systemctl --user stop     coworker@alex-triage.service
-systemctl --user disable  coworker@alex-triage.service
+<p>While it's running, in another terminal:</p>
+<div class="highlight"><pre><span></span><code>bin/aicw status alex
+tail -f coworkers/alex/state/highlights.log
 </code></pre></div>
+<p><code>aicw status</code> gives you a one-shot summary — is it running, is it live or
+dry-run, how many ticks today, what did it last do. <code>highlights.log</code>
+scrolls its thoughts and actions in near-real-time.</p>
+<p>Once you trust it, promote it to live by adding <code>--live</code> on the command
+line. Watch it for a day in dry-run first. There's no rush.</p>
+<h2 id="when-it-goes-wrong">When it goes wrong<a class="headerlink" href="#when-it-goes-wrong" title="Permanent link">&para;</a></h2>
+<p><strong>The coworker asks you a question.</strong> Answer with:</p>
+<div class="highlight"><pre><span></span><code>bin/answer.sh alex &quot;yes, go ahead&quot;
+</code></pre></div>
+<p>The next tick, it picks up your reply and continues.</p>
+<p><strong>You want to know why it did something.</strong> Check the highlights log for
+the decision, then check the events database:</p>
+<div class="highlight"><pre><span></span><code>sqlite3 coworkers/alex/state/events.db \
+  &quot;SELECT ts, kind, substr(payload,1,200) FROM events ORDER BY id DESC LIMIT 20&quot;
+</code></pre></div>
+<p>Every deliberation, every proposed action, every boundary check, every
+sensor read is in there.</p>
+<p><strong>A boundary blocked it.</strong> You'll see a <code>boundary.block</code> line in the
+highlights log with the reason. Either the coworker was about to do the
+right thing and your boundary is too tight, or the coworker was about to
+do the wrong thing and the boundary saved you. Read <code>BOUNDARIES.md</code> and
+decide.</p>
+<p><strong>Something crashed before the log started.</strong> Check
+<code>coworkers/alex/state/crash.log</code>.</p>
+<h2 id="get-help-from-your-ai">Get help from your AI<a class="headerlink" href="#get-help-from-your-ai" title="Permanent link">&para;</a></h2>
+<p>Any modern AI coding assistant — Claude Code, Cursor, GPT — can read this
+repo cold and help you configure a coworker. Point it at:</p>
+<ul>
+<li><code>src/runtime/config-schema.json</code> for the list of every behavioural knob,
+  what it does, and what values it accepts. The assistant can write a
+  valid <code>config.json</code> from this alone.</li>
+<li><code>AGENTS.md</code> for the deeper technical view of how the harness works.</li>
+<li>The <code>role/*.md</code> files under <code>examples/</code> for reference personalities and
+  boundary shapes worth copying.</li>
+</ul>
+<p>You do not have to learn how the harness works. Describe what you want
+the coworker to do; let your assistant translate that into the right
+files.</p>
+<h2 id="where-to-go-next">Where to go next<a class="headerlink" href="#where-to-go-next" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Deeper technical overview: <a href="../README.md">README.md</a>.</li>
+<li>For your AI assistant or an engineer: <a href="../AGENTS.md">AGENTS.md</a>.</li>
+<li>Why config is split between <code>.env</code> and <code>config.json</code>:
+  <a href="../adr/0007-config-file-vs-env-vars/">ADR 0007</a>.</li>
+</ul>
 
 
 

@@ -464,6 +464,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../comparison/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Comparison with other harnesses
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../dedicated-linear-user/" class="md-nav__link">
         
   
@@ -675,6 +703,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#disabling-the-periodic-tick-wake_modewebhook" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Disabling the periodic tick — WAKE_MODE=webhook
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#test" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -725,13 +764,41 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#linear-webhook-native-adapter-aic-36" class="md-nav__link">
+  <a href="#declarative-webhooks" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Linear webhook — native adapter (AIC-36)
+        Declarative webhooks
       
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="Declarative webhooks">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#adding-github" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Adding GitHub
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#adding-slack" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Adding Slack
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -1033,6 +1100,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#disabling-the-periodic-tick-wake_modewebhook" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Disabling the periodic tick — WAKE_MODE=webhook
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#test" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1083,13 +1161,41 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#linear-webhook-native-adapter-aic-36" class="md-nav__link">
+  <a href="#declarative-webhooks" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Linear webhook — native adapter (AIC-36)
+        Declarative webhooks
       
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="Declarative webhooks">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#adding-github" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Adding GitHub
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#adding-slack" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Adding Slack
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -1152,6 +1258,22 @@ WAKE_SECRET=some-shared-secret   # optional; enables 0.0.0.0 binding + auth
 <p>On startup the coworker logs:
 <div class="highlight"><pre><span></span><code>[hh:mm:ss] alex-triage wake endpoint: http://127.0.0.1:7778/wake
 </code></pre></div></p>
+<h2 id="disabling-the-periodic-tick-wake_modewebhook">Disabling the periodic tick — <code>WAKE_MODE=webhook</code><a class="headerlink" href="#disabling-the-periodic-tick-wake_modewebhook" title="Permanent link">&para;</a></h2>
+<p>By default the coworker runs both the wake HTTP server AND the periodic
+tick loop (<code>WAKE_MODE=both</code>). If you want the cheapest steady state and
+trust your webhook coverage, set:</p>
+<div class="highlight"><pre><span></span><code>WAKE_MODE=webhook
+WAKE_PORT=7778
+</code></pre></div>
+<p>This disables the scheduled tick loop (the base interval is pinned to
+24h). Ticks then fire only on <code>/wake</code>, on matching <code>/webhook/*</code> calls,
+and at startup — webhook delivery becomes the ONLY liveness signal.
+Missed webhooks mean silent drift. Scheduled <code>rituals/*.json</code> and pending
+promises only run when a wake event happens to fire a tick; they do not
+fire on time.</p>
+<p>Belt-and-suspenders operators want <code>WAKE_MODE=both</code> (the default) so a
+webhook outage degrades into normal polling instead of silent inactivity.
+Use <code>WAKE_MODE=tick</code> on hosts with no inbound reachability.</p>
 <h2 id="test">Test<a class="headerlink" href="#test" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code>curl -X POST http://127.0.0.1:7778/wake
 </code></pre></div>
@@ -1162,32 +1284,104 @@ WAKE_SECRET=some-shared-secret   # optional; enables 0.0.0.0 binding + auth
 <h3 id="local-dev-smeeio-tunnel">Local dev — smee.io tunnel<a class="headerlink" href="#local-dev-smeeio-tunnel" title="Permanent link">&para;</a></h3>
 <p><code>smee.io</code> gives you a public URL that forwards to your localhost.</p>
 <div class="highlight"><pre><span></span><code>npm install -g smee-client
-smee -u https://smee.io/YOUR_CHANNEL -t http://127.0.0.1:7778/wake
+smee -u https://smee.io/YOUR_CHANNEL -t http://127.0.0.1:7778/webhook/linear
 </code></pre></div>
-<p>Point Linear/Slack/GitHub webhooks at <code>https://smee.io/YOUR_CHANNEL</code>.</p>
+<p>Point the Linear webhook at <code>https://smee.io/YOUR_CHANNEL</code> (the <code>-t</code>
+target on the smee-client is the specific path from your
+<code>WEBHOOKS.json</code>, e.g. <code>/webhook/linear</code>, <code>/webhook/github</code>,
+<code>/webhook/slack</code>). Run one smee-client per webhook path, or use a real
+tunnel (below) if you want one public URL to route many paths.</p>
 <h3 id="production-real-tunnel">Production — real tunnel<a class="headerlink" href="#production-real-tunnel" title="Permanent link">&para;</a></h3>
 <p>Use Cloudflare Tunnel, Tailscale Funnel, or similar to expose the wake port.
 Always set <code>WAKE_SECRET</code> and configure the webhook provider to send it as an
 <code>x-wake-secret</code> header (or use their signing scheme + a small adapter).</p>
-<h2 id="linear-webhook-native-adapter-aic-36">Linear webhook — native adapter (AIC-36)<a class="headerlink" href="#linear-webhook-native-adapter-aic-36" title="Permanent link">&para;</a></h2>
-<p>Point Linear at <code>POST /linear-webhook</code> on the same <code>WAKE_PORT</code>; the runtime
-verifies the HMAC signature, filters by team, and wakes only on matching
-events.</p>
-<p>Env:</p>
-<div class="highlight"><pre><span></span><code>LINEAR_WEBHOOK_SECRET=&lt;same secret Linear signs with&gt;
-LINEAR_WATCHED_TEAMS=ILO,AIC    # optional; unset = accept every team
+<h2 id="declarative-webhooks">Declarative webhooks<a class="headerlink" href="#declarative-webhooks" title="Permanent link">&para;</a></h2>
+<p>Any coworker can declare inbound webhooks in
+<code>coworkers/&lt;name&gt;/role/WEBHOOKS.json</code>. The runtime loads them on startup,
+verifies signatures with a closed set of named verifiers, optionally filters
+the payload, and wakes the loop (plus hints which sensor caches to
+invalidate on the next tick). No custom code — new integrations are a JSON
+edit.</p>
+<p>Schema (top-level is an array). Linear example:</p>
+<div class="highlight"><pre><span></span><code><span class="p">[</span>
+<span class="w">  </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;linear&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;path&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;/webhook/linear&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;auth&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;hmac-sha256&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;header&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;linear-signature&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;secretEnv&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;LINEAR_WEBHOOK_SECRET&quot;</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="nt">&quot;filter&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;jsonPath&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;data.team.key&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;allow&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;TEAM_A&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;TEAM_B&quot;</span><span class="p">]</span><span class="w"> </span><span class="p">},</span>
+<span class="w">    </span><span class="nt">&quot;onEvent&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;wake&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;invalidate&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;linear.new_issues&quot;</span><span class="p">]</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">]</span>
 </code></pre></div>
-<p>Linear settings → API → Webhooks → New:
-- URL: <code>https://your-tunnel/linear-webhook</code>
-- Events: Issue create, Issue update, Comment create
-- Secret: whatever you set as <code>LINEAR_WEBHOOK_SECRET</code></p>
+<p><code>filter</code> is optional — omit it to accept every signed request. When
+present, the value at the JSON dot-path in the parsed body must equal
+one of the strings in <code>allow</code>, otherwise the request is 202-acked
+without waking.</p>
+<p><code>onEvent.invalidate</code> names sensor cache keys (from <code>SENSORS.json</code> or
+native sensors) to force-refresh on the resulting tick.</p>
+<p><code>auth.type</code> is a closed set:</p>
+<table>
+<thead>
+<tr>
+<th>type</th>
+<th>header (default)</th>
+<th>notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>hmac-sha256</code></td>
+<td>required — you name it</td>
+<td>HMAC-SHA256(body), hex-compare.</td>
+</tr>
+<tr>
+<td><code>github-sha256</code></td>
+<td><code>x-hub-signature-256</code></td>
+<td>Strips <code>sha256=</code> prefix before compare.</td>
+</tr>
+<tr>
+<td><code>slack-v0</code></td>
+<td><code>x-slack-signature</code></td>
+<td>Slack v0 scheme; enforces <code>|now-ts| ≤ maxAgeSeconds</code> (default 300).</td>
+</tr>
+<tr>
+<td><code>none</code></td>
+<td>—</td>
+<td>Always accepts. Emits a startup warning.</td>
+</tr>
+</tbody>
+</table>
 <p>Return codes:
-- <code>200</code> — signature valid, team matched, coworker woken.
-- <code>202</code> — signature valid, team NOT in <code>LINEAR_WATCHED_TEAMS</code>; ack, no wake.
+- <code>200</code> — signature valid, filter matched (if any), coworker woken.
+- <code>202</code> — signature valid, filter did not match; ack, no wake.
 - <code>401</code> — missing / bad signature.
-- <code>503</code> — <code>LINEAR_WEBHOOK_SECRET</code> not set on the coworker's side.</p>
-<p>Setting <code>LINEAR_WEBHOOK_SECRET</code> also binds the wake server to <code>0.0.0.0</code>
-so the tunnel can reach it, whether or not <code>WAKE_SECRET</code> is also set.</p>
+- <code>404</code> — no webhook spec for that path.
+- <code>503</code> — spec's <code>secretEnv</code> is not set in the process env.</p>
+<p>If any webhook is configured the wake server binds to <code>0.0.0.0</code> so the
+tunnel can reach it.</p>
+<h3 id="adding-github">Adding GitHub<a class="headerlink" href="#adding-github" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;github&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;path&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;/webhook/github&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;auth&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;github-sha256&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;secretEnv&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;GITHUB_WEBHOOK_SECRET&quot;</span><span class="w"> </span><span class="p">},</span>
+<span class="w">  </span><span class="nt">&quot;onEvent&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;wake&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;invalidate&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;github.open_prs&quot;</span><span class="p">]</span><span class="w"> </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<h3 id="adding-slack">Adding Slack<a class="headerlink" href="#adding-slack" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;slack&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;path&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;/webhook/slack&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;auth&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;slack-v0&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;secretEnv&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;SLACK_SIGNING_SECRET&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;maxAgeSeconds&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">300</span><span class="w"> </span><span class="p">},</span>
+<span class="w">  </span><span class="nt">&quot;onEvent&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;wake&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w"> </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
 <h2 id="generic-wake-fallback">Generic wake fallback<a class="headerlink" href="#generic-wake-fallback" title="Permanent link">&para;</a></h2>
 <p>If you'd rather route webhooks yourself (Slack Events API, GitHub with a
 custom signature scheme, an internal event bus), keep using <code>POST /wake</code>

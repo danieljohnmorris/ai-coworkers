@@ -10,28 +10,24 @@
       
       
       
-        <link rel="canonical" href="https://danieljohnmorris.github.io/ai-coworkers/systemd/">
+        <link rel="canonical" href="https://danieljohnmorris.github.io/ai-coworkers/adr/0006-filesystem-first-storage/">
       
       
-        <link rel="prev" href="../dedicated-linear-user/">
-      
-      
-        <link rel="next" href="../multi-machine/">
       
       
         
       
       
-      <link rel="icon" href="../assets/images/favicon.png">
+      <link rel="icon" href="../../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
     
     
       
-        <title>systemd deployment - ai-coworkers</title>
+        <title>ADR 0006 — filesystem-first storage - ai-coworkers</title>
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
       
       
 
@@ -50,7 +46,7 @@
       
     
     
-    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -68,7 +64,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#running-a-coworker-as-a-systemd-user-service" class="md-skip">
+        <a href="#adr-0006-filesystem-first-storage" class="md-skip">
           Skip to content
         </a>
       
@@ -84,7 +80,7 @@
 
 <header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href=".." title="ai-coworkers" class="md-header__button md-logo" aria-label="ai-coworkers" data-md-component="logo">
+    <a href="../.." title="ai-coworkers" class="md-header__button md-logo" aria-label="ai-coworkers" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -104,7 +100,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              systemd deployment
+              ADR 0006 — filesystem-first storage
             
           </span>
         </div>
@@ -194,7 +190,7 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href=".." title="ai-coworkers" class="md-nav__button md-logo" aria-label="ai-coworkers" data-md-component="logo">
+    <a href="../.." title="ai-coworkers" class="md-nav__button md-logo" aria-label="ai-coworkers" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -224,7 +220,7 @@
   
   
     <li class="md-nav__item">
-      <a href=".." class="md-nav__link">
+      <a href="../.." class="md-nav__link">
         
   
   
@@ -298,7 +294,7 @@
   
   
     <li class="md-nav__item">
-      <a href=".." class="md-nav__link">
+      <a href="../.." class="md-nav__link">
         
   
   
@@ -326,7 +322,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../contributing/" class="md-nav__link">
+      <a href="../../contributing/" class="md-nav__link">
         
   
   
@@ -408,7 +404,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../tool-cookbook/" class="md-nav__link">
+      <a href="../../tool-cookbook/" class="md-nav__link">
         
   
   
@@ -436,7 +432,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../migration/" class="md-nav__link">
+      <a href="../../migration/" class="md-nav__link">
         
   
   
@@ -464,7 +460,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../comparison/" class="md-nav__link">
+      <a href="../../comparison/" class="md-nav__link">
         
   
   
@@ -492,7 +488,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../dedicated-linear-user/" class="md-nav__link">
+      <a href="../../dedicated-linear-user/" class="md-nav__link">
         
   
   
@@ -524,20 +520,18 @@
       
   
   
-    
   
   
-  
     
     
     
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
         
           
           <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
@@ -558,7 +552,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_4">
             <span class="md-nav__icon md-icon"></span>
             
@@ -573,37 +567,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    systemd deployment
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../systemd/" class="md-nav__link">
         
   
   
@@ -619,114 +586,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#install-one-time" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Install (one-time)
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#environment-file" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Environment file
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#enable-and-start-a-coworker" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Enable and start a coworker
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#follow-the-logs" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Follow the logs
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#restart-on-failure-semantics" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Restart-on-failure semantics
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#run-multiple-coworkers-on-the-same-machine" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Run multiple coworkers on the same machine
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#enable-lingering-start-on-boot-without-login" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Enable lingering (start on boot without login)
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#stop-and-disable" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Stop and disable
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -739,7 +598,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../multi-machine/" class="md-nav__link">
+      <a href="../../multi-machine/" class="md-nav__link">
         
   
   
@@ -767,7 +626,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../webhooks/" class="md-nav__link">
+      <a href="../../webhooks/" class="md-nav__link">
         
   
   
@@ -795,7 +654,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../release-process/" class="md-nav__link">
+      <a href="../../release-process/" class="md-nav__link">
         
   
   
@@ -877,7 +736,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../adr/0001-coala-memory-taxonomy/" class="md-nav__link">
+      <a href="../0001-coala-memory-taxonomy/" class="md-nav__link">
         
   
   
@@ -905,7 +764,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../adr/0002-acp-code-delegate/" class="md-nav__link">
+      <a href="../0002-acp-code-delegate/" class="md-nav__link">
         
   
   
@@ -933,7 +792,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../adr/0003-container-isolation/" class="md-nav__link">
+      <a href="../0003-container-isolation/" class="md-nav__link">
         
   
   
@@ -961,7 +820,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../adr/0004-events-db-single-file/" class="md-nav__link">
+      <a href="../0004-events-db-single-file/" class="md-nav__link">
         
   
   
@@ -989,7 +848,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../adr/0005-evaluators-services/" class="md-nav__link">
+      <a href="../0005-evaluators-services/" class="md-nav__link">
         
   
   
@@ -1044,10 +903,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#install-one-time" class="md-nav__link">
+  <a href="#context" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Install (one-time)
+        Context
       
     </span>
   </a>
@@ -1055,10 +914,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#environment-file" class="md-nav__link">
+  <a href="#decision" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Environment file
+        Decision
       
     </span>
   </a>
@@ -1066,10 +925,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#enable-and-start-a-coworker" class="md-nav__link">
+  <a href="#consequences" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Enable and start a coworker
+        Consequences
       
     </span>
   </a>
@@ -1077,10 +936,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#follow-the-logs" class="md-nav__link">
+  <a href="#precedent" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Follow the logs
+        Precedent
       
     </span>
   </a>
@@ -1088,10 +947,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#restart-on-failure-semantics" class="md-nav__link">
+  <a href="#when-to-reconsider" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Restart-on-failure semantics
+        When to reconsider
       
     </span>
   </a>
@@ -1099,32 +958,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#run-multiple-coworkers-on-the-same-machine" class="md-nav__link">
+  <a href="#reference" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Run multiple coworkers on the same machine
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#enable-lingering-start-on-boot-without-login" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Enable lingering (start on boot without login)
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#stop-and-disable" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Stop and disable
+        Reference
       
     </span>
   </a>
@@ -1148,7 +985,7 @@
 
 
   
-    <a href="https://github.com/danieljohnmorris/ai-coworkers/edit/main/docs/systemd.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+    <a href="https://github.com/danieljohnmorris/ai-coworkers/edit/main/docs/adr/0006-filesystem-first-storage.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
     </a>
@@ -1156,55 +993,152 @@
   
 
 
-<h1 id="running-a-coworker-as-a-systemd-user-service">Running a coworker as a systemd user service<a class="headerlink" href="#running-a-coworker-as-a-systemd-user-service" title="Permanent link">&para;</a></h1>
-<p>The template at <code>templates/systemd/coworker@.service</code> is a parameterized unit:
-one file, many coworkers, each named after its directory under <code>coworkers/</code>.</p>
-<h2 id="install-one-time">Install (one-time)<a class="headerlink" href="#install-one-time" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code>mkdir -p ~/.config/systemd/user
-cp templates/systemd/coworker@.service ~/.config/systemd/user/
-systemctl --user daemon-reload
-</code></pre></div>
-<h2 id="environment-file">Environment file<a class="headerlink" href="#environment-file" title="Permanent link">&para;</a></h2>
-<p>The unit reads env vars from <code>~/ai-coworkers/.env</code> (already gitignored).
-Ensure it exports at minimum:</p>
-<div class="highlight"><pre><span></span><code>OLLAMA_API_KEY=...
-COWORKER_MODEL=gemma4:cloud
-TICK_INTERVAL_MS=300000   # 5min
-</code></pre></div>
-<p>Linear is no longer a static API key — it's an OAuth-based MCP server.
-Add it to <code>MCP_SERVERS</code> (see below) and do the browser consent once.</p>
-<p>Add <code>MCP_SERVERS=...</code> and <code>SKILLS_DIR=...</code> if you're using adapters.</p>
-<h2 id="enable-and-start-a-coworker">Enable and start a coworker<a class="headerlink" href="#enable-and-start-a-coworker" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code>systemctl --user enable  coworker@alex-triage.service
-systemctl --user start   coworker@alex-triage.service
-systemctl --user status  coworker@alex-triage.service
-</code></pre></div>
-<h2 id="follow-the-logs">Follow the logs<a class="headerlink" href="#follow-the-logs" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code>journalctl --user -u coworker@alex-triage.service -f
-</code></pre></div>
-<p>For the full structured event log (SQLite):</p>
-<div class="highlight"><pre><span></span><code>sqlite3 ~/ai-coworkers/coworkers/alex-triage/state/events.db \
-  &quot;SELECT ts, kind, substr(payload,1,150) FROM events ORDER BY id DESC LIMIT 20&quot;
-</code></pre></div>
-<h2 id="restart-on-failure-semantics">Restart-on-failure semantics<a class="headerlink" href="#restart-on-failure-semantics" title="Permanent link">&para;</a></h2>
-<p>The unit sets <code>Restart=on-failure</code> with <code>RestartSec=10s</code>. If the process exits
-non-zero, systemd will restart it after 10 seconds. Crash log lives at
-<code>coworkers/&lt;name&gt;/state/crash.log</code>; the events db keeps a per-tick timeline.</p>
-<h2 id="run-multiple-coworkers-on-the-same-machine">Run multiple coworkers on the same machine<a class="headerlink" href="#run-multiple-coworkers-on-the-same-machine" title="Permanent link">&para;</a></h2>
-<p>Each becomes its own unit instance:</p>
-<div class="highlight"><pre><span></span><code>systemctl --user enable --now coworker@alex-triage.service
-systemctl --user enable --now coworker@sam-pr-reviewer.service
-systemctl --user enable --now coworker@priya-pm.service
-</code></pre></div>
-<p>They share nothing except the runtime code and <code>.env</code> — separate SQLite dbs,
-separate memory, separate boundaries.</p>
-<h2 id="enable-lingering-start-on-boot-without-login">Enable lingering (start on boot without login)<a class="headerlink" href="#enable-lingering-start-on-boot-without-login" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code>loginctl enable-linger $USER
-</code></pre></div>
-<h2 id="stop-and-disable">Stop and disable<a class="headerlink" href="#stop-and-disable" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code>systemctl --user stop     coworker@alex-triage.service
-systemctl --user disable  coworker@alex-triage.service
-</code></pre></div>
+<h1 id="adr-0006-filesystem-first-storage">ADR 0006 — filesystem-first storage<a class="headerlink" href="#adr-0006-filesystem-first-storage" title="Permanent link">&para;</a></h1>
+<p><strong>Status:</strong> Accepted (2026-08-06). Retrospective — codifies the shape
+already present in the codebase so future contributors don't
+"upgrade" it to a graph or a relational schema by reflex.</p>
+<h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">&para;</a></h2>
+<p>Mature agent frameworks tend to reach for a heavier store the moment
+"entities" enter the vocabulary. ElizaOS keeps a structured <code>facts</code>
+memory. LangGraph delegates to whatever persistence you wire behind
+its checkpointer — typically Postgres. Anything that talks about
+"relationships" in a design doc gravitates toward Neo4j, RDF, or a
+bespoke edges table with foreign-key discipline.</p>
+<p>We deliberately did not do that. Every long-lived piece of coworker
+state in this repo is a <strong>human-readable file on disk</strong>, with SQLite
+used only where an index or a searchable log genuinely earns its
+keep. This ADR names that choice so it isn't quietly reversed.</p>
+<h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
+<p>Storage taxonomy for a coworker (<code>coworkers/&lt;name&gt;/state/…</code>):</p>
+<table>
+<thead>
+<tr>
+<th>Concern</th>
+<th>Store</th>
+<th>Shape</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Entity notes (people, projects)</td>
+<td><code>entities/{people,projects}/&lt;key&gt;.md</code></td>
+<td>markdown, one file per entity</td>
+</tr>
+<tr>
+<td>Freeform agent scratchpad</td>
+<td><code>notes.md</code></td>
+<td>append-only markdown, 4 KB cap</td>
+</tr>
+<tr>
+<td>Semantic memory (learnings)</td>
+<td><code>memory/MEMORY.md</code></td>
+<td>curated markdown</td>
+</tr>
+<tr>
+<td>Journal / dreams</td>
+<td><code>journal/*.md</code>, <code>memory/DREAMS.md</code></td>
+<td>markdown</td>
+</tr>
+<tr>
+<td>Role docs</td>
+<td><code>coworkers/&lt;name&gt;/role/*.md</code></td>
+<td>markdown</td>
+</tr>
+<tr>
+<td>Event log</td>
+<td><code>events.db</code> (SQLite)</td>
+<td>append-only rows + FTS5 index</td>
+</tr>
+<tr>
+<td>Rollups / promises / people-notes index</td>
+<td><code>memory.db</code> (SQLite)</td>
+<td>tables, but only as an index over the markdown truth</td>
+</tr>
+<tr>
+<td>Relationships between entities</td>
+<td><code>entities/relationships.jsonl</code></td>
+<td>append-only JSON lines</td>
+</tr>
+</tbody>
+</table>
+<p>Two rules the taxonomy enforces:</p>
+<ol>
+<li><strong>The markdown is the source of truth.</strong> If <code>notes.md</code> and
+   <code>memory.db</code> disagree, <code>notes.md</code> wins. SQLite is a rebuildable
+   index over on-disk facts, not the primary record.</li>
+<li><strong>Relationships between entities are prose-first.</strong> The Dan card
+   mentions ILO because it says so in English. A tick's entity
+   detector finds them by substring + alias match, not by graph
+   traversal. The edges file (<code>relationships.jsonl</code>) exists for the
+   cases where an explicit typed edge earns its keep, but it is
+   flat, append-only, and readable in <code>less</code>.</li>
+</ol>
+<h2 id="consequences">Consequences<a class="headerlink" href="#consequences" title="Permanent link">&para;</a></h2>
+<p><strong>+</strong> <code>cat coworkers/alex/state/entities/people/dan.md</code> is a complete,
+truthful answer to "what does Alex know about Dan?" — no join, no
+SDK, no query language.</p>
+<p><strong>+</strong> State is diffable with <code>git diff</code>. Every coworker's memory can
+be inspected, backed up, and forked with the tools every engineer
+already has. This is the same reason role docs are markdown, not JSON.</p>
+<p><strong>+</strong> No schema migrations across versions. Adding a new field to an
+entity note is "write a new sentence." Dropping one is "delete the
+sentence." No <code>ALTER TABLE</code>, no rollback plan.</p>
+<p><strong>+</strong> Forkability. A downstream user is not signing up to defend our
+choice of DB engine or migrate off it later. The whole coworker is
+<code>rsync</code>-able.</p>
+<p><strong>−</strong> No graph-query power. "Find all P0 tickets assigned to people
+who left the company" is a script that greps entity files, not a
+Cypher query. When we need that, we write the script; if we ever
+need it enough that scripts stop scaling, we revisit (see below).</p>
+<p><strong>−</strong> Relationship queries are grep-shaped. You can find every
+mention of "ILO" across every entity file cheaply, but ranking by
+recency or filtering by edge type requires reading the file. Fine at
+current scale (dozens of entities per coworker); would hurt at
+thousands.</p>
+<p><strong>−</strong> No transactions across files. A crash mid-write to <code>notes.md</code>
+can leave a partial entry. The 4 KB cap and append-only shape make
+this recoverable-by-eye rather than corrupting.</p>
+<h2 id="precedent">Precedent<a class="headerlink" href="#precedent" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Vercel Eve</strong> — the coworker <em>is</em> a directory of markdown. Same
+  ergonomic bet: humans edit state directly with the same tools
+  they use to edit code.</li>
+<li><strong>Hermes</strong> — state files, not a state service. Skills are
+  markdown. Coworker memory lives on disk.</li>
+<li><strong>MemGPT archival</strong> — searchable text over rigid schema. The
+  archival tier is deliberately unstructured because the retrieval
+  path is FTS, not SQL.</li>
+</ul>
+<p>Contrast:</p>
+<ul>
+<li><strong>ElizaOS</strong> — structured <code>facts</code> memory with typed keys. Powerful
+  for cross-agent aggregation; heavier to fork and reason about.</li>
+<li><strong>LangGraph</strong> — whatever you persist. In practice, Postgres or
+  Redis. Assumes an ops surface we don't want to require.</li>
+<li><strong>Any Neo4j / RDF agent memory</strong> — beautiful for "who works with
+  whom on what"; unmaintainable at coworker-per-directory scale.</li>
+</ul>
+<h2 id="when-to-reconsider">When to reconsider<a class="headerlink" href="#when-to-reconsider" title="Permanent link">&para;</a></h2>
+<ul>
+<li>We ship a "query my whole fleet" surface that needs cross-coworker
+  relational answers ("which of my 20 coworkers ever escalated to
+  Slack channel X?"). Grep across 20 directories is fine; grep
+  across 2,000 is not.</li>
+<li>Entity counts per coworker cross ~10,000 and detection latency
+  starts showing up in tick timing.</li>
+<li>A concrete downstream use case demands a typed edge query — not
+  "graphs would be nice" but "we cannot answer question Q at all
+  today." At that point, add a materialised view (still derived
+  from markdown), not a schema migration.</li>
+</ul>
+<h2 id="reference">Reference<a class="headerlink" href="#reference" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Related ADRs: <a href="../0001-coala-memory-taxonomy/">0001 memory taxonomy</a>,
+  <a href="../0004-events-db-single-file/">0004 events.db single file</a>,
+  <a href="../0005-evaluators-services/">0005 evaluators + services</a>.</li>
+<li>Implementation: <code>src/runtime/entities.ts</code>, <code>src/tools/memory.ts</code>
+  (<code>memory.note</code> / <code>memory.notes_read</code>), <code>src/runtime/semantic.ts</code>.</li>
+</ul>
 
 
 
@@ -1260,10 +1194,10 @@ systemctl --user disable  coworker@alex-triage.service
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.instant", "navigation.tracking", "navigation.top", "content.code.copy", "content.action.edit"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.instant", "navigation.tracking", "navigation.top", "content.code.copy", "content.action.edit"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
       
     
   </body>
