@@ -474,6 +474,57 @@ errors are logged on startup and the offending spec is skipped.
 
 ---
 
+## Memory tools
+
+Coworkers have a small set of action tools for reading and writing their
+own long-term memory. All are registered by default; expose them per
+coworker by listing `memory` (prefix match) in the role's `TOOLS.md`.
+
+| Tool | Input | Behaviour |
+|---|---|---|
+| `memory.search` | `{ query: string, limit?: 1..25 }` | FTS5 search over the coworker's own event log. Read-only. |
+| `memory.recall` | `{ query: string, purpose?: string }` | `memory.search` + one-paragraph LLM summary. |
+| `memory.note_project` | `{ projectKey: string, body: string }` | Save/replace a per-project markdown note. Auto-loaded into perception when the key next appears. Injection-scanned + size-capped. |
+| `memory.note_person` | `{ handle: string, body: string }` | Save/replace a per-person note. Auto-loaded when the handle appears. |
+| `memory.note` | `{ body: string, tag?: string }` | Append a timestamped freeform entry to `state/notes.md`. 4 KB cap (oldest entries trimmed on the `\n## ` boundary); exact-body repeats are deduplicated. Use for durable observations that don't fit an entity note (e.g. "AGNT team is retired — don't attempt writes"). |
+| `memory.notes_read` | `{ grep?: string }` | Read `state/notes.md`. Optional case-insensitive substring filter on entry bodies. |
+
+Writes honour `dryRun` — a dry-run call returns `{dryRun: true, ...}`
+without touching disk.
+
+### Reflection
+
+The **reflect** ritual (`src/runtime/reflect.ts`, `dreamOnce`) reads the
+past week's `action` / `deliberate` / `boundary.block` / `sensor.error`
+events, asks the model to distil them into a compact learnings
+paragraph, and promotes that paragraph into semantic `MEMORY.md` (with
+a promotion gate, a 25 %-loss guard, a version snapshot, and a
+`DREAMS.md` diary of what was added or dropped). A longer weekly
+rollup is written to `memory.db`, and raw events older than
+`REFLECT_RETENTION_DAYS` (default 30) are pruned.
+
+Reflection ships as a built-in ritual (`reflect.weekly`, Sundays 03:00
+UTC) and applies to any coworker with no `role/rituals/` directory.
+To make it explicit — or to override the cadence — drop a JSON file
+into `coworkers/<name>/role/rituals/`, e.g.:
+
+```json
+{
+  "name": "reflect.weekly",
+  "cadence": { "kind": "weekly", "weekdayUTC": 0, "hourUTC": 3 },
+  "action": "reflect",
+  "note": "Sunday 03:00 UTC — compact the past week's events into semantic MEMORY.md."
+}
+```
+
+Once a role adds any file to `role/rituals/`, the full built-in set
+(`reflect.weekly`, `journal.daily`, `role.audit`, `health.snapshot`)
+is replaced by the on-disk list — so if you want to keep the others,
+copy them across too. See `examples/generic-triage/role/rituals/`
+for the canonical set.
+
+---
+
 ## Boundaries and dry-run
 
 Every proposed action is checked against `BOUNDARIES.md` before execution.
