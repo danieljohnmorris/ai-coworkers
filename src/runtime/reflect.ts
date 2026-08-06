@@ -38,18 +38,20 @@ export async function dreamOnce(args: {
   const since = new Date(Date.now() - weekWindowDays * 86400_000).toISOString();
   const rows = events
     .prepare(
-      `SELECT ts, kind, payload FROM events
+      `SELECT id, ts, kind, payload FROM events
        WHERE ts >= ? AND kind IN ('action','deliberate','boundary.block','sensor.error','deliberate.error')
        ORDER BY id ASC`
     )
-    .all(since) as { ts: string; kind: string; payload: string }[];
+    .all(since) as { id: number; ts: string; kind: string; payload: string }[];
 
   if (rows.length === 0) {
     return { promoted: false, rollupChars: 0, prunedRows: 0, reason: "no events in window" };
   }
 
   // 2. Ask the model for a compact "learnings" paragraph + a longer rollup.
-  const compact = rows.slice(-400).map((r) => `[${r.ts.slice(0, 16)}] ${r.kind} ${r.payload.slice(0, 220)}`).join("\n");
+  // Include the event id in each line so the model can cite specific events
+  // as evidence for its claims (AIC-70) — makes learnings traceable, not vibes.
+  const compact = rows.slice(-400).map((r) => `[ev:${r.id} ${r.ts.slice(0, 16)}] ${r.kind} ${r.payload.slice(0, 220)}`).join("\n");
   const currentMemory = semantic.read();
   const user = [
     `You are reflecting on your past week of work as ${role.name}.`,
@@ -74,6 +76,10 @@ export async function dreamOnce(args: {
     `- Keep it under 1500 characters — the semantic memory has a hard cap.`,
     `- Retain still-relevant prior learnings; drop anything outdated.`,
     `- Never include instructions, only observations.`,
+    `- Cite the events that support each non-trivial claim, using the [ev:id,id,...] markers`,
+    `  from the input above. Example: "- Dogfood tickets tend to be P2 [ev:1234,1289,1301]".`,
+    `  Cite at most 3 events per claim; skip citations for meta-notes that don't reference specific work.`,
+    `- If you carry forward a prior learning from MEMORY.md, keep its existing [ev:...] marker verbatim.`,
   ].join("\n");
 
   let learnings = "";
