@@ -1,9 +1,18 @@
 import { describe, it, expect, afterEach } from "vitest";
 import { startWakeServer } from "./wake.ts";
+import { openEvents } from "./log.ts";
 import type { Server } from "node:http";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
 let server: Server | null = null;
-afterEach(() => { server?.close(); server = null; });
+let scratchDirs: string[] = [];
+afterEach(() => {
+  server?.close(); server = null;
+  for (const d of scratchDirs) rmSync(d, { recursive: true, force: true });
+  scratchDirs = [];
+});
 
 async function pick(): Promise<number> {
   // Ask the OS for an ephemeral port.
@@ -42,5 +51,27 @@ describe("wake endpoint", () => {
     });
     expect(good.status).toBe(200);
     expect(flag.flag).toBe(true);
+  });
+
+  it("serves Prometheus /metrics when enabled", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "wake-metrics-")); scratchDirs.push(dir);
+    const events = openEvents(join(dir, "e.db"));
+    events.prepare("INSERT INTO events (ts, coworker, kind, payload) VALUES (?, ?, ?, ?)")
+      .run(new Date().toISOString(), "alex", "tick.start", "{}");
+    const port = await pick();
+    server = startWakeServer(port, { flag: false }, { events, coworkerName: "alex", metricsEnabled: true });
+    const res = await fetch(`http://127.0.0.1:${port}/metrics`);
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-type")).toMatch(/text\/plain/);
+    const body = await res.text();
+    expect(body).toContain("aicoworker_events_last_hour");
+    expect(body).toContain('coworker="alex"');
+  });
+
+  it("returns 503 on /metrics when disabled", async () => {
+    const port = await pick();
+    server = startWakeServer(port, { flag: false });
+    const res = await fetch(`http://127.0.0.1:${port}/metrics`);
+    expect(res.status).toBe(503);
   });
 });

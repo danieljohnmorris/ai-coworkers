@@ -163,8 +163,14 @@ async function main() {
   // webhooks (or any curl) fire an immediate tick.
   const wakePort = Number(process.env.WAKE_PORT ?? 0);
   if (wakePort > 0) {
-    startWakeServer(wakePort, wake, process.env.WAKE_SECRET);
+    startWakeServer(wakePort, wake, {
+      secret: process.env.WAKE_SECRET,
+      events,
+      coworkerName: name,
+      metricsEnabled: process.env.METRICS_ENABLED === "1",
+    });
     log.stream(`wake endpoint: http://127.0.0.1:${wakePort}/wake`);
+    if (process.env.METRICS_ENABLED === "1") log.stream(`metrics endpoint: http://127.0.0.1:${wakePort}/metrics`);
   }
   const onSig = () => {
     log.stream(`shutdown signal`);

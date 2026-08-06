@@ -34,6 +34,7 @@ The distinctive thesis: agents live in a filesystem directory (role docs + state
 - [entities.ts](https://github.com/danieljohnmorris/ai-coworkers/blob/main/src/runtime/entities.ts): per-person + per-project cards, alias-aware detection in perception.
 - [rituals.ts](https://github.com/danieljohnmorris/ai-coworkers/blob/main/src/runtime/rituals.ts) + [rituals_loader.ts](https://github.com/danieljohnmorris/ai-coworkers/blob/main/src/runtime/rituals_loader.ts): due-based scheduler for hourly/daily/weekly rituals. Rituals are declared in `role/rituals/*.json` (AIC-80) — falls back to built-in defaults if the dir is absent. Actions: `reflect`, `journal`, `role_audit`, `health_snapshot`.
 - [budget.ts](https://github.com/danieljohnmorris/ai-coworkers/blob/main/src/runtime/budget.ts), [tempo.ts](https://github.com/danieljohnmorris/ai-coworkers/blob/main/src/runtime/tempo.ts), [circuit.ts](https://github.com/danieljohnmorris/ai-coworkers/blob/main/src/runtime/circuit.ts): LLM-call budgets, tempo self-awareness, per-sensor circuit breakers.
+- [rate_limits.ts](https://github.com/danieljohnmorris/ai-coworkers/blob/main/src/runtime/rate_limits.ts) + [triage.ts](https://github.com/danieljohnmorris/ai-coworkers/blob/main/src/runtime/triage.ts) + [metrics.ts](https://github.com/danieljohnmorris/ai-coworkers/blob/main/src/runtime/metrics.ts): 429 detection + per-prefix cooldown (AIC-62), TRIAGE_MODEL cheap-first preflight (AIC-47), Prometheus `/metrics` on the wake server (AIC-67).
 
 ## Adapters (src/adapters/)
 
@@ -115,6 +116,8 @@ TRIAGE_MODEL=...      # optional — cheap-first preflight (AIC-47); when
                       #   set, every tick asks this small model "act or
                       #   skip?" before spending the expensive prompt
 LINEAR_API_KEY=...    # optional — only the Linear coworker needs it
+METRICS_ENABLED=1     # optional (AIC-67) — expose Prometheus /metrics
+                      #   on WAKE_PORT
 ```
 
 Run it:
