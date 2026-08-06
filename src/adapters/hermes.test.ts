@@ -41,6 +41,35 @@ describe("loadHermesSkills", () => {
     expect(s[0].description).toContain("Just a body");
     rmSync(dir, { recursive: true, force: true });
   });
+
+  it("recurses into category subdirs (Hermes-style productivity/google-workspace layout)", () => {
+    // Real Hermes lays skills out as ~/.hermes/skills/<category>/<skill>/SKILL.md
+    // — a flat scan misses everything below the first level. Regression
+    // test for that discovery.
+    mkdirSync(join(dir, "productivity", "google-workspace"), { recursive: true });
+    mkdirSync(join(dir, "productivity", "airtable"), { recursive: true });
+    mkdirSync(join(dir, "creativity", "manim"), { recursive: true });
+    writeFileSync(join(dir, "productivity", "google-workspace", "SKILL.md"), "---\nname: google-workspace\ndescription: Gmail + Docs via OAuth\n---\nbody");
+    writeFileSync(join(dir, "productivity", "airtable", "SKILL.md"), "---\nname: airtable\ndescription: Airtable CLI\n---\nbody");
+    writeFileSync(join(dir, "creativity", "manim", "SKILL.md"), "---\nname: manim\ndescription: Manim animations\n---\nbody");
+    const s = loadHermesSkills(dir);
+    const names = s.map((x) => x.name).sort();
+    expect(names).toEqual(["airtable", "google-workspace", "manim"]);
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it("does NOT recurse into a skill's own scripts/ or references/ subdirs", () => {
+    // A skill's own subdirectories (scripts/, references/) are its
+    // implementation, not nested skills. Stopping recursion at the first
+    // SKILL.md found prevents spurious duplicate entries when a nested
+    // dir happens to contain another markdown file called SKILL.md.
+    mkdirSync(join(dir, "productivity", "google-workspace", "scripts"), { recursive: true });
+    writeFileSync(join(dir, "productivity", "google-workspace", "SKILL.md"), "---\nname: google-workspace\ndescription: outer\n---\nx");
+    writeFileSync(join(dir, "productivity", "google-workspace", "scripts", "SKILL.md"), "---\nname: BAD-nested\ndescription: should not be loaded\n---\nx");
+    const s = loadHermesSkills(dir);
+    expect(s.map((x) => x.name)).toEqual(["google-workspace"]);
+    rmSync(dir, { recursive: true, force: true });
+  });
 });
 
 describe("renderSkillsIndex", () => {
