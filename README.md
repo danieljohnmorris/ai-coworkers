@@ -237,6 +237,7 @@ node --experimental-strip-types src/dashboard.ts     # fleet view on :7777
 - [Tick loop internals](docs/tick-loop.md) (TODO)
 - [Memory taxonomy (CoALA mapping)](docs/adr/0001-coala-memory-taxonomy.md)
 - [Boundary model](docs/boundaries.md) (TODO)
+- [Comparison with other harnesses](docs/comparison.md) — vs Buzz, Hermes, OpenClaw, Eve, ElizaOS, OpenSRE, Anthropic MA, CrewAI, LangGraph
 
 **Operations**
 - [systemd deployment](docs/systemd.md)
