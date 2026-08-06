@@ -41,6 +41,40 @@ export function isCredentialName(name: string): boolean {
   return CREDENTIAL_PATTERNS.some((re) => re.test(name));
 }
 
+// Load a coworker-scoped env. Reads `coworkers/<name>/.env` if present and
+// overlays it onto the shell env. The `.env` file wins on conflict — that's
+// the whole point: a coworker's own file scopes it to a specific workspace
+// (a different Linear org, a different GitHub PAT, etc.) without polluting
+// any other coworker or the host shell.
+//
+// `.env` format is minimal on purpose: `KEY=value` per line, blank lines
+// and `#` comments allowed, no quoting rules, no interpolation. Values with
+// spaces or shell metacharacters are used verbatim. Missing file → returns
+// a shallow copy of `baseEnv` unchanged.
+import { readFileSync, existsSync } from "node:fs";
+import { join } from "node:path";
+
+export function loadCoworkerEnv(
+  coworkersDir: string,
+  name: string,
+  baseEnv: NodeJS.ProcessEnv = process.env,
+): NodeJS.ProcessEnv {
+  const out: NodeJS.ProcessEnv = { ...baseEnv };
+  const path = join(coworkersDir, name, ".env");
+  if (!existsSync(path)) return out;
+  const text = readFileSync(path, "utf8");
+  for (const rawLine of text.split(/\r?\n/)) {
+    const line = rawLine.trim();
+    if (!line || line.startsWith("#")) continue;
+    const eq = line.indexOf("=");
+    if (eq <= 0) continue;                       // no key or `=key` → skip
+    const key = line.slice(0, eq).trim();
+    const value = line.slice(eq + 1);            // preserve exact value bytes
+    out[key] = value;
+  }
+  return out;
+}
+
 // Return the subset of env vars a tool is allowed to see: every non-secret
 // variable, plus only the credentials it declared it needs.
 export function filterEnvForTool(env: NodeJS.ProcessEnv, allowed: readonly string[] | undefined): NodeJS.ProcessEnv {
