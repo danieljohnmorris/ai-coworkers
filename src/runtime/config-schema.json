@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ai-coworkers/config-schema.json",
+  "title": "CoworkerConfig",
+  "description": "Behavioural knobs for a single coworker. Secrets, host binding, and development escape hatches stay in .env (see docs/adr/0007-config-file-vs-env-vars.md).",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "wake_mode": {
+      "type": "string",
+      "enum": ["tick", "webhook", "both"],
+      "default": "both",
+      "description": "Activity source. 'tick' = periodic tick loop only. 'webhook' = wake HTTP server only (no scheduled ticks). 'both' = both (belt-and-suspenders; recommended)."
+    },
+    "extract_entities": {
+      "type": "boolean",
+      "default": false,
+      "description": "Enable the per-tick entity evaluator that extracts people, projects, and workspace facts into state/entities and state/notes.md."
+    },
+    "max_tools_per_tick": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100,
+      "default": 8,
+      "description": "Maximum number of tool calls the coworker may chain within a single tick before the tick is force-closed."
+    },
+    "pii_mask": {
+      "type": "boolean",
+      "default": false,
+      "description": "Reversibly mask cloud identifiers (pod names, account IDs, IPs, UUIDs) in prompts so the LLM sees stable per-tick tokens instead of raw identifiers."
+    },
+    "note_require_signed": {
+      "type": "boolean",
+      "default": false,
+      "description": "Reject operator notes that lack a valid HMAC signature. Requires NOTE_HMAC_SECRET to be set; use bin/note-to.sh to write signed notes."
+    }
+  }
+}

@@ -9,6 +9,24 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 ## [Unreleased]
 
 ### Added
+- **Per-coworker `config.json`** — behavioural knobs are moving off
+  environment variables into a schema-validated JSON file at
+  `coworkers/<name>/config.json` (schema:
+  `src/runtime/config-schema.json`, loader:
+  `src/runtime/coworker_config.ts`). First cut migrates `wake_mode`,
+  `extract_entities`, `max_tools_per_tick`, `pii_mask`, and
+  `note_require_signed`. Env vars keep working as a deprecated
+  fallback with a one-time warning; secrets, host binding, and dev
+  escape hatches stay in `.env` forever. Rationale:
+  [ADR 0007](docs/adr/0007-config-file-vs-env-vars.md).
+- **`bin/configure.sh <coworker>`** — interactive wizard that walks
+  every knob in the schema, shows its description and default, reads
+  the current value from `config.json`, and writes the result back
+  after a confirmation prompt. Preserves unknown fields so re-runs are
+  safe.
+- **`docs/coworker-builder-guide.md`** — front-door guide for
+  non-technical people building coworkers, with an entry link from the
+  top of `README.md`. Never mentions Node, npm, git, or ADRs.
 - **Entity evaluator** (`src/runtime/evaluator.ts`) — opt-in per-tick
   hook that extracts people, projects, and durable workspace facts
   from perception + actions + thoughts and writes them into the
