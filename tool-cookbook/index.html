@@ -489,6 +489,34 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Path A — reuse Hermes skills">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#gmail-google-workspace-per-coworker-setup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Gmail + Google Workspace — per-coworker setup
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#slack-per-coworker-setup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Slack — per-coworker setup
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -1013,6 +1041,34 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Path A — reuse Hermes skills">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#gmail-google-workspace-per-coworker-setup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Gmail + Google Workspace — per-coworker setup
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#slack-per-coworker-setup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Slack — per-coworker setup
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -1174,6 +1230,47 @@ is fully self-executing prose (a subset).</p>
 <p><strong>Verified working:</strong> loaded 72 skills from a live Hermes install via
 our adapter on 2026-08-06 (see <code>src/adapters/hermes.test.ts</code> recursion
 test).</p>
+<h3 id="gmail-google-workspace-per-coworker-setup">Gmail + Google Workspace — per-coworker setup<a class="headerlink" href="#gmail-google-workspace-per-coworker-setup" title="Permanent link">&para;</a></h3>
+<p>For a specific coworker to send / read email, run once as the operator:</p>
+<div class="highlight"><pre><span></span><code>bin/setup-gmail.sh<span class="w"> </span>&lt;coworker&gt;
+</code></pre></div>
+<p>The script wraps Hermes's <code>google-workspace/scripts/setup.py</code>, following
+its documented three-step agent-driven flow but with the operator in the
+loop instead of a chat model:</p>
+<ol>
+<li>Prompts you for the path to a <code>credentials.json</code> downloaded from
+   <a href="https://console.cloud.google.com/apis/credentials">Google Cloud Console</a>
+   (Desktop-app OAuth client type; enable Gmail / Calendar / Drive /
+   Sheets / Docs APIs on the project).</li>
+<li>Prints the OAuth URL — you visit, authorize, paste back the code.</li>
+<li>Verifies + reports the token path.</li>
+</ol>
+<p>Token lands at <code>coworkers/&lt;name&gt;/state/hermes-home/google_token.json</code>
+(scoped via <code>HERMES_HOME</code> env). Each coworker gets its own token —
+running the script for <code>alex</code> doesn't affect <code>bob</code>. The
+[<code>gmail.search</code> / <code>gmail.get</code> / <code>gmail.send</code> / <code>gmail.reply</code> tools in
+<code>src/tools/gmail.ts</code>] shell out to Hermes's <code>google_api.py</code> with the
+same <code>HERMES_HOME</code>, so the tools pick up the cached token automatically.</p>
+<p>If a coworker's TOOLS.md declares <code>- gmail</code> but setup hasn't run, the
+tools return <code>{warning: "Gmail not configured — run bin/setup-gmail.sh
+&lt;coworker&gt;"}</code> instead of throwing — coworker just skips gmail work
+until the operator runs setup.</p>
+<h3 id="slack-per-coworker-setup">Slack — per-coworker setup<a class="headerlink" href="#slack-per-coworker-setup" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code>bin/setup-slack.sh<span class="w"> </span>&lt;coworker&gt;
+</code></pre></div>
+<p>Wraps <code>hermes slack manifest</code>. Steps:</p>
+<ol>
+<li>Writes the app manifest to <code>/tmp/slack-manifest-&lt;coworker&gt;.json</code>.</li>
+<li>Walks you through creating the Slack App at
+   <a href="https://api.slack.com/apps">api.slack.com/apps</a> → "From an app
+   manifest" → pick workspace → paste → install.</li>
+<li>Prompts for the Bot Token (<code>xoxb-…</code>), optional App Token
+   (<code>xapp-…</code> for Socket Mode), optional watched-channel IDs.</li>
+<li>Writes them to <code>coworkers/&lt;name&gt;/.env</code> (gitignored).</li>
+</ol>
+<p>Existing native <code>src/tools/slack.ts</code> picks the tokens up on next
+restart. No new tool code needed — the setup step is what was
+missing.</p>
 <h2 id="path-b-mcp-servers">Path B — MCP servers<a class="headerlink" href="#path-b-mcp-servers" title="Permanent link">&para;</a></h2>
 <p>The <a href="https://modelcontextprotocol.io">Model Context Protocol</a> ecosystem
 ships servers for most APIs. We spawn them as subprocesses via
