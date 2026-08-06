@@ -110,4 +110,14 @@ describe("loadRituals", () => {
     const r = loadRituals(dir);
     expect(r.specs).toHaveLength(1);
   });
+
+  it("loads alex-triage's rituals dir cleanly and includes the reflect ritual", () => {
+    const repoRoot = new URL("../..", import.meta.url).pathname;
+    const alexRituals = join(repoRoot, "coworkers", "alex-triage", "role", "rituals");
+    const r = loadRituals(alexRituals);
+    expect(r.errors).toEqual([]);
+    const reflect = r.specs.find((s) => s.action === "reflect");
+    expect(reflect).toBeDefined();
+    expect(reflect!.cadence).toMatchObject({ kind: "weekly", weekdayUTC: 0, hourUTC: 3 });
+  });
 });

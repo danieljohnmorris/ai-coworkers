@@ -143,4 +143,102 @@ export const memoryRecall: ToolDef = {
   },
 };
 
-export const memoryTools: ToolDef[] = [memorySearch, memoryRecall, memoryNoteProject, memoryNotePerson];
+// AIC — memory.note: an agent-freeform notes scratchpad. Unlike the
+// project/person entity notes (which are structured, keyed, and auto-loaded
+// into perception), this is a single append-only log the coworker uses to
+// jot durable observations that don't fit any entity — e.g. "AGNT team is
+// retired, don't write to it". Survives restarts. Bounded to 4 KB by
+// trimming from the top on the entry boundary (`\n## `). Deduplicates
+// exact-body repeats so a thought-loop can't spam the file.
+const NOTES_CAP = 4096;
+
+function notesPath(coworker: string): string {
+  const repoRoot = new URL("../..", import.meta.url).pathname;
+  return join(repoRoot, "coworkers", coworker, "state", "notes.md");
+}
+
+function trimNotesToCap(text: string, cap: number): string {
+  if (text.length <= cap) return text;
+  // Split on entry boundaries; the first chunk is anything before the first
+  // "\n## " marker (usually empty). Trim from the front until under cap,
+  // always keeping the newest entry.
+  const parts = text.split(/(?=\n## )/);
+  while (parts.length > 1 && parts.join("").length > cap) parts.shift();
+  return parts.join("");
+}
+
+export const memoryNote: ToolDef = {
+  name: "memory.note",
+  kind: "action",
+  description:
+    "Append a timestamped freeform note to your own scratchpad (state/notes.md). Use for durable observations that don't fit a project/person note — e.g. \"AGNT team is retired, don't attempt writes\". Survives restarts. File is capped at 4 KB (oldest entries trimmed first). Exact-body repeats are deduplicated.",
+  inputSchema: {
+    type: "object",
+    required: ["body"],
+    properties: {
+      body: { type: "string", minLength: 1, description: "The note body. Keep it short and factual." },
+      tag: { type: "string", description: "Optional label, e.g. 'team', 'process', 'gotcha'." },
+    },
+  },
+  handler: async (input: { body: string; tag?: string }, ctx: ToolCtx) => {
+    const body = input.body.trim();
+    if (!body) return { accepted: false, reason: "empty body" };
+    const tag = input.tag?.trim() || "";
+    if (ctx.dryRun) return { dryRun: true, wouldNote: { chars: body.length, tag } };
+
+    const { readFileSync, writeFileSync, existsSync, mkdirSync } = await import("node:fs");
+    const { dirname } = await import("node:path");
+    const path = notesPath(ctx.coworker);
+    let existing = "";
+    try { if (existsSync(path)) existing = readFileSync(path, "utf8"); } catch { /* empty */ }
+
+    // Dedup: extract last entry's body and compare exactly.
+    const parts = existing.split(/(?=\n## )/);
+    const last = parts[parts.length - 1] ?? "";
+    const lastBody = last.replace(/^\n## [^\n]*\n/, "").trimEnd();
+    if (lastBody === body) return { deduped: true };
+
+    const ts = new Date().toISOString();
+    const entry = `\n## ${ts}  [${tag}]\n${body}\n`;
+    const combined = trimNotesToCap(existing + entry, NOTES_CAP);
+    try { mkdirSync(dirname(path), { recursive: true }); } catch { /* empty */ }
+    writeFileSync(path, combined);
+    return { accepted: true, bytes: combined.length };
+  },
+};
+
+export const memoryNotesRead: ToolDef = {
+  name: "memory.notes_read",
+  kind: "action",
+  description:
+    "Read your freeform notes scratchpad (state/notes.md). Optional case-insensitive substring filter via `grep` — returns only entries whose body matches. Cheap; safe to call any time you need to recall a prior jot.",
+  inputSchema: {
+    type: "object",
+    properties: {
+      grep: { type: "string", description: "Optional case-insensitive substring; only matching entries are returned." },
+    },
+  },
+  handler: async (input: { grep?: string }, ctx: ToolCtx) => {
+    const { readFileSync, existsSync } = await import("node:fs");
+    const path = notesPath(ctx.coworker);
+    if (!existsSync(path)) return { content: "" };
+    const text = readFileSync(path, "utf8");
+    if (!input.grep) return { content: text };
+    const needle = input.grep.toLowerCase();
+    const parts = text.split(/(?=\n## )/).filter((p) => p.startsWith("\n## "));
+    const matches = parts.filter((p) => {
+      const body = p.replace(/^\n## [^\n]*\n/, "");
+      return body.toLowerCase().includes(needle);
+    });
+    return { content: matches.join("") };
+  },
+};
+
+export const memoryTools: ToolDef[] = [
+  memorySearch,
+  memoryRecall,
+  memoryNoteProject,
+  memoryNotePerson,
+  memoryNote,
+  memoryNotesRead,
+];
