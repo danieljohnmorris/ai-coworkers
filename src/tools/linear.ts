@@ -26,6 +26,7 @@ async function gql<T>(query: string, variables: Record<string, unknown>, apiKey:
 
 export const linearNewIssues: ToolDef = {
   name: "linear.new_issues",
+  requiresCreds: ["LINEAR_API_KEY"],
   kind: "sensor",
   description: "List recently created Linear issues that are untriaged (no priority set).",
   inputSchema: { type: "object", properties: {} },
@@ -54,6 +55,7 @@ export const linearNewIssues: ToolDef = {
 
 export const linearUntaggedIssues: ToolDef = {
   name: "linear.untagged_issues",
+  requiresCreds: ["LINEAR_API_KEY"],
   kind: "sensor",
   description: "Open Linear issues in watched teams that currently have no labels. Feed the label-maintenance responsibility. Respects team ignore list via LINEAR_IGNORE_TEAMS env (comma-separated team keys).",
   inputSchema: { type: "object", properties: {} },
@@ -111,6 +113,7 @@ function countByKey<T>(arr: T[], key: (x: T) => string): Record<string, number> 
 
 export const linearComment: ToolDef = {
   name: "linear.comment",
+  requiresCreds: ["LINEAR_API_KEY"],
   kind: "action",
   description: "Post a comment on a Linear issue. Use to propose triage decisions or ask reporter for info.",
   inputSchema: {
@@ -145,6 +148,7 @@ export const linearComment: ToolDef = {
 
 export const linearIssueDetail: ToolDef = {
   name: "linear.issue_detail",
+  requiresCreds: ["LINEAR_API_KEY"],
   // Read-only but requires input; sensors are called with no args by the
   // tick loop, so this is exposed as an "action" the model calls when it
   // needs context on a specific issue. Never side-effects — safe under
@@ -176,6 +180,7 @@ export const linearIssueDetail: ToolDef = {
 
 export const linearSearchIssues: ToolDef = {
   name: "linear.search",
+  requiresCreds: ["LINEAR_API_KEY"],
   kind: "action",
   description: "Search Linear issues by keyword and/or team. Use when you need to find issues beyond what sensors surface — e.g. re-check an older ticket, cross-reference by keyword, or scan a specific team.",
   inputSchema: {
@@ -212,6 +217,7 @@ export const linearSearchIssues: ToolDef = {
 
 export const linearTeamLabels: ToolDef = {
   name: "linear.team_labels",
+  requiresCreds: ["LINEAR_API_KEY"],
   // Read-only but takes input; see note on linearIssueDetail. Exposed as an
   // action so the model can call it with a team key.
   kind: "action",
@@ -238,6 +244,7 @@ export const linearTeamLabels: ToolDef = {
 
 export const linearSetLabels: ToolDef = {
   name: "linear.set_labels",
+  requiresCreds: ["LINEAR_API_KEY"],
   kind: "action",
   description: "Set the labels on a Linear issue (replaces existing set). Pass label IDs, not names — resolve names via linear.team_labels first.",
   inputSchema: {
@@ -267,6 +274,7 @@ export const linearSetLabels: ToolDef = {
 
 export const linearCreateLabel: ToolDef = {
   name: "linear.create_label",
+  requiresCreds: ["LINEAR_API_KEY"],
   kind: "action",
   description:
     "Create a NEW label in a team's vocabulary. Use ONLY when reusing an existing label is genuinely wrong AND your manager has approved (ask via `ask` to='manager' first if in doubt). Prefer the smallest label vocabulary possible; overuse creates label sprawl.",
@@ -302,6 +310,7 @@ export const linearCreateLabel: ToolDef = {
 
 export const linearWorkspaceSnapshot: ToolDef = {
   name: "linear.workspace_snapshot",
+  requiresCreds: ["LINEAR_API_KEY"],
   kind: "sensor",
   description:
     "Once/day snapshot of workspace shape: teams, active projects, label frequency, priority distribution. Gives the coworker structural awareness without hand-authored WORKSPACE.md having to enumerate everything.",

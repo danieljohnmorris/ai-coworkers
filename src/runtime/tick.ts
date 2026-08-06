@@ -22,6 +22,7 @@ import type { SemanticMemory } from "./semantic.ts";
 import { runDue, type RitualDef } from "./rituals.ts";
 import { dreamOnce } from "./reflect.ts";
 import { auditRoleDocs } from "./role_audit.ts";
+import { filterEnvForTool } from "./credentials.ts";
 import { writeJournal } from "./journal.ts";
 import { matchIntents } from "./intents.ts";
 import { tailHighlights } from "./log.ts";
@@ -99,7 +100,7 @@ export async function tick(ctx: TickContext): Promise<TickOutcome> {
       const result = await s.handler({}, {
         coworker: ctx.role.name,
         dryRun: ctx.dryRun,
-        env: process.env,
+        env: filterEnvForTool(process.env, s.requiresCreds),
       });
       if (minInterval(s.name) > 0) setCached(s.name, result, nowMs);
       sensors.push({ name: s.name, result });
@@ -295,7 +296,7 @@ export async function tick(ctx: TickContext): Promise<TickOutcome> {
       ctx.log.highlight(`✗ ${decision.tool} not registered`);
       break;
     }
-    const decisionCtx = { coworker: ctx.role.name, dryRun: ctx.dryRun, env: process.env };
+    const decisionCtx = { coworker: ctx.role.name, dryRun: ctx.dryRun, env: filterEnvForTool(process.env, tool.requiresCreds) };
     // AIC-43 — validate input against the tool's declared schema. Failure
     // is fed back as a chained-step outcome (not fatal) so the model can
     // correct itself on the next step.

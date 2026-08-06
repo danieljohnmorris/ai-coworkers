@@ -29,6 +29,9 @@ function inboxPath(coworker: string): string {
 
 export const ask: ToolDef = {
   name: "ask",
+  // ask routes to slack / linear / github, so it needs any credential the
+  // underlying tools might reach for.
+  requiresCreds: ["SLACK_BOT_TOKEN", "LINEAR_API_KEY", "GITHUB_TOKEN"],
   kind: "action",
   description:
     "Ask a question of your manager, a peer coworker, or anyone via Slack. Use when you genuinely need input to proceed. Do NOT use for routine work. The question persists (or is delivered) — you will see any unanswered questions to your manager in future perception until resolved, so ask only when blocked.",

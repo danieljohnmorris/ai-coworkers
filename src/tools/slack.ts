@@ -29,6 +29,7 @@ async function slack<T>(method: string, token: string, body?: object, init?: Req
 
 export const slackMentions: ToolDef = {
   name: "slack.mentions",
+  requiresCreds: ["SLACK_BOT_TOKEN"],
   kind: "sensor",
   description: "Recent @-mentions of the bot in watched channels. Use to notice when someone is asking you something.",
   inputSchema: { type: "object", properties: {} },
@@ -63,6 +64,7 @@ export const slackMentions: ToolDef = {
 
 export const slackPost: ToolDef = {
   name: "slack.post",
+  requiresCreds: ["SLACK_BOT_TOKEN"],
   kind: "action",
   description: "Post a message to a Slack channel. Use for the morning triage summary or P0 escalations.",
   inputSchema: {
@@ -85,6 +87,7 @@ export const slackPost: ToolDef = {
 
 export const slackDM: ToolDef = {
   name: "slack.dm",
+  requiresCreds: ["SLACK_BOT_TOKEN"],
   kind: "action",
   description: "Send a direct message to a Slack user by their user ID. Use for P0 escalations to your manager.",
   inputSchema: {

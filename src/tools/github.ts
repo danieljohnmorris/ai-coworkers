@@ -29,6 +29,7 @@ function watchedRepos(env: NodeJS.ProcessEnv): string[] {
 
 export const githubOpenPRs: ToolDef = {
   name: "github.open_prs",
+  requiresCreds: ["GITHUB_TOKEN"],
   kind: "sensor",
   description: "List open pull requests across WATCHED_REPOS. Useful for the PR-reviewer coworker archetype.",
   inputSchema: { type: "object", properties: {} },
@@ -58,6 +59,7 @@ export const githubOpenPRs: ToolDef = {
 
 export const githubPRComment: ToolDef = {
   name: "github.pr_comment",
+  requiresCreds: ["GITHUB_TOKEN"],
   kind: "action",
   description: "Post an issue-level comment on a pull request.",
   inputSchema: {
