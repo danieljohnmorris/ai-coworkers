@@ -1227,11 +1227,16 @@
 </ol>
 <h2 id="development-setup">Development setup<a class="headerlink" href="#development-setup" title="Permanent link">&para;</a></h2>
 <p>Requires Node ≥ 22 (uses native <code>node:sqlite</code>, <code>--experimental-strip-types</code>).</p>
+<p>Use the npm version pinned in <code>package.json#packageManager</code>. Older npm does
+not understand the <code>libc</code> field and strips the glibc/musl gating from
+optional dependencies on every <code>npm install</code>, which silently breaks installs
+on Alpine. CI regenerates the lockfile and fails on any difference.</p>
 <div class="highlight"><pre><span></span><code>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/danieljohnmorris/ai-coworkers
 <span class="nb">cd</span><span class="w"> </span>ai-coworkers
+npm<span class="w"> </span>i<span class="w"> </span>-g<span class="w"> </span><span class="s2">&quot;npm@</span><span class="k">$(</span>node<span class="w"> </span>-p<span class="w"> </span><span class="s2">&quot;require(&#39;./package.json&#39;).packageManager.split(&#39;@&#39;)[1]&quot;</span><span class="k">)</span><span class="s2">&quot;</span>
 npm<span class="w"> </span>install
-npm<span class="w"> </span><span class="nb">test</span><span class="w">              </span><span class="c1"># ~480 tests, ~2s</span>
-npm<span class="w"> </span>run<span class="w"> </span>test:cov<span class="w">      </span><span class="c1"># ~99% line coverage</span>
+npm<span class="w"> </span><span class="nb">test</span><span class="w">              </span><span class="c1"># 733 tests, ~3s</span>
+npm<span class="w"> </span>run<span class="w"> </span>test:cov<span class="w">      </span><span class="c1"># ~98% line coverage</span>
 
 <span class="c1"># Enable the pre-commit hook that blocks accidental secret commits:</span>
 git<span class="w"> </span>config<span class="w"> </span>core.hooksPath<span class="w"> </span>.githooks
