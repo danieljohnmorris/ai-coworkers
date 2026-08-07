@@ -284,10 +284,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#deciding-not-to-act" class="md-nav__link">
+  <a href="#most-ticks-never-reach-the-model" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Deciding not to act
+        Most ticks never reach the model
       
     </span>
   </a>
@@ -655,10 +655,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#deciding-not-to-act" class="md-nav__link">
+  <a href="#most-ticks-never-reach-the-model" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Deciding not to act
+        Most ticks never reach the model
       
     </span>
   </a>
@@ -1499,10 +1499,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#deciding-not-to-act" class="md-nav__link">
+  <a href="#most-ticks-never-reach-the-model" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Deciding not to act
+        Most ticks never reach the model
       
     </span>
   </a>
@@ -1777,8 +1777,11 @@
 <a href="https://nodejs.org"><img alt="node" src="https://img.shields.io/badge/node-%E2%89%A522-brightgreen" /></a>
 <a href="LICENSE"><img alt="license" src="https://img.shields.io/badge/license-MIT-blue" /></a>
 <a href="#tests"><img alt="tests" src="https://img.shields.io/badge/tests-733-brightgreen" /></a></p>
-<p>Long-running AI coworkers with <strong>roles</strong>, <strong>boundaries</strong>, and a <strong>tick loop</strong>.
-Not one-shot task agents. Persistent processes that decide when <em>not</em> to act.</p>
+<p>An AI coworker you leave running. It holds a <strong>role</strong>, works inside
+<strong>boundaries</strong> you write in markdown, asks instead of guessing, and spends no
+tokens on the ticks where nothing changed.</p>
+<p>Nobody prompts it. It wakes on a clock or a webhook, and most of those wakes
+stop before a model is involved.</p>
 <p><strong>Two ways in.</strong> If you want to run a coworker, start with
 <a href="docs/coworker-builder-guide.md">docs/coworker-builder-guide.md</a> and the
 <a href="#install">Install</a> section below. If you want to change the harness itself,
@@ -1813,24 +1816,26 @@ to <strong>dry-run</strong>, and <strong>escalates to a human inbox</strong> ins
 </tr>
 </tbody>
 </table>
-<h3 id="deciding-not-to-act">Deciding not to act<a class="headerlink" href="#deciding-not-to-act" title="Permanent link">&para;</a></h3>
-<p>Most of a coworker's life is this. The quiet gate compares the world to the
-last tick, finds nothing new, and returns before the model is ever called:</p>
+<h3 id="most-ticks-never-reach-the-model">Most ticks never reach the model<a class="headerlink" href="#most-ticks-never-reach-the-model" title="Permanent link">&para;</a></h3>
+<p>The quiet gate is ordinary code, not a judgement call. It compares the world
+to the last tick and returns before any model is asked anything:</p>
 <div class="highlight"><pre><span></span><code>[09:06:02] alex-triage tick →
 [09:06:02] alex-triage quiet — nothing new for 240s, no LLM call
 [09:06:02] alex-triage idle x3 — next tick in 480s
 </code></pre></div>
-<p>Zero tokens for that tick. The interval keeps doubling to a cap while nothing
-happens, so an idle coworker costs close to nothing. A webhook, a new ticket
-or <code>/wake</code> resets it:</p>
+<p>No tokens. Not a cheap model, not a short prompt: the gate returns at
+<a href="src/runtime/tick.ts"><code>src/runtime/tick.ts</code></a> before either the triage model or
+the main one is reached. Sensor polling still costs you API calls. The interval
+doubles to a cap while nothing happens. A webhook, a new ticket or <code>/wake</code>
+resets it:</p>
 <div class="highlight"><pre><span></span><code>[09:14:11] alex-triage activity resumed — interval reset to 60s
 [09:14:13] alex-triage 💭 New bug report, no repro steps. Asking rather
                        than guessing at the browser.
 [09:14:13] alex-triage [LIVE] → ask: {&quot;to&quot;:&quot;linear:TRIAGE-88&quot;,&quot;q&quot;:&quot;Which browser?&quot;}
 </code></pre></div>
-<p>Those are the real line formats. <code>quiet</code> comes from <code>src/runtime/tick.ts</code>,
-<code>idle x{n}</code> and <code>activity resumed</code> from <code>src/index.ts</code>, and the
-<code>[time] coworker message</code> prefix from <code>src/runtime/log.ts</code>.</p>
+<p>The <code>💭</code> lines are the coworker's own reasoning. It asked rather than guessed
+because <a href="examples/generic-triage/role/BOUNDARIES.md"><code>BOUNDARIES.md</code></a> does not
+let it invent a label.</p>
 <hr />
 <h2 id="install">Install<a class="headerlink" href="#install" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/danieljohnmorris/ai-coworkers
@@ -1863,7 +1868,7 @@ TRIAGE_MODEL=               # optional; cheap-first preflight
 <h3 id="2-pick-a-template">2. Pick a template<a class="headerlink" href="#2-pick-a-template" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code>cp<span class="w"> </span>-r<span class="w"> </span>examples/generic-triage<span class="w"> </span>coworkers/my-triage
 </code></pre></div>
-<p>Available: <code>generic-triage</code>, <code>pr-reviewer</code>, <code>project-manager</code>, <code>scribe</code>, <code>trace</code>, <code>log</code>, <code>watchtower</code>. Or scaffold from scratch with <code>bin/aicw new &lt;name&gt;</code> (blank) or <code>bin/aicw new-interview &lt;name&gt;</code> (JD-style Q&amp;A). For a full guided setup (template, integrations and config) use <code>bin/aicw new &lt;name&gt; --wizard</code>. (The legacy <code>bin/new-coworker.sh</code> / <code>bin/new-coworker-interview.sh</code> names still work via deprecated symlinks.)</p>
+<p>Available: <code>generic-triage</code>, <code>pr-reviewer</code>, <code>project-manager</code>, <code>scribe</code>, <code>trace</code>, <code>log</code>, <code>watchtower</code>. Or scaffold from scratch with <code>bin/aicw new &lt;name&gt;</code> (blank) or <code>bin/aicw new-interview &lt;name&gt;</code> (JD-style Q&amp;A). For a full guided setup (template, integrations and config) use <code>bin/aicw new &lt;name&gt; --wizard</code>. (The legacy <a href="bin/new-coworker.sh"><code>bin/new-coworker.sh</code></a> / <a href="bin/new-coworker-interview.sh"><code>bin/new-coworker-interview.sh</code></a> names still work via deprecated symlinks.)</p>
 <h3 id="3-connect-a-service">3. Connect a service<a class="headerlink" href="#3-connect-a-service" title="Permanent link">&para;</a></h3>
 <p>Each script prompts for tokens and writes them to <code>coworkers/&lt;name&gt;/.env</code>:</p>
 <div class="highlight"><pre><span></span><code>bin/aicw<span class="w"> </span>slack<span class="w">  </span>my-triage<span class="w">    </span><span class="o">&amp;&amp;</span><span class="w">  </span>bin/aicw<span class="w"> </span>verify-slack<span class="w">  </span>my-triage
@@ -1876,42 +1881,41 @@ the first tick open a browser to consent. See
 <a href="docs/dedicated-linear-user.md">docs/dedicated-linear-user.md</a>.</p>
 <h3 id="4-optional-webhooks-sub-second-reactions">4. Optional: webhooks (sub-second reactions)<a class="headerlink" href="#4-optional-webhooks-sub-second-reactions" title="Permanent link">&para;</a></h3>
 <p>Set <code>WAKE_PORT=7778</code> (and <code>WAKE_SECRET</code> for auth) in the coworker's <code>.env</code>, then declare inbound webhooks in <code>coworkers/&lt;name&gt;/role/WEBHOOKS.json</code>. Closed-set signature verifiers: <code>hmac-sha256</code>, <code>github-sha256</code>, <code>slack-v0</code>, <code>none</code>. See <a href="docs/webhooks.md">docs/webhooks.md</a> for schema + tunnel setup.</p>
-<p>Choose an activity mode via <code>WAKE_MODE</code>:</p>
+<p>Choose an activity mode via <code>WAKE_MODE</code>. It decides what can wake a coworker:
+the clock, an inbound webhook, or both.</p>
 <table>
 <thead>
 <tr>
 <th>mode</th>
-<th>tick loop</th>
-<th>wake server</th>
-<th>when to use</th>
+<th>wakes on</th>
+<th>pick it when</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><code>tick</code></td>
-<td>on</td>
-<td>off</td>
-<td>no inbound reachability (behind NAT, no tunnel)</td>
+<td>the clock only, every <code>TICK_INTERVAL_MS</code> (default 5 min, backing off to 30 min while quiet)</td>
+<td>nothing can reach you from outside: behind NAT, no tunnel</td>
 </tr>
 <tr>
 <td><code>webhook</code></td>
-<td>off (24h floor)</td>
-<td>on</td>
-<td>cheapest steady state; you trust webhook coverage</td>
+<td>inbound webhooks, plus one tick every 24h</td>
+<td>you trust your webhook coverage and want the fewest wakes. The 24h tick is a safety net, so if delivery breaks you notice in a day rather than never</td>
 </tr>
 <tr>
 <td><code>both</code> (default)</td>
-<td>on</td>
-<td>on</td>
-<td>webhooks fire fast, polling catches the gaps they miss</td>
+<td>either</td>
+<td>you want webhooks for speed and the clock to catch whatever they miss</td>
 </tr>
 </tbody>
 </table>
+<p><code>both</code> costs nothing extra on a quiet system, because a tick that finds nothing
+new stops at the quiet gate without calling a model.</p>
 <h3 id="5-optional-mcp-servers-extra-tools">5. Optional: MCP servers (extra tools)<a class="headerlink" href="#5-optional-mcp-servers-extra-tools" title="Permanent link">&para;</a></h3>
 <p>One env var per fleet or per coworker:</p>
 <div class="highlight"><pre><span></span><code>MCP_SERVERS=&#39;[{&quot;name&quot;:&quot;github&quot;,&quot;command&quot;:&quot;npx&quot;,&quot;args&quot;:[&quot;-y&quot;,&quot;@modelcontextprotocol/server-github&quot;]}]&#39;
 </code></pre></div>
-<p>Every listed tool registers as <code>mcp.&lt;name&gt;.&lt;tool&gt;</code>. See <code>src/adapters/mcp.ts</code>.</p>
+<p>Every listed tool registers as <code>mcp.&lt;name&gt;.&lt;tool&gt;</code>. See <a href="src/adapters/mcp.ts"><code>src/adapters/mcp.ts</code></a>.</p>
 <h3 id="6-optional-metrics">6. Optional: metrics<a class="headerlink" href="#6-optional-metrics" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code>METRICS_ENABLED=1
 </code></pre></div>
@@ -1958,7 +1962,7 @@ human can skim.</p>
 <ul>
 <li><strong>Sense</strong>: read-only sensors (Linear, GitHub, Slack, self-status), cached.</li>
 <li><strong>Perceive</strong>: world-state + tempo + budget + operator notes + own recent thoughts.</li>
-<li><strong>Quiet gate</strong>: nothing changed, no work, no ritual/promise due → skip the LLM. Zero cost.</li>
+<li><strong>Quiet gate</strong>: nothing changed, no work, no ritual/promise due → return before any model call, triage included. Sensor polling still costs API calls.</li>
 <li><strong>Deliberate</strong>: model returns <code>{thoughts, action, reason, pace}</code>, may chain up to <code>MAX_TOOLS_PER_TICK</code>.</li>
 <li><strong>Boundaries</strong>: every action checked against <code>BOUNDARIES.md</code> before execute.</li>
 <li><strong>Adaptive interval</strong>: quiet/noop ticks double the sleep up to a cap; activity or <code>/wake</code> resets. Model may set <code>pace: faster/slower</code>.</li>
@@ -2029,42 +2033,42 @@ the surface that fits.</p>
 <tr>
 <td><strong>MCP servers</strong></td>
 <td><code>MCP_SERVERS='[{"name":"github","command":"npx","args":["-y","@modelcontextprotocol/server-github"]}]'</code></td>
-<td><code>src/adapters/mcp.ts</code></td>
+<td><a href="src/adapters/mcp.ts"><code>src/adapters/mcp.ts</code></a></td>
 </tr>
 <tr>
 <td><strong>Hermes / OpenClaw / Anthropic skills</strong></td>
 <td>Drop under <code>~/.hermes/skills/</code>; add name to <code>ACTIVE_SKILLS=</code> to inline the full body</td>
-<td><code>src/adapters/hermes.ts</code></td>
+<td><a href="src/adapters/hermes.ts"><code>src/adapters/hermes.ts</code></a></td>
 </tr>
 <tr>
 <td><strong>Vercel Eve <code>agent/</code> folder</strong></td>
 <td>Point loader at Eve-shaped directory</td>
-<td><code>src/adapters/eve.ts</code></td>
+<td><a href="src/adapters/eve.ts"><code>src/adapters/eve.ts</code></a></td>
 </tr>
 <tr>
 <td><strong>ACP coding agents</strong> (Goose / Codex / Claude Code / …)</td>
 <td><code>ACP_AGENT_CMD="goose acp"</code> → coworker gets <code>code.delegate</code> tool</td>
-<td><code>src/adapters/acp.ts</code></td>
+<td><a href="src/adapters/acp.ts"><code>src/adapters/acp.ts</code></a></td>
 </tr>
 <tr>
 <td><strong>Gmail + Google Workspace</strong> (reuses Hermes)</td>
 <td><code>bin/aicw gmail &lt;coworker&gt;</code> → OAuth flow, token scoped per-coworker at <code>state/hermes-home/</code>; then <code>gmail.*</code> tools available</td>
-<td><code>src/tools/gmail.ts</code></td>
+<td><a href="src/tools/gmail.ts"><code>src/tools/gmail.ts</code></a></td>
 </tr>
 <tr>
 <td><strong>Slack</strong></td>
 <td><code>bin/aicw slack &lt;coworker&gt;</code> → generates app manifest via <code>hermes slack manifest</code>, walks you through workspace install, prompts for tokens → written to <code>coworkers/&lt;name&gt;/.env</code></td>
-<td><code>src/tools/slack.ts</code></td>
+<td><a href="src/tools/slack.ts"><code>src/tools/slack.ts</code></a></td>
 </tr>
 <tr>
 <td><strong>Linear</strong></td>
 <td>Add Linear's remote MCP server (<code>https://mcp.linear.app/mcp</code>, OAuth 2.1 + DCR) to <code>MCP_SERVERS</code> in <code>coworkers/&lt;name&gt;/.env</code>; declare sensors in <code>role/SENSORS.json</code>. First tick opens a browser to consent.</td>
-<td><code>src/adapters/mcp.ts</code> + <code>examples/generic-triage/role/SENSORS.json</code></td>
+<td><a href="src/adapters/mcp.ts"><code>src/adapters/mcp.ts</code></a> + <a href="examples/generic-triage/role/SENSORS.json"><code>examples/generic-triage/role/SENSORS.json</code></a></td>
 </tr>
 <tr>
 <td><strong>Native tools</strong></td>
 <td>New <code>src/tools/&lt;name&gt;.ts</code> exporting <code>ToolDef[]</code></td>
-<td><code>src/tools/github.ts</code></td>
+<td><a href="src/tools/github.ts"><code>src/tools/github.ts</code></a></td>
 </tr>
 </tbody>
 </table>
@@ -2090,7 +2094,7 @@ bin/aicw<span class="w"> </span>verify-slack<span class="w"> </span>&lt;coworker
 <div class="highlight"><pre><span></span><code>bin/aicw<span class="w"> </span>new<span class="w"> </span>&lt;name&gt;<span class="w">                     </span><span class="c1"># blank template</span>
 bin/aicw<span class="w"> </span>new<span class="w"> </span>&lt;name&gt;<span class="w"> </span>--wizard<span class="w">            </span><span class="c1"># guided: template + integrations + config</span>
 bin/aicw<span class="w"> </span>new-interview<span class="w"> </span>&lt;name&gt;<span class="w">           </span><span class="c1"># JD-style Q&amp;A → writes role docs</span>
-<span class="c1"># (Legacy `bin/new-coworker.sh` / `bin/new-coworker-interview.sh` still work as deprecated symlinks.)</span>
+<span class="c1"># (Legacy [`bin/new-coworker.sh`](bin/new-coworker.sh) / [`bin/new-coworker-interview.sh`](bin/new-coworker-interview.sh) still work as deprecated symlinks.)</span>
 </code></pre></div></p>
 <hr />
 <h2 id="operating">Operating<a class="headerlink" href="#operating" title="Permanent link">&para;</a></h2>
@@ -2127,7 +2131,7 @@ Hermes/OpenClaw (SOUL/USER/MEMORY files, skills, dreams), ElizaOS
 <div class="highlight"><pre><span></span><code>npm<span class="w"> </span><span class="nb">test</span><span class="w">              </span><span class="c1"># 733 tests, ~3s</span>
 npm<span class="w"> </span>run<span class="w"> </span>test:cov<span class="w">      </span><span class="c1"># 97.9% lines · 95.9% statements · 97.5% functions · 91.2% branches</span>
 </code></pre></div>
-<p>Fake LLM + fake API fixtures in <code>test/fixtures.ts</code> exercise the tick pipeline
+<p>Fake LLM + fake API fixtures in <a href="test/fixtures.ts"><code>test/fixtures.ts</code></a> exercise the tick pipeline
 without touching real services.</p>
 <hr />
 <h2 id="contributing">Contributing<a class="headerlink" href="#contributing" title="Permanent link">&para;</a></h2>
