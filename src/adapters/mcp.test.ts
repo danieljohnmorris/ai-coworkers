@@ -144,6 +144,40 @@ describe("buildHttpHeaders", () => {
     expect(got).not.toBe(headers);
   });
 
+  it("interpolates ${VAR} in header values from the env", () => {
+    const got = buildHttpHeaders(
+      { name: "x", url: "https://e", headers: { "X-API-Key": "${SOME_KEY}" } },
+      { SOME_KEY: "s3cret" },
+    );
+    expect(got).toEqual({ "X-API-Key": "s3cret" });
+  });
+
+  it("interpolates more than one reference in a single header value", () => {
+    const got = buildHttpHeaders(
+      { name: "x", url: "https://e", headers: { "X-Pair": "${A}:${B}" } },
+      { A: "one", B: "two" },
+    );
+    expect(got).toEqual({ "X-Pair": "one:two" });
+  });
+
+  it("throws when an interpolated header var is missing, rather than sending it literally", () => {
+    expect(() =>
+      buildHttpHeaders(
+        { name: "x", url: "https://e", headers: { "X-API-Key": "${MISSING_KEY}" } },
+        {},
+      ),
+    ).toThrow(/MISSING_KEY/);
+  });
+
+  it("throws when an interpolated header var is set but empty", () => {
+    expect(() =>
+      buildHttpHeaders(
+        { name: "x", url: "https://e", headers: { "X-API-Key": "${EMPTY_KEY}" } },
+        { EMPTY_KEY: "" },
+      ),
+    ).toThrow(/EMPTY_KEY/);
+  });
+
   it("reads bearerEnv and sets Authorization: Bearer <value>", () => {
     const got = buildHttpHeaders(
       { name: "x", url: "https://e", bearerEnv: "MY_TOKEN" },
