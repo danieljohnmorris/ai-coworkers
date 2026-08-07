@@ -691,6 +691,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#shutdown" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Shutdown
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#run-multiple-coworkers-on-the-same-machine" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1099,6 +1110,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#shutdown" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Shutdown
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#run-multiple-coworkers-on-the-same-machine" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1190,6 +1212,15 @@ systemctl --user status  coworker@alex-triage.service
 <p>The unit sets <code>Restart=on-failure</code> with <code>RestartSec=10s</code>. If the process exits
 non-zero, systemd will restart it after 10 seconds. Crash log lives at
 <code>coworkers/&lt;name&gt;/state/crash.log</code>; the events db keeps a per-tick timeline.</p>
+<h2 id="shutdown">Shutdown<a class="headerlink" href="#shutdown" title="Permanent link">&para;</a></h2>
+<p>On <code>SIGTERM</code> the coworker stops between tool calls: an idle one exits within a
+second, and a busy one finishes the call in flight and then stops chaining. It
+then closes its MCP connections, which are stdio subprocesses that would
+otherwise be orphaned.</p>
+<p>The unit sets <code>TimeoutStopSec=120s</code> to give that path room. The systemd default
+is 90s, which an LLM call with retries can exceed, and once systemd gives up it
+sends <code>SIGKILL</code> and the close never runs. Lower it only if you know your model
+calls are fast.</p>
 <h2 id="run-multiple-coworkers-on-the-same-machine">Run multiple coworkers on the same machine<a class="headerlink" href="#run-multiple-coworkers-on-the-same-machine" title="Permanent link">&para;</a></h2>
 <p>Each becomes its own unit instance:</p>
 <div class="highlight"><pre><span></span><code>systemctl --user enable --now coworker@alex-triage.service
