@@ -6,8 +6,12 @@
 [![license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 [![tests](https://img.shields.io/badge/tests-733-brightgreen)](#tests)
 
-Long-running AI coworkers with **roles**, **boundaries**, and a **tick loop**.
-Not one-shot task agents. Persistent processes that decide when *not* to act.
+An AI coworker you leave running. It holds a **role**, works inside
+**boundaries** you write in markdown, asks instead of guessing, and spends no
+tokens on the ticks where nothing changed.
+
+Nobody prompts it. It wakes on a clock or a webhook, and most of those wakes
+stop before a model is involved.
 
 **Two ways in.** If you want to run a coworker, start with
 [docs/coworker-builder-guide.md](docs/coworker-builder-guide.md) and the
@@ -32,10 +36,10 @@ to **dry-run**, and **escalates to a human inbox** instead of guessing.
 |---|---|---|---|---|
 | ~7.8k | 733 | 97.9% lines · 95.9% statements · 91.2% branches | MCP · Hermes · Eve · ACP · native | working · episodic · semantic · entity · procedural · reflective |
 
-### Deciding not to act
+### Most ticks never reach the model
 
-Most of a coworker's life is this. The quiet gate compares the world to the
-last tick, finds nothing new, and returns before the model is ever called:
+The quiet gate is ordinary code, not a judgement call. It compares the world
+to the last tick and returns before any model is asked anything:
 
 ```
 [09:06:02] alex-triage tick →
@@ -43,9 +47,11 @@ last tick, finds nothing new, and returns before the model is ever called:
 [09:06:02] alex-triage idle x3 — next tick in 480s
 ```
 
-Zero tokens for that tick. The interval keeps doubling to a cap while nothing
-happens, so an idle coworker costs close to nothing. A webhook, a new ticket
-or `/wake` resets it:
+No tokens. Not a cheap model, not a short prompt: the gate returns at
+[`src/runtime/tick.ts`](src/runtime/tick.ts) before either the triage model or
+the main one is reached. Sensor polling still costs you API calls. The interval
+doubles to a cap while nothing happens. A webhook, a new ticket or `/wake`
+resets it:
 
 ```
 [09:14:11] alex-triage activity resumed — interval reset to 60s
@@ -54,9 +60,9 @@ or `/wake` resets it:
 [09:14:13] alex-triage [LIVE] → ask: {"to":"linear:TRIAGE-88","q":"Which browser?"}
 ```
 
-Those are the real line formats. `quiet` comes from `src/runtime/tick.ts`,
-`idle x{n}` and `activity resumed` from `src/index.ts`, and the
-`[time] coworker message` prefix from `src/runtime/log.ts`.
+The `💭` lines are the coworker's own reasoning. It asked rather than guessed
+because [`BOUNDARIES.md`](examples/generic-triage/role/BOUNDARIES.md) does not
+let it invent a label.
 
 ---
 
@@ -112,7 +118,7 @@ Per-coworker overrides go in `coworkers/<name>/.env` and win over the shell env.
 cp -r examples/generic-triage coworkers/my-triage
 ```
 
-Available: `generic-triage`, `pr-reviewer`, `project-manager`, `scribe`, `trace`, `log`, `watchtower`. Or scaffold from scratch with `bin/aicw new <name>` (blank) or `bin/aicw new-interview <name>` (JD-style Q&A). For a full guided setup (template, integrations and config) use `bin/aicw new <name> --wizard`. (The legacy `bin/new-coworker.sh` / `bin/new-coworker-interview.sh` names still work via deprecated symlinks.)
+Available: `generic-triage`, `pr-reviewer`, `project-manager`, `scribe`, `trace`, `log`, `watchtower`. Or scaffold from scratch with `bin/aicw new <name>` (blank) or `bin/aicw new-interview <name>` (JD-style Q&A). For a full guided setup (template, integrations and config) use `bin/aicw new <name> --wizard`. (The legacy [`bin/new-coworker.sh`](bin/new-coworker.sh) / [`bin/new-coworker-interview.sh`](bin/new-coworker-interview.sh) names still work via deprecated symlinks.)
 
 ### 3. Connect a service
 
@@ -133,13 +139,17 @@ the first tick open a browser to consent. See
 
 Set `WAKE_PORT=7778` (and `WAKE_SECRET` for auth) in the coworker's `.env`, then declare inbound webhooks in `coworkers/<name>/role/WEBHOOKS.json`. Closed-set signature verifiers: `hmac-sha256`, `github-sha256`, `slack-v0`, `none`. See [docs/webhooks.md](docs/webhooks.md) for schema + tunnel setup.
 
-Choose an activity mode via `WAKE_MODE`:
+Choose an activity mode via `WAKE_MODE`. It decides what can wake a coworker:
+the clock, an inbound webhook, or both.
 
-| mode | tick loop | wake server | when to use |
-|---|---|---|---|
-| `tick` | on | off | no inbound reachability (behind NAT, no tunnel) |
-| `webhook` | off (24h floor) | on | cheapest steady state; you trust webhook coverage |
-| `both` (default) | on | on | webhooks fire fast, polling catches the gaps they miss |
+| mode | wakes on | pick it when |
+|---|---|---|
+| `tick` | the clock only, every `TICK_INTERVAL_MS` (default 5 min, backing off to 30 min while quiet) | nothing can reach you from outside: behind NAT, no tunnel |
+| `webhook` | inbound webhooks, plus one tick every 24h | you trust your webhook coverage and want the fewest wakes. The 24h tick is a safety net, so if delivery breaks you notice in a day rather than never |
+| `both` (default) | either | you want webhooks for speed and the clock to catch whatever they miss |
+
+`both` costs nothing extra on a quiet system, because a tick that finds nothing
+new stops at the quiet gate without calling a model.
 
 ### 5. Optional: MCP servers (extra tools)
 
@@ -149,7 +159,7 @@ One env var per fleet or per coworker:
 MCP_SERVERS='[{"name":"github","command":"npx","args":["-y","@modelcontextprotocol/server-github"]}]'
 ```
 
-Every listed tool registers as `mcp.<name>.<tool>`. See `src/adapters/mcp.ts`.
+Every listed tool registers as `mcp.<name>.<tool>`. See [`src/adapters/mcp.ts`](src/adapters/mcp.ts).
 
 ### 6. Optional: metrics
 
@@ -215,7 +225,7 @@ human can skim.
 
 - **Sense**: read-only sensors (Linear, GitHub, Slack, self-status), cached.
 - **Perceive**: world-state + tempo + budget + operator notes + own recent thoughts.
-- **Quiet gate**: nothing changed, no work, no ritual/promise due → skip the LLM. Zero cost.
+- **Quiet gate**: nothing changed, no work, no ritual/promise due → return before any model call, triage included. Sensor polling still costs API calls.
 - **Deliberate**: model returns `{thoughts, action, reason, pace}`, may chain up to `MAX_TOOLS_PER_TICK`.
 - **Boundaries**: every action checked against `BOUNDARIES.md` before execute.
 - **Adaptive interval**: quiet/noop ticks double the sleep up to a cap; activity or `/wake` resets. Model may set `pace: faster/slower`.
@@ -296,14 +306,14 @@ the surface that fits.
 
 | Ecosystem | How | File |
 |---|---|---|
-| **MCP servers** | `MCP_SERVERS='[{"name":"github","command":"npx","args":["-y","@modelcontextprotocol/server-github"]}]'` | `src/adapters/mcp.ts` |
-| **Hermes / OpenClaw / Anthropic skills** | Drop under `~/.hermes/skills/`; add name to `ACTIVE_SKILLS=` to inline the full body | `src/adapters/hermes.ts` |
-| **Vercel Eve `agent/` folder** | Point loader at Eve-shaped directory | `src/adapters/eve.ts` |
-| **ACP coding agents** (Goose / Codex / Claude Code / …) | `ACP_AGENT_CMD="goose acp"` → coworker gets `code.delegate` tool | `src/adapters/acp.ts` |
-| **Gmail + Google Workspace** (reuses Hermes) | `bin/aicw gmail <coworker>` → OAuth flow, token scoped per-coworker at `state/hermes-home/`; then `gmail.*` tools available | `src/tools/gmail.ts` |
-| **Slack** | `bin/aicw slack <coworker>` → generates app manifest via `hermes slack manifest`, walks you through workspace install, prompts for tokens → written to `coworkers/<name>/.env` | `src/tools/slack.ts` |
-| **Linear** | Add Linear's remote MCP server (`https://mcp.linear.app/mcp`, OAuth 2.1 + DCR) to `MCP_SERVERS` in `coworkers/<name>/.env`; declare sensors in `role/SENSORS.json`. First tick opens a browser to consent. | `src/adapters/mcp.ts` + `examples/generic-triage/role/SENSORS.json` |
-| **Native tools** | New `src/tools/<name>.ts` exporting `ToolDef[]` | `src/tools/github.ts` |
+| **MCP servers** | `MCP_SERVERS='[{"name":"github","command":"npx","args":["-y","@modelcontextprotocol/server-github"]}]'` | [`src/adapters/mcp.ts`](src/adapters/mcp.ts) |
+| **Hermes / OpenClaw / Anthropic skills** | Drop under `~/.hermes/skills/`; add name to `ACTIVE_SKILLS=` to inline the full body | [`src/adapters/hermes.ts`](src/adapters/hermes.ts) |
+| **Vercel Eve `agent/` folder** | Point loader at Eve-shaped directory | [`src/adapters/eve.ts`](src/adapters/eve.ts) |
+| **ACP coding agents** (Goose / Codex / Claude Code / …) | `ACP_AGENT_CMD="goose acp"` → coworker gets `code.delegate` tool | [`src/adapters/acp.ts`](src/adapters/acp.ts) |
+| **Gmail + Google Workspace** (reuses Hermes) | `bin/aicw gmail <coworker>` → OAuth flow, token scoped per-coworker at `state/hermes-home/`; then `gmail.*` tools available | [`src/tools/gmail.ts`](src/tools/gmail.ts) |
+| **Slack** | `bin/aicw slack <coworker>` → generates app manifest via `hermes slack manifest`, walks you through workspace install, prompts for tokens → written to `coworkers/<name>/.env` | [`src/tools/slack.ts`](src/tools/slack.ts) |
+| **Linear** | Add Linear's remote MCP server (`https://mcp.linear.app/mcp`, OAuth 2.1 + DCR) to `MCP_SERVERS` in `coworkers/<name>/.env`; declare sensors in `role/SENSORS.json`. First tick opens a browser to consent. | [`src/adapters/mcp.ts`](src/adapters/mcp.ts) + [`examples/generic-triage/role/SENSORS.json`](examples/generic-triage/role/SENSORS.json) |
+| **Native tools** | New `src/tools/<name>.ts` exporting `ToolDef[]` | [`src/tools/github.ts`](src/tools/github.ts) |
 
 **Verify setup landed:**
 ```bash
@@ -332,7 +342,7 @@ From scratch:
 bin/aicw new <name>                     # blank template
 bin/aicw new <name> --wizard            # guided: template + integrations + config
 bin/aicw new-interview <name>           # JD-style Q&A → writes role docs
-# (Legacy `bin/new-coworker.sh` / `bin/new-coworker-interview.sh` still work as deprecated symlinks.)
+# (Legacy [`bin/new-coworker.sh`](bin/new-coworker.sh) / [`bin/new-coworker-interview.sh`](bin/new-coworker-interview.sh) still work as deprecated symlinks.)
 ```
 
 ---
@@ -384,7 +394,7 @@ npm test              # 733 tests, ~3s
 npm run test:cov      # 97.9% lines · 95.9% statements · 97.5% functions · 91.2% branches
 ```
 
-Fake LLM + fake API fixtures in `test/fixtures.ts` exercise the tick pipeline
+Fake LLM + fake API fixtures in [`test/fixtures.ts`](test/fixtures.ts) exercise the tick pipeline
 without touching real services.
 
 ---
