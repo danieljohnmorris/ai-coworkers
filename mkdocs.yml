@@ -9,7 +9,7 @@
 #              markdown surfaced via nav entries; no symlinks needed.
 
 site_name: ai-coworkers
-site_description: A daemon with a job description. No chat window: it wakes on a clock or a webhook, reads its sensors, and acts inside a role you wrote in markdown, with its own responsibilities and boundaries.
+site_description: "A daemon with a job description. No chat window: it wakes on a clock or a webhook, reads its sensors, and acts inside a role you wrote in markdown, with its own responsibilities and boundaries."
 site_url: https://danieljohnmorris.github.io/ai-coworkers
 repo_url: https://github.com/danieljohnmorris/ai-coworkers
 repo_name: danieljohnmorris/ai-coworkers
