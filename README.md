@@ -4,7 +4,7 @@
 [![coverage](https://img.shields.io/badge/coverage-97.9%25-brightgreen)](#tests)
 [![node](https://img.shields.io/badge/node-%E2%89%A522-brightgreen)](https://nodejs.org)
 [![license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
-[![tests](https://img.shields.io/badge/tests-733-brightgreen)](#tests)
+[![tests](https://img.shields.io/badge/tests-735-brightgreen)](#tests)
 
 An AI coworker you leave running. It holds a **role**, works inside
 **boundaries** you write in markdown, asks instead of guessing, and spends no
@@ -34,7 +34,7 @@ to **dry-run**, and **escalates to a human inbox** instead of guessing.
 
 | LOC | tests | coverage | adapters | memory tiers |
 |---|---|---|---|---|
-| ~7.8k | 733 | 97.9% lines · 95.9% statements · 91.2% branches | MCP · Hermes · Eve · ACP · native | working · episodic · semantic · entity · procedural · reflective |
+| ~7.8k | 735 | 97.9% lines · 95.9% statements · 91.2% branches | MCP · Hermes · Eve · ACP · native | working · episodic · semantic · entity · procedural · reflective |
 
 ### Most ticks never reach the model
 
@@ -390,7 +390,7 @@ Hermes/OpenClaw (SOUL/USER/MEMORY files, skills, dreams), ElizaOS
 ## Tests
 
 ```bash
-npm test              # 733 tests, ~3s
+npm test              # 735 tests, ~3s
 npm run test:cov      # 97.9% lines · 95.9% statements · 97.5% functions · 91.2% branches
 ```
 

@@ -26,7 +26,7 @@ git clone https://github.com/danieljohnmorris/ai-coworkers
 cd ai-coworkers
 npm i -g "npm@$(node -p "require('./package.json').packageManager.split('@')[1]")"
 npm install
-npm test              # 733 tests, ~3s
+npm test              # 735 tests, ~3s
 npm run test:cov      # ~98% line coverage
 
 # Enable the pre-commit hook that blocks accidental secret commits:
