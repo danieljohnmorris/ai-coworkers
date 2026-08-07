@@ -4,6 +4,16 @@ import { mkdtempSync, rmSync, writeFileSync, readFileSync, existsSync, chmodSync
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
+// Poll until `path` exists or the budget runs out. Returns either way; the
+// caller asserts, so a timeout still fails the test with a useful message.
+async function waitForFile(path: string, timeoutMs = 2_000): Promise<void> {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    if (existsSync(path)) return;
+    await new Promise((r) => setTimeout(r, 10));
+  }
+}
+
 let dir: string;
 let agentPath: string;
 beforeEach(() => {
@@ -49,13 +59,16 @@ process.stdin.on("data", (chunk) => {
     if (!step) continue;
     // step: { respond: [<frames>], reply: <object> }
     for (const frame of (step.notifications ?? [])) send(frame);
-    if (step.replyTo !== undefined) {
-      // Reply to the incoming request using its id.
-      send({ jsonrpc: "2.0", id: msg.id, result: step.replyTo });
-    }
+    // Agent→client requests go out BEFORE the reply that ends the turn, which
+    // is the order a real ACP agent uses: ask for the write, then finish. The
+    // reverse order let the turn resolve before the request was even parsed.
     if (step.requestClient) {
       // Fire an agent→client request (a new id we make up); no reply needed here.
       send({ jsonrpc: "2.0", id: 1000 + received, method: step.requestClient.method, params: step.requestClient.params });
+    }
+    if (step.replyTo !== undefined) {
+      // Reply to the incoming request using its id.
+      send({ jsonrpc: "2.0", id: msg.id, result: step.replyTo });
     }
   }
 });
@@ -160,8 +173,10 @@ describe("runAcpTurn", () => {
     ]);
     const r = await runAcpTurn({ agentCmd: ["node", agentPath], prompt: "write", cwd: dir, timeoutMs: 10_000 });
     expect(r.stopReason).toBe("end_turn");
-    // Wait a beat for filesystem write to settle.
-    await new Promise((r) => setTimeout(r, 30));
+    // runAcpTurn now settles in-flight agent requests before returning, so the
+    // write has landed by here. Poll briefly anyway so a regression fails on
+    // the assertion below rather than as a bare vitest timeout.
+    await waitForFile(join(dir, "out", "wrote.txt"));
     expect(existsSync(join(dir, "out", "wrote.txt"))).toBe(true);
     expect(readFileSync(join(dir, "out", "wrote.txt"), "utf8")).toBe("hello-write");
   });

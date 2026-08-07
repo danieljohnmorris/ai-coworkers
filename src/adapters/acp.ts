@@ -146,6 +146,14 @@ export async function runAcpTurn(req: TurnRequest): Promise<TurnResult> {
 
   // ---- incoming message dispatch ----
 
+  // Requests the agent sent us that we are still serving. A single stdout
+  // chunk can carry both an fs/write_text_file request and the session/prompt
+  // response, in which case the turn resolves while the write is still in
+  // flight and cleanup() would SIGTERM the child out from under it. Linux
+  // batches those frames where macOS does not, so this only bit on CI.
+  // Settled before the turn returns.
+  const inflight = new Set<Promise<void>>();
+
   const handleIncoming = async (m: RpcMessage): Promise<void> => {
     // Response to something we sent.
     if ("id" in m && ("result" in m || "error" in m) && !("method" in m)) {
@@ -160,12 +168,16 @@ export async function runAcpTurn(req: TurnRequest): Promise<TurnResult> {
     // Request from the agent — we must respond.
     if ("id" in m && "method" in m) {
       const req = m as RpcRequest;
-      try {
-        const result = await handleAgentRequest(req.method, req.params, { cwd, allowKinds, toolCalls });
-        send({ jsonrpc: "2.0", id: req.id, result });
-      } catch (err) {
-        send({ jsonrpc: "2.0", id: req.id, error: { code: -32000, message: String(err) } });
-      }
+      const served = (async () => {
+        try {
+          const result = await handleAgentRequest(req.method, req.params, { cwd, allowKinds, toolCalls });
+          send({ jsonrpc: "2.0", id: req.id, result });
+        } catch (err) {
+          send({ jsonrpc: "2.0", id: req.id, error: { code: -32000, message: String(err) } });
+        }
+      })();
+      inflight.add(served);
+      try { await served; } finally { inflight.delete(served); }
       return;
     }
 
@@ -229,6 +241,10 @@ export async function runAcpTurn(req: TurnRequest): Promise<TurnResult> {
         sessionId: sess.sessionId,
         prompt: [{ type: "text", text: req.prompt }],
       });
+      // Finish serving anything the agent asked for before the caller sees
+      // the turn as done, so side effects (writes) have landed.
+      while (inflight.size) await Promise.allSettled([...inflight]);
+
       return promptResult;
     }, timeoutMs);
 

@@ -4,16 +4,25 @@
 [![coverage](https://img.shields.io/badge/coverage-97.9%25-brightgreen)](#tests)
 [![node](https://img.shields.io/badge/node-%E2%89%A522-brightgreen)](https://nodejs.org)
 [![license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
-[![tests](https://img.shields.io/badge/tests-660-brightgreen)](#tests)
+[![tests](https://img.shields.io/badge/tests-733-brightgreen)](#tests)
 
 Long-running AI coworkers with **roles**, **boundaries**, and a **tick loop**.
-Not one-shot task agents — persistent processes that decide when *not* to act.
+Not one-shot task agents. Persistent processes that decide when *not* to act.
 
-> **New here?** If you're building coworkers rather than hacking on the harness itself, start with [docs/coworker-builder-guide.md](docs/coworker-builder-guide.md).
+**Two ways in.** If you want to run a coworker, start with
+[docs/coworker-builder-guide.md](docs/coworker-builder-guide.md) and the
+[Install](#install) section below. If you want to change the harness itself,
+read [CONTRIBUTING.md](CONTRIBUTING.md) and the ADRs in [`docs/adr/`](docs/adr/).
+
+[Install](#install) · [Setup](#setup) · [Watch it think](#watch-it-think) ·
+[Tick loop](#the-tick-loop) · [Coworker layout](#a-coworker-in-one-directory) ·
+[Boundaries](#boundaries--dry-run) · [Adapters](#adapters) ·
+[Templates](#coworker-templates) · [Operating](#operating) · [Docs](#docs) ·
+[Contributing](#contributing) · [Status](#status)
 
 **Small harness, meant to be forked.** Inspired by the Pi CLI philosophy of shipping a compact, readable runtime rather than a framework: ~7.8k lines you can adopt, fork, and adapt to your team's shape without fighting an opinionated abstraction layer. Every design choice has an ADR (`docs/adr/`) so you can disagree and rewrite that piece in isolation.
 
-**Runs your existing agent artifacts.** Point ai-coworkers at your Claude Code / OpenClaw / NanoClaw SOUL.md, Hermes skills, or Vercel Eve `agent/` folder — the adapters load them in-place. Delegate coding work to any [ACP](https://agentclientprotocol.com)-conformant agent (Goose, Codex, Claude Code) via `code.delegate`. Expose any [MCP](https://modelcontextprotocol.io) server through a coworker with one env var.
+**Runs your existing agent artifacts.** Point ai-coworkers at your Claude Code / OpenClaw / NanoClaw SOUL.md, Hermes skills, or Vercel Eve `agent/` folder, and the adapters load them in-place. Delegate coding work to any [ACP](https://agentclientprotocol.com)-conformant agent (Goose, Codex, Claude Code) via `code.delegate`. Expose any [MCP](https://modelcontextprotocol.io) server through a coworker with one env var.
 
 Unlike Hermes / ElizaOS (single-agent, chat-native) or CrewAI (task
 orchestration), ai-coworkers models **roles with hard boundaries**, defaults
@@ -21,9 +30,33 @@ to **dry-run**, and **escalates to a human inbox** instead of guessing.
 
 | LOC | tests | coverage | adapters | memory tiers |
 |---|---|---|---|---|
-| ~7.8k | 660 | 97.9% lines · 95.9% statements · 91.2% branches | MCP · Hermes · Eve · ACP · native | working · episodic · semantic · entity · procedural · reflective |
+| ~7.8k | 733 | 97.9% lines · 95.9% statements · 91.2% branches | MCP · Hermes · Eve · ACP · native | working · episodic · semantic · entity · procedural · reflective |
 
-> _(TODO: 15-sec asciinema of a coworker deciding not to act — the whole thesis in one clip.)_
+### Deciding not to act
+
+Most of a coworker's life is this. The quiet gate compares the world to the
+last tick, finds nothing new, and returns before the model is ever called:
+
+```
+[09:06:02] alex-triage tick →
+[09:06:02] alex-triage quiet — nothing new for 240s, no LLM call
+[09:06:02] alex-triage idle x3 — next tick in 480s
+```
+
+Zero tokens for that tick. The interval keeps doubling to a cap while nothing
+happens, so an idle coworker costs close to nothing. A webhook, a new ticket
+or `/wake` resets it:
+
+```
+[09:14:11] alex-triage activity resumed — interval reset to 60s
+[09:14:13] alex-triage 💭 New bug report, no repro steps. Asking rather
+                       than guessing at the browser.
+[09:14:13] alex-triage [LIVE] → ask: {"to":"linear:TRIAGE-88","q":"Which browser?"}
+```
+
+Those are the real line formats. `quiet` comes from `src/runtime/tick.ts`,
+`idle x{n}` and `activity resumed` from `src/index.ts`, and the
+`[time] coworker message` prefix from `src/runtime/log.ts`.
 
 ---
 
@@ -38,18 +71,18 @@ Two env vars in `.env`:
 
 ```
 OLLAMA_API_KEY=...    # or any OpenAI-compatible endpoint
-COWORKER_MODEL=...    # optional — main model, defaults to gemma4:cloud
-TRIAGE_MODEL=...      # optional — cheap-first preflight; when set,
+COWORKER_MODEL=...    # optional, main model, defaults to gemma4:cloud
+TRIAGE_MODEL=...      # optional, cheap-first preflight; when set,
                       #   every tick asks this small model "act or
                       #   skip?" before spending the expensive prompt
-METRICS_ENABLED=1     # optional — expose Prometheus /metrics on WAKE_PORT
+METRICS_ENABLED=1     # optional, expose Prometheus /metrics on WAKE_PORT
 ```
 
 Run it:
 
 ```bash
-node --experimental-strip-types --no-warnings src/index.ts alex-triage
-# add --live to allow write actions to actually execute
+npm run coworker alex-triage
+# add -- --live to allow write actions to actually execute
 ```
 
 Default is **dry-run**. Every write returns `{dryRun: true, would: {...}}` so
@@ -79,7 +112,7 @@ Per-coworker overrides go in `coworkers/<name>/.env` and win over the shell env.
 cp -r examples/generic-triage coworkers/my-triage
 ```
 
-Available: `generic-triage`, `pr-reviewer`, `project-manager`, `scribe`, `trace`, `log`, `watchtower`. Or scaffold from scratch with `bin/aicw new <name>` (blank) or `bin/aicw new-interview <name>` (JD-style Q&A). For a full guided setup — template + integrations + config — use `bin/aicw new <name> --wizard`. (The legacy `bin/new-coworker.sh` / `bin/new-coworker-interview.sh` names still work via deprecated symlinks.)
+Available: `generic-triage`, `pr-reviewer`, `project-manager`, `scribe`, `trace`, `log`, `watchtower`. Or scaffold from scratch with `bin/aicw new <name>` (blank) or `bin/aicw new-interview <name>` (JD-style Q&A). For a full guided setup (template, integrations and config) use `bin/aicw new <name> --wizard`. (The legacy `bin/new-coworker.sh` / `bin/new-coworker-interview.sh` names still work via deprecated symlinks.)
 
 ### 3. Connect a service
 
@@ -90,7 +123,7 @@ bin/aicw slack  my-triage    &&  bin/aicw verify-slack  my-triage
 bin/aicw gmail  my-triage    &&  bin/aicw verify-gmail  my-triage
 ```
 
-Linear no longer has a setup script — it's wired via its remote MCP
+Linear no longer has a setup script. It's wired via its remote MCP
 server (OAuth 2.1). Add the server to `coworkers/<name>/.env` and let
 the first tick open a browser to consent. See
 [AGENTS.md](AGENTS.md#linear) and
@@ -106,7 +139,7 @@ Choose an activity mode via `WAKE_MODE`:
 |---|---|---|---|
 | `tick` | on | off | no inbound reachability (behind NAT, no tunnel) |
 | `webhook` | off (24h floor) | on | cheapest steady state; you trust webhook coverage |
-| `both` (default) | on | on | belt-and-suspenders — webhooks fire fast, polling catches gaps |
+| `both` (default) | on | on | webhooks fire fast, polling catches the gaps they miss |
 
 ### 5. Optional: MCP servers (extra tools)
 
@@ -131,7 +164,7 @@ Prometheus endpoint served on the wake port at `/metrics` (requires `WAKE_PORT` 
 Watch in dry-run for a day, then promote:
 
 ```bash
-node --experimental-strip-types --no-warnings src/index.ts my-triage --live
+npm run coworker my-triage -- --live
 ```
 
 For long-running deployment see [docs/systemd.md](docs/systemd.md).
@@ -153,7 +186,7 @@ Excerpt from a real `highlights.log` (ticket ids anonymised):
              continues, but this specific task is done.
 ```
 
-`💭` lines are the coworker's private thoughts — a running notebook that
+`💭` lines are the coworker's private thoughts, a running notebook that
 threads across ticks. `→` lines are actions. Both interleave in one file a
 human can skim.
 
@@ -180,12 +213,12 @@ human can skim.
                               hygiene · rituals · record ─────┘
 ```
 
-- **Sense** — read-only sensors (Linear, GitHub, Slack, self-status), cached.
-- **Perceive** — world-state + tempo + budget + operator notes + own recent thoughts.
-- **Quiet gate** — nothing changed, no work, no ritual/promise due → skip the LLM. Zero cost.
-- **Deliberate** — model returns `{thoughts, action, reason, pace}`, may chain up to `MAX_TOOLS_PER_TICK`.
-- **Boundaries** — every action checked against `BOUNDARIES.md` before execute.
-- **Adaptive interval** — quiet/noop ticks double the sleep up to a cap; activity or `/wake` resets. Model may set `pace: faster/slower`.
+- **Sense**: read-only sensors (Linear, GitHub, Slack, self-status), cached.
+- **Perceive**: world-state + tempo + budget + operator notes + own recent thoughts.
+- **Quiet gate**: nothing changed, no work, no ritual/promise due → skip the LLM. Zero cost.
+- **Deliberate**: model returns `{thoughts, action, reason, pace}`, may chain up to `MAX_TOOLS_PER_TICK`.
+- **Boundaries**: every action checked against `BOUNDARIES.md` before execute.
+- **Adaptive interval**: quiet/noop ticks double the sleep up to a cap; activity or `/wake` resets. Model may set `pace: faster/slower`.
 
 ---
 
@@ -218,11 +251,16 @@ Edit markdown → restart → new behavior. No YAML, no code changes for tuning.
 
 ## Boundaries + dry-run
 
+Each coworker has its own `role/BOUNDARIES.md`. Below is an abridged one
+from the triage template
+([examples/generic-triage/role/BOUNDARIES.md](examples/generic-triage/role/BOUNDARIES.md),
+which also gates individual Linear MCP write tools):
+
 ```md
 ## Must not touch
 - Any ticket in team CS (client data)
 - Any code, repository, or PR
-- Do not invent new labels — only apply labels that already exist
+- Do not invent new labels; only apply labels that already exist
 
 ## Resource limits
 - Max concurrent worktrees: 0
@@ -237,19 +275,19 @@ reach the target system. Coworkers get promoted to `--live` independently.
 
 ## Humans ↔ coworker
 
-**You → coworker** — leaves a note that surfaces in the next tick's prompt:
+**You → coworker.** Leaves a note that surfaces in the next tick's prompt:
 ```bash
 bin/aicw note alex-triage "Prioritise ILO parser bugs today"
 ```
 
-**Coworker → you** — persistent question log they see until answered:
+**Coworker → you.** A persistent question log they see until answered:
 ```bash
 bin/aicw answer alex-triage "Keep it as perf, don't split yet."
 ```
 
-**Coworker → coworker / Slack / Linear / GitHub** — one `ask` tool with
+**Coworker → coworker / Slack / Linear / GitHub.** One `ask` tool with
 `to="coworker:sam"` · `to="slack:#triage"` · `to="linear:ILO-42"` ·
-`to="github:owner/repo#123"`. The channel is contextual — the coworker picks
+`to="github:owner/repo#123"`. The channel is contextual, so the coworker picks
 the surface that fits.
 
 ---
@@ -281,13 +319,13 @@ bin/aicw verify-slack <coworker>    # calls Slack auth.test with the coworker's 
 
 `cp -r examples/<name> coworkers/<yourname>`:
 
-- **generic-triage** — Linear triage engineer
-- **pr-reviewer** — reviews open PRs on watched GitHub repos
-- **project-manager** — project health summaries, aging tickets
-- **scribe** — keeps README + docs honest as the code changes
-- **trace** — incident RCA: reads stack traces, walks git history, posts root-cause notes
-- **log** — auto-changelog: updates CHANGELOG.md on every merge, drafts GitHub releases on every tag
-- **watchtower** — monitoring: baselines operational signals + alerts on real anomalies (aggressive dedup)
+- **generic-triage**: Linear triage engineer
+- **pr-reviewer**: reviews open PRs on watched GitHub repos
+- **project-manager**: project health summaries, aging tickets
+- **scribe**: keeps README + docs honest as the code changes
+- **trace**: incident RCA: reads stack traces, walks git history, posts root-cause notes
+- **log**: auto-changelog: updates CHANGELOG.md on every merge, drafts GitHub releases on every tag
+- **watchtower**: monitoring: baselines operational signals + alerts on real anomalies (aggressive dedup)
 
 From scratch:
 ```bash
@@ -315,20 +353,23 @@ node --experimental-strip-types src/dashboard.ts     # fleet view on :7777
 ## Docs
 
 **Getting started**
-- [Install & first coworker](docs/getting-started.md) (TODO)
-- [Writing role docs](docs/role-docs.md) (TODO)
+- [Coworker builder guide](docs/coworker-builder-guide.md)
+- [Tool cookbook](docs/tool-cookbook.md)
+- [Dedicated Linear user](docs/dedicated-linear-user.md)
 
 **Architecture**
-- [Tick loop internals](docs/tick-loop.md) (TODO)
+- [Architecture decision records](docs/adr/)
 - [Memory taxonomy (CoALA mapping)](docs/adr/0001-coala-memory-taxonomy.md)
-- [Boundary model](docs/boundaries.md) (TODO)
-- [Comparison with other harnesses](docs/comparison.md) — vs Buzz, Hermes, OpenClaw, Eve, ElizaOS, OpenSRE, Anthropic MA, CrewAI, LangGraph
+- [Comparison with other harnesses](docs/comparison.md), vs Buzz, Hermes, OpenClaw, Eve, ElizaOS, OpenSRE, Anthropic MA, CrewAI, LangGraph
 
 **Operations**
 - [systemd deployment](docs/systemd.md)
-- [Webhooks & external wakes](docs/webhooks.md)
+- [Webhooks and external wakes](docs/webhooks.md)
+- [Multi-machine fleets](docs/multi-machine.md)
+- [Migration notes](docs/migration.md)
+- [Release process](docs/release-process.md)
 
-**Design lineage** — Pi CLI (small forkable harness > opinionated framework),
+**Design lineage.** Pi CLI (small forkable harness > opinionated framework),
 Hermes/OpenClaw (SOUL/USER/MEMORY files, skills, dreams), ElizaOS
 (providers·actions·evaluators), Generative Agents (Stanford), MemGPT/Letta
 (tiered memory), Vercel Eve (filesystem-first), Claude Code (multi-tool turns),
@@ -339,7 +380,7 @@ Hermes/OpenClaw (SOUL/USER/MEMORY files, skills, dreams), ElizaOS
 ## Tests
 
 ```bash
-npm test              # 660 tests, ~3s
+npm test              # 733 tests, ~3s
 npm run test:cov      # 97.9% lines · 95.9% statements · 97.5% functions · 91.2% branches
 ```
 
@@ -348,10 +389,24 @@ without touching real services.
 
 ---
 
+## Contributing
+
+Issues and pull requests are welcome. Where to look first:
+
+- [CONTRIBUTING.md](CONTRIBUTING.md), how to set up, test and open a PR
+- [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)
+- [SECURITY.md](SECURITY.md), how to report a vulnerability
+- [`docs/adr/`](docs/adr/), one ADR per design decision. If you disagree with a
+  choice, the ADR is where to argue with it
+
+Run `npm test` before opening a PR. CI runs the same suite on Node 22.
+
+---
+
 ## Status
 
-Early. Runtime is stable and battle-tested against real Linear. Coding
-coworker (`code.delegate`) is scaffolded but not yet wired to a real coding
-harness. Open work: [GitHub Issues](../../issues).
+Early. The runtime is stable and has been running against real Linear.
+The coding coworker (`code.delegate`) is scaffolded but not yet wired to a
+real coding harness. Open work: [GitHub Issues](../../issues).
 
-MIT.
+Licensed under [MIT](LICENSE).
