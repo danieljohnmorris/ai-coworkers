@@ -284,6 +284,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#deciding-not-to-act" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Deciding not to act
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#install" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -492,6 +503,17 @@
     <span class="md-ellipsis">
       
         Tests
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#contributing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Contributing
       
     </span>
   </a>
@@ -633,6 +655,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#deciding-not-to-act" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Deciding not to act
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#install" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -841,6 +874,17 @@
     <span class="md-ellipsis">
       
         Tests
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#contributing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Contributing
       
     </span>
   </a>
@@ -1455,6 +1499,17 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#deciding-not-to-act" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Deciding not to act
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#install" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1670,6 +1725,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#contributing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Contributing
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#status" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1710,14 +1776,20 @@
 <a href="#tests"><img alt="coverage" src="https://img.shields.io/badge/coverage-97.9%25-brightgreen" /></a>
 <a href="https://nodejs.org"><img alt="node" src="https://img.shields.io/badge/node-%E2%89%A522-brightgreen" /></a>
 <a href="LICENSE"><img alt="license" src="https://img.shields.io/badge/license-MIT-blue" /></a>
-<a href="#tests"><img alt="tests" src="https://img.shields.io/badge/tests-660-brightgreen" /></a></p>
+<a href="#tests"><img alt="tests" src="https://img.shields.io/badge/tests-733-brightgreen" /></a></p>
 <p>Long-running AI coworkers with <strong>roles</strong>, <strong>boundaries</strong>, and a <strong>tick loop</strong>.
-Not one-shot task agents — persistent processes that decide when <em>not</em> to act.</p>
-<blockquote>
-<p><strong>New here?</strong> If you're building coworkers rather than hacking on the harness itself, start with <a href="docs/coworker-builder-guide.md">docs/coworker-builder-guide.md</a>.</p>
-</blockquote>
+Not one-shot task agents. Persistent processes that decide when <em>not</em> to act.</p>
+<p><strong>Two ways in.</strong> If you want to run a coworker, start with
+<a href="docs/coworker-builder-guide.md">docs/coworker-builder-guide.md</a> and the
+<a href="#install">Install</a> section below. If you want to change the harness itself,
+read <a href="CONTRIBUTING.md">CONTRIBUTING.md</a> and the ADRs in <a href="docs/adr/"><code>docs/adr/</code></a>.</p>
+<p><a href="#install">Install</a> · <a href="#setup">Setup</a> · <a href="#watch-it-think">Watch it think</a> ·
+<a href="#the-tick-loop">Tick loop</a> · <a href="#a-coworker-in-one-directory">Coworker layout</a> ·
+<a href="#boundaries--dry-run">Boundaries</a> · <a href="#adapters">Adapters</a> ·
+<a href="#coworker-templates">Templates</a> · <a href="#operating">Operating</a> · <a href="#docs">Docs</a> ·
+<a href="#contributing">Contributing</a> · <a href="#status">Status</a></p>
 <p><strong>Small harness, meant to be forked.</strong> Inspired by the Pi CLI philosophy of shipping a compact, readable runtime rather than a framework: ~7.8k lines you can adopt, fork, and adapt to your team's shape without fighting an opinionated abstraction layer. Every design choice has an ADR (<code>docs/adr/</code>) so you can disagree and rewrite that piece in isolation.</p>
-<p><strong>Runs your existing agent artifacts.</strong> Point ai-coworkers at your Claude Code / OpenClaw / NanoClaw SOUL.md, Hermes skills, or Vercel Eve <code>agent/</code> folder — the adapters load them in-place. Delegate coding work to any <a href="https://agentclientprotocol.com">ACP</a>-conformant agent (Goose, Codex, Claude Code) via <code>code.delegate</code>. Expose any <a href="https://modelcontextprotocol.io">MCP</a> server through a coworker with one env var.</p>
+<p><strong>Runs your existing agent artifacts.</strong> Point ai-coworkers at your Claude Code / OpenClaw / NanoClaw SOUL.md, Hermes skills, or Vercel Eve <code>agent/</code> folder, and the adapters load them in-place. Delegate coding work to any <a href="https://agentclientprotocol.com">ACP</a>-conformant agent (Goose, Codex, Claude Code) via <code>code.delegate</code>. Expose any <a href="https://modelcontextprotocol.io">MCP</a> server through a coworker with one env var.</p>
 <p>Unlike Hermes / ElizaOS (single-agent, chat-native) or CrewAI (task
 orchestration), ai-coworkers models <strong>roles with hard boundaries</strong>, defaults
 to <strong>dry-run</strong>, and <strong>escalates to a human inbox</strong> instead of guessing.</p>
@@ -1734,16 +1806,31 @@ to <strong>dry-run</strong>, and <strong>escalates to a human inbox</strong> ins
 <tbody>
 <tr>
 <td>~7.8k</td>
-<td>660</td>
+<td>733</td>
 <td>97.9% lines · 95.9% statements · 91.2% branches</td>
 <td>MCP · Hermes · Eve · ACP · native</td>
 <td>working · episodic · semantic · entity · procedural · reflective</td>
 </tr>
 </tbody>
 </table>
-<blockquote>
-<p><em>(TODO: 15-sec asciinema of a coworker deciding not to act — the whole thesis in one clip.)</em></p>
-</blockquote>
+<h3 id="deciding-not-to-act">Deciding not to act<a class="headerlink" href="#deciding-not-to-act" title="Permanent link">&para;</a></h3>
+<p>Most of a coworker's life is this. The quiet gate compares the world to the
+last tick, finds nothing new, and returns before the model is ever called:</p>
+<div class="highlight"><pre><span></span><code>[09:06:02] alex-triage tick →
+[09:06:02] alex-triage quiet — nothing new for 240s, no LLM call
+[09:06:02] alex-triage idle x3 — next tick in 480s
+</code></pre></div>
+<p>Zero tokens for that tick. The interval keeps doubling to a cap while nothing
+happens, so an idle coworker costs close to nothing. A webhook, a new ticket
+or <code>/wake</code> resets it:</p>
+<div class="highlight"><pre><span></span><code>[09:14:11] alex-triage activity resumed — interval reset to 60s
+[09:14:13] alex-triage 💭 New bug report, no repro steps. Asking rather
+                       than guessing at the browser.
+[09:14:13] alex-triage [LIVE] → ask: {&quot;to&quot;:&quot;linear:TRIAGE-88&quot;,&quot;q&quot;:&quot;Which browser?&quot;}
+</code></pre></div>
+<p>Those are the real line formats. <code>quiet</code> comes from <code>src/runtime/tick.ts</code>,
+<code>idle x{n}</code> and <code>activity resumed</code> from <code>src/index.ts</code>, and the
+<code>[time] coworker message</code> prefix from <code>src/runtime/log.ts</code>.</p>
 <hr />
 <h2 id="install">Install<a class="headerlink" href="#install" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/danieljohnmorris/ai-coworkers
@@ -1751,15 +1838,15 @@ to <strong>dry-run</strong>, and <strong>escalates to a human inbox</strong> ins
 </code></pre></div>
 <p>Two env vars in <code>.env</code>:</p>
 <div class="highlight"><pre><span></span><code>OLLAMA_API_KEY=...    # or any OpenAI-compatible endpoint
-COWORKER_MODEL=...    # optional — main model, defaults to gemma4:cloud
-TRIAGE_MODEL=...      # optional — cheap-first preflight; when set,
+COWORKER_MODEL=...    # optional, main model, defaults to gemma4:cloud
+TRIAGE_MODEL=...      # optional, cheap-first preflight; when set,
                       #   every tick asks this small model &quot;act or
                       #   skip?&quot; before spending the expensive prompt
-METRICS_ENABLED=1     # optional — expose Prometheus /metrics on WAKE_PORT
+METRICS_ENABLED=1     # optional, expose Prometheus /metrics on WAKE_PORT
 </code></pre></div>
 <p>Run it:</p>
-<div class="highlight"><pre><span></span><code>node<span class="w"> </span>--experimental-strip-types<span class="w"> </span>--no-warnings<span class="w"> </span>src/index.ts<span class="w"> </span>alex-triage
-<span class="c1"># add --live to allow write actions to actually execute</span>
+<div class="highlight"><pre><span></span><code>npm<span class="w"> </span>run<span class="w"> </span>coworker<span class="w"> </span>alex-triage
+<span class="c1"># add -- --live to allow write actions to actually execute</span>
 </code></pre></div>
 <p>Default is <strong>dry-run</strong>. Every write returns <code>{dryRun: true, would: {...}}</code> so
 you can watch a coworker for a day before granting live access.</p>
@@ -1776,13 +1863,13 @@ TRIAGE_MODEL=               # optional; cheap-first preflight
 <h3 id="2-pick-a-template">2. Pick a template<a class="headerlink" href="#2-pick-a-template" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code>cp<span class="w"> </span>-r<span class="w"> </span>examples/generic-triage<span class="w"> </span>coworkers/my-triage
 </code></pre></div>
-<p>Available: <code>generic-triage</code>, <code>pr-reviewer</code>, <code>project-manager</code>, <code>scribe</code>, <code>trace</code>, <code>log</code>, <code>watchtower</code>. Or scaffold from scratch with <code>bin/aicw new &lt;name&gt;</code> (blank) or <code>bin/aicw new-interview &lt;name&gt;</code> (JD-style Q&amp;A). For a full guided setup — template + integrations + config — use <code>bin/aicw new &lt;name&gt; --wizard</code>. (The legacy <code>bin/new-coworker.sh</code> / <code>bin/new-coworker-interview.sh</code> names still work via deprecated symlinks.)</p>
+<p>Available: <code>generic-triage</code>, <code>pr-reviewer</code>, <code>project-manager</code>, <code>scribe</code>, <code>trace</code>, <code>log</code>, <code>watchtower</code>. Or scaffold from scratch with <code>bin/aicw new &lt;name&gt;</code> (blank) or <code>bin/aicw new-interview &lt;name&gt;</code> (JD-style Q&amp;A). For a full guided setup (template, integrations and config) use <code>bin/aicw new &lt;name&gt; --wizard</code>. (The legacy <code>bin/new-coworker.sh</code> / <code>bin/new-coworker-interview.sh</code> names still work via deprecated symlinks.)</p>
 <h3 id="3-connect-a-service">3. Connect a service<a class="headerlink" href="#3-connect-a-service" title="Permanent link">&para;</a></h3>
 <p>Each script prompts for tokens and writes them to <code>coworkers/&lt;name&gt;/.env</code>:</p>
 <div class="highlight"><pre><span></span><code>bin/aicw<span class="w"> </span>slack<span class="w">  </span>my-triage<span class="w">    </span><span class="o">&amp;&amp;</span><span class="w">  </span>bin/aicw<span class="w"> </span>verify-slack<span class="w">  </span>my-triage
 bin/aicw<span class="w"> </span>gmail<span class="w">  </span>my-triage<span class="w">    </span><span class="o">&amp;&amp;</span><span class="w">  </span>bin/aicw<span class="w"> </span>verify-gmail<span class="w">  </span>my-triage
 </code></pre></div>
-<p>Linear no longer has a setup script — it's wired via its remote MCP
+<p>Linear no longer has a setup script. It's wired via its remote MCP
 server (OAuth 2.1). Add the server to <code>coworkers/&lt;name&gt;/.env</code> and let
 the first tick open a browser to consent. See
 <a href="AGENTS.md#linear">AGENTS.md</a> and
@@ -1816,7 +1903,7 @@ the first tick open a browser to consent. See
 <td><code>both</code> (default)</td>
 <td>on</td>
 <td>on</td>
-<td>belt-and-suspenders — webhooks fire fast, polling catches gaps</td>
+<td>webhooks fire fast, polling catches the gaps they miss</td>
 </tr>
 </tbody>
 </table>
@@ -1831,7 +1918,7 @@ the first tick open a browser to consent. See
 <p>Prometheus endpoint served on the wake port at <code>/metrics</code> (requires <code>WAKE_PORT</code> set).</p>
 <h3 id="7-go-live">7. Go live<a class="headerlink" href="#7-go-live" title="Permanent link">&para;</a></h3>
 <p>Watch in dry-run for a day, then promote:</p>
-<div class="highlight"><pre><span></span><code>node<span class="w"> </span>--experimental-strip-types<span class="w"> </span>--no-warnings<span class="w"> </span>src/index.ts<span class="w"> </span>my-triage<span class="w"> </span>--live
+<div class="highlight"><pre><span></span><code>npm<span class="w"> </span>run<span class="w"> </span>coworker<span class="w"> </span>my-triage<span class="w"> </span>--<span class="w"> </span>--live
 </code></pre></div>
 <p>For long-running deployment see <a href="docs/systemd.md">docs/systemd.md</a>.</p>
 <hr />
@@ -1846,7 +1933,7 @@ the first tick open a browser to consent. See
 [22:57:56] 💭 TRIAGE-42 labeled &#39;Feature&#39; successfully. Backlog catch-up
              continues, but this specific task is done.
 </code></pre></div>
-<p><code>💭</code> lines are the coworker's private thoughts — a running notebook that
+<p><code>💭</code> lines are the coworker's private thoughts, a running notebook that
 threads across ticks. <code>→</code> lines are actions. Both interleave in one file a
 human can skim.</p>
 <hr />
@@ -1869,12 +1956,12 @@ human can skim.</p>
                               hygiene · rituals · record ─────┘
 </code></pre></div>
 <ul>
-<li><strong>Sense</strong> — read-only sensors (Linear, GitHub, Slack, self-status), cached.</li>
-<li><strong>Perceive</strong> — world-state + tempo + budget + operator notes + own recent thoughts.</li>
-<li><strong>Quiet gate</strong> — nothing changed, no work, no ritual/promise due → skip the LLM. Zero cost.</li>
-<li><strong>Deliberate</strong> — model returns <code>{thoughts, action, reason, pace}</code>, may chain up to <code>MAX_TOOLS_PER_TICK</code>.</li>
-<li><strong>Boundaries</strong> — every action checked against <code>BOUNDARIES.md</code> before execute.</li>
-<li><strong>Adaptive interval</strong> — quiet/noop ticks double the sleep up to a cap; activity or <code>/wake</code> resets. Model may set <code>pace: faster/slower</code>.</li>
+<li><strong>Sense</strong>: read-only sensors (Linear, GitHub, Slack, self-status), cached.</li>
+<li><strong>Perceive</strong>: world-state + tempo + budget + operator notes + own recent thoughts.</li>
+<li><strong>Quiet gate</strong>: nothing changed, no work, no ritual/promise due → skip the LLM. Zero cost.</li>
+<li><strong>Deliberate</strong>: model returns <code>{thoughts, action, reason, pace}</code>, may chain up to <code>MAX_TOOLS_PER_TICK</code>.</li>
+<li><strong>Boundaries</strong>: every action checked against <code>BOUNDARIES.md</code> before execute.</li>
+<li><strong>Adaptive interval</strong>: quiet/noop ticks double the sleep up to a cap; activity or <code>/wake</code> resets. Model may set <code>pace: faster/slower</code>.</li>
 </ul>
 <hr />
 <h2 id="a-coworker-in-one-directory">A coworker in one directory<a class="headerlink" href="#a-coworker-in-one-directory" title="Permanent link">&para;</a></h2>
@@ -1900,10 +1987,14 @@ human can skim.</p>
 <p>Edit markdown → restart → new behavior. No YAML, no code changes for tuning.</p>
 <hr />
 <h2 id="boundaries-dry-run">Boundaries + dry-run<a class="headerlink" href="#boundaries-dry-run" title="Permanent link">&para;</a></h2>
+<p>Each coworker has its own <code>role/BOUNDARIES.md</code>. Below is an abridged one
+from the triage template
+(<a href="examples/generic-triage/role/BOUNDARIES.md">examples/generic-triage/role/BOUNDARIES.md</a>,
+which also gates individual Linear MCP write tools):</p>
 <div class="highlight"><pre><span></span><code><span class="gu">## Must not touch</span>
 <span class="k">-</span><span class="w"> </span>Any ticket in team CS (client data)
 <span class="k">-</span><span class="w"> </span>Any code, repository, or PR
-<span class="k">-</span><span class="w"> </span>Do not invent new labels — only apply labels that already exist
+<span class="k">-</span><span class="w"> </span>Do not invent new labels; only apply labels that already exist
 
 <span class="gu">## Resource limits</span>
 <span class="k">-</span><span class="w"> </span>Max concurrent worktrees: 0
@@ -1914,15 +2005,15 @@ human can skim.</p>
 reach the target system. Coworkers get promoted to <code>--live</code> independently.</p>
 <hr />
 <h2 id="humans-coworker">Humans ↔ coworker<a class="headerlink" href="#humans-coworker" title="Permanent link">&para;</a></h2>
-<p><strong>You → coworker</strong> — leaves a note that surfaces in the next tick's prompt:
+<p><strong>You → coworker.</strong> Leaves a note that surfaces in the next tick's prompt:
 <div class="highlight"><pre><span></span><code>bin/aicw<span class="w"> </span>note<span class="w"> </span>alex-triage<span class="w"> </span><span class="s2">&quot;Prioritise ILO parser bugs today&quot;</span>
 </code></pre></div></p>
-<p><strong>Coworker → you</strong> — persistent question log they see until answered:
+<p><strong>Coworker → you.</strong> A persistent question log they see until answered:
 <div class="highlight"><pre><span></span><code>bin/aicw<span class="w"> </span>answer<span class="w"> </span>alex-triage<span class="w"> </span><span class="s2">&quot;Keep it as perf, don&#39;t split yet.&quot;</span>
 </code></pre></div></p>
-<p><strong>Coworker → coworker / Slack / Linear / GitHub</strong> — one <code>ask</code> tool with
+<p><strong>Coworker → coworker / Slack / Linear / GitHub.</strong> One <code>ask</code> tool with
 <code>to="coworker:sam"</code> · <code>to="slack:#triage"</code> · <code>to="linear:ILO-42"</code> ·
-<code>to="github:owner/repo#123"</code>. The channel is contextual — the coworker picks
+<code>to="github:owner/repo#123"</code>. The channel is contextual, so the coworker picks
 the surface that fits.</p>
 <hr />
 <h2 id="adapters">Adapters<a class="headerlink" href="#adapters" title="Permanent link">&para;</a></h2>
@@ -1987,13 +2078,13 @@ bin/aicw<span class="w"> </span>verify-slack<span class="w"> </span>&lt;coworker
 <h2 id="coworker-templates">Coworker templates<a class="headerlink" href="#coworker-templates" title="Permanent link">&para;</a></h2>
 <p><code>cp -r examples/&lt;name&gt; coworkers/&lt;yourname&gt;</code>:</p>
 <ul>
-<li><strong>generic-triage</strong> — Linear triage engineer</li>
-<li><strong>pr-reviewer</strong> — reviews open PRs on watched GitHub repos</li>
-<li><strong>project-manager</strong> — project health summaries, aging tickets</li>
-<li><strong>scribe</strong> — keeps README + docs honest as the code changes</li>
-<li><strong>trace</strong> — incident RCA: reads stack traces, walks git history, posts root-cause notes</li>
-<li><strong>log</strong> — auto-changelog: updates CHANGELOG.md on every merge, drafts GitHub releases on every tag</li>
-<li><strong>watchtower</strong> — monitoring: baselines operational signals + alerts on real anomalies (aggressive dedup)</li>
+<li><strong>generic-triage</strong>: Linear triage engineer</li>
+<li><strong>pr-reviewer</strong>: reviews open PRs on watched GitHub repos</li>
+<li><strong>project-manager</strong>: project health summaries, aging tickets</li>
+<li><strong>scribe</strong>: keeps README + docs honest as the code changes</li>
+<li><strong>trace</strong>: incident RCA: reads stack traces, walks git history, posts root-cause notes</li>
+<li><strong>log</strong>: auto-changelog: updates CHANGELOG.md on every merge, drafts GitHub releases on every tag</li>
+<li><strong>watchtower</strong>: monitoring: baselines operational signals + alerts on real anomalies (aggressive dedup)</li>
 </ul>
 <p>From scratch:
 <div class="highlight"><pre><span></span><code>bin/aicw<span class="w"> </span>new<span class="w"> </span>&lt;name&gt;<span class="w">                     </span><span class="c1"># blank template</span>
@@ -2013,34 +2104,48 @@ node<span class="w"> </span>--experimental-strip-types<span class="w"> </span>sr
 <hr />
 <h2 id="docs">Docs<a class="headerlink" href="#docs" title="Permanent link">&para;</a></h2>
 <p><strong>Getting started</strong>
-- <a href="docs/getting-started.md">Install &amp; first coworker</a> (TODO)
-- <a href="docs/role-docs.md">Writing role docs</a> (TODO)</p>
+- <a href="docs/coworker-builder-guide.md">Coworker builder guide</a>
+- <a href="docs/tool-cookbook.md">Tool cookbook</a>
+- <a href="docs/dedicated-linear-user.md">Dedicated Linear user</a></p>
 <p><strong>Architecture</strong>
-- <a href="docs/tick-loop.md">Tick loop internals</a> (TODO)
+- <a href="docs/adr/">Architecture decision records</a>
 - <a href="docs/adr/0001-coala-memory-taxonomy.md">Memory taxonomy (CoALA mapping)</a>
-- <a href="docs/boundaries.md">Boundary model</a> (TODO)
-- <a href="docs/comparison.md">Comparison with other harnesses</a> — vs Buzz, Hermes, OpenClaw, Eve, ElizaOS, OpenSRE, Anthropic MA, CrewAI, LangGraph</p>
+- <a href="docs/comparison.md">Comparison with other harnesses</a>, vs Buzz, Hermes, OpenClaw, Eve, ElizaOS, OpenSRE, Anthropic MA, CrewAI, LangGraph</p>
 <p><strong>Operations</strong>
 - <a href="docs/systemd.md">systemd deployment</a>
-- <a href="docs/webhooks.md">Webhooks &amp; external wakes</a></p>
-<p><strong>Design lineage</strong> — Pi CLI (small forkable harness &gt; opinionated framework),
+- <a href="docs/webhooks.md">Webhooks and external wakes</a>
+- <a href="docs/multi-machine.md">Multi-machine fleets</a>
+- <a href="docs/migration.md">Migration notes</a>
+- <a href="docs/release-process.md">Release process</a></p>
+<p><strong>Design lineage.</strong> Pi CLI (small forkable harness &gt; opinionated framework),
 Hermes/OpenClaw (SOUL/USER/MEMORY files, skills, dreams), ElizaOS
 (providers·actions·evaluators), Generative Agents (Stanford), MemGPT/Letta
 (tiered memory), Vercel Eve (filesystem-first), Claude Code (multi-tool turns),
 <a href="https://arxiv.org/abs/2309.02427">CoALA</a> (memory taxonomy).</p>
 <hr />
 <h2 id="tests">Tests<a class="headerlink" href="#tests" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code>npm<span class="w"> </span><span class="nb">test</span><span class="w">              </span><span class="c1"># 660 tests, ~3s</span>
+<div class="highlight"><pre><span></span><code>npm<span class="w"> </span><span class="nb">test</span><span class="w">              </span><span class="c1"># 733 tests, ~3s</span>
 npm<span class="w"> </span>run<span class="w"> </span>test:cov<span class="w">      </span><span class="c1"># 97.9% lines · 95.9% statements · 97.5% functions · 91.2% branches</span>
 </code></pre></div>
 <p>Fake LLM + fake API fixtures in <code>test/fixtures.ts</code> exercise the tick pipeline
 without touching real services.</p>
 <hr />
+<h2 id="contributing">Contributing<a class="headerlink" href="#contributing" title="Permanent link">&para;</a></h2>
+<p>Issues and pull requests are welcome. Where to look first:</p>
+<ul>
+<li><a href="CONTRIBUTING.md">CONTRIBUTING.md</a>, how to set up, test and open a PR</li>
+<li><a href="CODE_OF_CONDUCT.md">CODE_OF_CONDUCT.md</a></li>
+<li><a href="SECURITY.md">SECURITY.md</a>, how to report a vulnerability</li>
+<li><a href="docs/adr/"><code>docs/adr/</code></a>, one ADR per design decision. If you disagree with a
+  choice, the ADR is where to argue with it</li>
+</ul>
+<p>Run <code>npm test</code> before opening a PR. CI runs the same suite on Node 22.</p>
+<hr />
 <h2 id="status">Status<a class="headerlink" href="#status" title="Permanent link">&para;</a></h2>
-<p>Early. Runtime is stable and battle-tested against real Linear. Coding
-coworker (<code>code.delegate</code>) is scaffolded but not yet wired to a real coding
-harness. Open work: <a href="../../issues">GitHub Issues</a>.</p>
-<p>MIT.</p>
+<p>Early. The runtime is stable and has been running against real Linear.
+The coding coworker (<code>code.delegate</code>) is scaffolded but not yet wired to a
+real coding harness. Open work: <a href="../../issues">GitHub Issues</a>.</p>
+<p>Licensed under <a href="LICENSE">MIT</a>.</p>
 
 
 
