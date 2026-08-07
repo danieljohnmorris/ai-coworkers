@@ -250,6 +250,11 @@ Edit markdown → restart → new behavior. No YAML, no code changes for tuning.
 
 ## Boundaries + dry-run
 
+Boundaries are per-coworker, not global. Below is an abridged
+`role/BOUNDARIES.md` from the triage template
+([examples/generic-triage/role/BOUNDARIES.md](examples/generic-triage/role/BOUNDARIES.md),
+which also gates individual Linear MCP write tools):
+
 ```md
 ## Must not touch
 - Any ticket in team CS (client data)
