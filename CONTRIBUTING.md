@@ -16,12 +16,18 @@ Thanks for looking. Two guiding rules before you start:
 
 Requires Node ≥ 22 (uses native `node:sqlite`, `--experimental-strip-types`).
 
+Use the npm version pinned in `package.json#packageManager`. Older npm does
+not understand the `libc` field and strips the glibc/musl gating from
+optional dependencies on every `npm install`, which silently breaks installs
+on Alpine. CI regenerates the lockfile and fails on any difference.
+
 ```bash
 git clone https://github.com/danieljohnmorris/ai-coworkers
 cd ai-coworkers
+npm i -g "npm@$(node -p "require('./package.json').packageManager.split('@')[1]")"
 npm install
-npm test              # ~480 tests, ~2s
-npm run test:cov      # ~99% line coverage
+npm test              # 733 tests, ~3s
+npm run test:cov      # ~98% line coverage
 
 # Enable the pre-commit hook that blocks accidental secret commits:
 git config core.hooksPath .githooks
