@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Long-running AI coworkers. They have sensors and can act. They hold a role, with their own responsibilities and boundaries, written in markdown.">
+        <meta name="description" content="A daemon with a job description. No chat window: it wakes on a clock or a webhook, reads its sensors, and acts inside a role you wrote in markdown, with its own responsibilities and boundaries.">
       
       
       
@@ -1528,10 +1528,13 @@
 <a href="https://nodejs.org"><img alt="node" src="https://img.shields.io/badge/node-%E2%89%A522-brightgreen" /></a>
 <a href="LICENSE"><img alt="license" src="https://img.shields.io/badge/license-MIT-blue" /></a>
 <a href="#tests"><img alt="tests" src="https://img.shields.io/badge/tests-735-brightgreen" /></a></p>
-<p><strong>Long-running AI coworkers. They have sensors and can act.</strong> Each one holds a
-role, with its own responsibilities and boundaries, written in markdown. You
-don't prompt it. It wakes on a clock or a webhook, reads its sensors, and
-decides what to do about what it finds.</p>
+<p><strong>A daemon with a job description.</strong> There is no chat window here. Nobody
+talks to a coworker, and nobody watches it work. It wakes on a clock or a
+webhook, reads its sensors, and acts inside a role you wrote in markdown, with
+its own responsibilities and boundaries. When it needs a human, it asks and
+keeps working.</p>
+<p>Most "AI coworkers" are a chat interface with tools behind it. This is the
+other thing: a long-running process that holds a job.</p>
 <table>
 <tr><td><b>Does a job, not a task</b></td><td>Ships with seven roles: triage engineer, PR reviewer, project manager, scribe, incident RCA, changelog, monitoring. Copy one, edit the markdown, restart.</td></tr>
 <tr><td><b>Configured like a hire</b></td><td>A coworker is a directory: <code>ROLE.md</code>, <code>RESPONSIBILITIES.md</code>, <code>AUTHORITY.md</code>, <code>BOUNDARIES.md</code>, <code>RITUALS.md</code>, <code>RELATIONSHIPS.md</code>. No YAML, no code changes to tune behaviour. <code>bin/aicw new-interview</code> writes them from a JD-style Q&A.</td></tr>
@@ -1547,9 +1550,11 @@ decides what to do about what it finds.</p>
 To change the harness itself, read <a href="CONTRIBUTING.md">CONTRIBUTING.md</a> and the
 ADRs in <a href="docs/adr/"><code>docs/adr/</code></a>.</p>
 <p><strong>Small harness, meant to be forked.</strong> Inspired by the Pi CLI philosophy of shipping a compact, readable runtime rather than a framework: ~7.8k lines you can adopt, fork, and adapt to your team's shape without fighting an opinionated abstraction layer. Every design choice has an ADR (<code>docs/adr/</code>) so you can disagree and rewrite that piece in isolation.</p>
-<p>Unlike Hermes / ElizaOS (single-agent, chat-native) or CrewAI (task
-orchestration), ai-coworkers models <strong>roles with hard boundaries</strong>, defaults
-to <strong>dry-run</strong>, and <strong>escalates to a human inbox</strong> instead of guessing.</p>
+<p>Hermes and ElizaOS are chat-native: you talk, they act, you watch. CrewAI
+orchestrates tasks you hand it. Rowboat and Anton are desktop coworkers you
+converse with. ai-coworkers has no conversation to be in. It models <strong>roles
+with hard boundaries</strong>, defaults to <strong>dry-run</strong>, and <strong>escalates to a human
+inbox</strong> instead of guessing. Full comparison: <a href="docs/comparison.md">docs/comparison.md</a>.</p>
 <table>
 <thead>
 <tr>
