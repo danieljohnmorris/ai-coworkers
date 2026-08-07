@@ -4,6 +4,16 @@ import { mkdtempSync, rmSync, writeFileSync, readFileSync, existsSync, chmodSync
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
+// Poll until `path` exists or the budget runs out. Returns either way; the
+// caller asserts, so a timeout still fails the test with a useful message.
+async function waitForFile(path: string, timeoutMs = 5_000): Promise<void> {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    if (existsSync(path)) return;
+    await new Promise((r) => setTimeout(r, 10));
+  }
+}
+
 let dir: string;
 let agentPath: string;
 beforeEach(() => {
@@ -160,8 +170,9 @@ describe("runAcpTurn", () => {
     ]);
     const r = await runAcpTurn({ agentCmd: ["node", agentPath], prompt: "write", cwd: dir, timeoutMs: 10_000 });
     expect(r.stopReason).toBe("end_turn");
-    // Wait a beat for filesystem write to settle.
-    await new Promise((r) => setTimeout(r, 30));
+    // The write is served asynchronously, so poll rather than sleeping a fixed
+    // beat. A fixed 30ms lost the race on slower CI runners.
+    await waitForFile(join(dir, "out", "wrote.txt"));
     expect(existsSync(join(dir, "out", "wrote.txt"))).toBe(true);
     expect(readFileSync(join(dir, "out", "wrote.txt"), "utf8")).toBe("hello-write");
   });
