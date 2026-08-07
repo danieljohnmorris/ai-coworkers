@@ -13,6 +13,8 @@ for **long-running AI agents with hard boundaries**. It optimises for
 "the agent works safely while nobody's watching" — including *deciding
 not to act* — rather than "the agent answers when spoken to."
 
+If you want a desktop coworker you converse with → **Rowboat** or
+**MindsHub's Anton** (both chat-first, with the human present and watching).
 If you want a chat interface for agents → **Buzz**.
 If you want the widest coding-agent ecosystem → **Claude Code / Codex / Goose** (we speak their protocol, ACP).
 If you want dozens of pre-built domain skills → **Hermes** (we import them).

@@ -6,10 +6,14 @@
 [![license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 [![tests](https://img.shields.io/badge/tests-735-brightgreen)](#tests)
 
-**Long-running AI coworkers. They have sensors and can act.** Each one holds a
-role, with its own responsibilities and boundaries, written in markdown. You
-don't prompt it. It wakes on a clock or a webhook, reads its sensors, and
-decides what to do about what it finds.
+**A daemon with a job description.** There is no chat window here. Nobody
+talks to a coworker, and nobody watches it work. It wakes on a clock or a
+webhook, reads its sensors, and acts inside a role you wrote in markdown, with
+its own responsibilities and boundaries. When it needs a human, it asks and
+keeps working.
+
+Most "AI coworkers" are a chat interface with tools behind it. This is the
+other thing: a long-running process that holds a job.
 
 <table>
 <tr><td><b>Does a job, not a task</b></td><td>Ships with seven roles: triage engineer, PR reviewer, project manager, scribe, incident RCA, changelog, monitoring. Copy one, edit the markdown, restart.</td></tr>
@@ -28,9 +32,11 @@ ADRs in [`docs/adr/`](docs/adr/).
 
 **Small harness, meant to be forked.** Inspired by the Pi CLI philosophy of shipping a compact, readable runtime rather than a framework: ~7.8k lines you can adopt, fork, and adapt to your team's shape without fighting an opinionated abstraction layer. Every design choice has an ADR (`docs/adr/`) so you can disagree and rewrite that piece in isolation.
 
-Unlike Hermes / ElizaOS (single-agent, chat-native) or CrewAI (task
-orchestration), ai-coworkers models **roles with hard boundaries**, defaults
-to **dry-run**, and **escalates to a human inbox** instead of guessing.
+Hermes and ElizaOS are chat-native: you talk, they act, you watch. CrewAI
+orchestrates tasks you hand it. Rowboat and Anton are desktop coworkers you
+converse with. ai-coworkers has no conversation to be in. It models **roles
+with hard boundaries**, defaults to **dry-run**, and **escalates to a human
+inbox** instead of guessing. Full comparison: [docs/comparison.md](docs/comparison.md).
 
 | LOC | tests | coverage | adapters | memory tiers |
 |---|---|---|---|---|
