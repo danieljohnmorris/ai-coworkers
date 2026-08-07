@@ -9,6 +9,15 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 ## [Unreleased]
 
 ### Added
+- **Optional `work_hours` config block** — coworkers can now declare a
+  working-hours window (`timezone`, `days`, `start`, `end`) in
+  `config.json` and choose out-of-hours behaviour via `out_of_hours`
+  (`webhook_only` | `reduced` | `normal`). Absent block = 24/7
+  (unchanged). Webhooks, rituals and due promises always fire regardless
+  of the window; only the periodic tick cadence is adjusted. Composes
+  with `wake_mode`. Boundary crossings emit a `work_hours.transition`
+  event. `bin/aicw configure` walks the new prompt; `bin/aicw status`
+  reports current window state and the next in-hours transition.
 - **Unified `bin/aicw` CLI** — a single git-style router that dispatches
   `bin/aicw <verb>` to `bin/aicw-<verb>`. `bin/aicw help` (or no args)
   lists every discovered verb with its one-line description. Existing

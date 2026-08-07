@@ -90,6 +90,24 @@ etc.). Open them in any text editor and write in plain English. There is
 **no compile step** — save the file and the coworker picks up the change
 on its next tick.
 
+**Work hours (optional).** By default a coworker is always on — it ticks
+around the clock, ready to react. If yours only needs to think during
+office hours, the wizard will offer to set a `work_hours` block: pick a
+timezone, weekdays, start/end times, and what should happen outside
+those hours. Three choices:
+
+- **`webhook_only`** — outside hours the scheduled tick loop sleeps
+  (24-hour idle). Webhooks, rituals and time-based promises still fire.
+  Good for a coworker whose only out-of-hours job is "react to an alert".
+- **`reduced`** — outside hours the minimum time between ticks is
+  clamped (default 60 minutes). Good for background maintenance.
+- **`normal`** — the block is informational; cadence is unchanged.
+  Useful if you just want the hours recorded but no scheduler change.
+
+Leaving `work_hours` unset means 24/7, exactly as it was. Webhooks,
+rituals and due promises fire regardless of the window — work_hours
+only ever slows down the *unprompted* tick loop.
+
 The most important role file is `BOUNDARIES.md`. Read it. Adjust it. This
 is where you tell the coworker what it must never do (delete tickets,
 send emails on your behalf, touch a particular project) and where you

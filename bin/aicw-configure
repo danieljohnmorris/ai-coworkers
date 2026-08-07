@@ -54,6 +54,8 @@ echo "For each knob: press ENTER to keep the current/default value, or type a ne
 echo
 
 for key in $keys; do
+  # work_hours is a nested object — handled in a dedicated flow after the loop.
+  [ "$key" = "work_hours" ] && continue
   desc=$(jq -r --arg k "$key" '.properties[$k].description // ""' "$schema")
   type=$(jq -r --arg k "$key" '.properties[$k].type // "string"' "$schema")
   default=$(jq -r --arg k "$key" '.properties[$k].default' "$schema")
@@ -105,6 +107,76 @@ for key in $keys; do
   esac
   changes="${changes}  $key = $answer"$'\n'
 done
+
+# ── work_hours (nested object) ──
+# Optional. Absent = 24/7 (no change from today's behaviour).
+wh_current="$(jq -c '.work_hours // empty' <<<"$pending")"
+echo "── work_hours (object, optional)"
+echo "   Restricts periodic tick cadence to a working-hours window."
+echo "   Webhooks, rituals and due promises always fire regardless."
+if [[ -n "$wh_current" ]]; then
+  echo "   current: $wh_current"
+  default_wh="y"
+else
+  echo "   currently: 24/7 (not set)"
+  default_wh="n"
+fi
+read -r -p "   Set work hours? [y/N] " wh_ans </dev/tty || wh_ans=""
+[[ -z "$wh_ans" ]] && wh_ans="$default_wh"
+case "$(echo "$wh_ans" | tr '[:upper:]' '[:lower:]')" in
+  y|yes)
+    cur_tz=$(jq -r '.work_hours.timezone // ""' <<<"$pending")
+    cur_days=$(jq -r '.work_hours.days // [1,2,3,4,5] | map(tostring) | join(",")' <<<"$pending")
+    cur_start=$(jq -r '.work_hours.start // "09:00"' <<<"$pending")
+    cur_end=$(jq -r '.work_hours.end // "18:00"' <<<"$pending")
+    cur_mode=$(jq -r '.work_hours.out_of_hours // "webhook_only"' <<<"$pending")
+    cur_int=$(jq -r '.work_hours.out_of_hours_interval_min // 60' <<<"$pending")
+
+    read -r -p "     timezone (IANA, empty = system default) [$cur_tz]: " wh_tz </dev/tty || wh_tz=""
+    [[ -z "$wh_tz" ]] && wh_tz="$cur_tz"
+    read -r -p "     days (ISO 1=Mon..7=Sun, comma-sep) [$cur_days]: " wh_days </dev/tty || wh_days=""
+    [[ -z "$wh_days" ]] && wh_days="$cur_days"
+    read -r -p "     start HH:MM [$cur_start]: " wh_start </dev/tty || wh_start=""
+    [[ -z "$wh_start" ]] && wh_start="$cur_start"
+    read -r -p "     end HH:MM (< start = spans midnight) [$cur_end]: " wh_end </dev/tty || wh_end=""
+    [[ -z "$wh_end" ]] && wh_end="$cur_end"
+    read -r -p "     out_of_hours (webhook_only|reduced|normal) [$cur_mode]: " wh_mode </dev/tty || wh_mode=""
+    [[ -z "$wh_mode" ]] && wh_mode="$cur_mode"
+    read -r -p "     out_of_hours_interval_min (only for 'reduced') [$cur_int]: " wh_int </dev/tty || wh_int=""
+    [[ -z "$wh_int" ]] && wh_int="$cur_int"
+
+    # Build JSON. Days is an int array; other numeric field is out_of_hours_interval_min.
+    days_json="$(echo "$wh_days" | tr ',' '\n' | awk 'NF' | jq -R 'tonumber' | jq -s '.')"
+    wh_obj=$(jq -n \
+      --arg tz "$wh_tz" \
+      --argjson days "$days_json" \
+      --arg start "$wh_start" \
+      --arg end "$wh_end" \
+      --arg mode "$wh_mode" \
+      --argjson interval "$wh_int" \
+      '{
+         out_of_hours: $mode,
+         out_of_hours_interval_min: $interval,
+         days: $days,
+         start: $start,
+         end: $end
+       } + (if $tz == "" then {} else { timezone: $tz } end)')
+    pending=$(jq --argjson v "$wh_obj" '.work_hours = $v' <<<"$pending")
+    changes="${changes}  work_hours = $wh_obj"$'\n'
+    ;;
+  *)
+    if [[ -n "$wh_current" ]]; then
+      read -r -p "   Remove existing work_hours? [y/N] " rm_ans </dev/tty || rm_ans=""
+      case "$(echo "$rm_ans" | tr '[:upper:]' '[:lower:]')" in
+        y|yes)
+          pending=$(jq 'del(.work_hours)' <<<"$pending")
+          changes="${changes}  work_hours = <removed>"$'\n'
+          ;;
+      esac
+    fi
+    ;;
+esac
+echo
 
 if [[ -z "$changes" ]]; then
   echo "No changes."
