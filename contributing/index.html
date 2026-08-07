@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Long-running AI coworkers with roles, boundaries, and a tick loop.">
+        <meta name="description" content="Built to run for weeks, not one task. Coworkers hold a role, act inside hard boundaries you write in markdown, and escalate instead of guessing.">
       
       
       
@@ -1235,7 +1235,7 @@ on Alpine. CI regenerates the lockfile and fails on any difference.</p>
 <span class="nb">cd</span><span class="w"> </span>ai-coworkers
 npm<span class="w"> </span>i<span class="w"> </span>-g<span class="w"> </span><span class="s2">&quot;npm@</span><span class="k">$(</span>node<span class="w"> </span>-p<span class="w"> </span><span class="s2">&quot;require(&#39;./package.json&#39;).packageManager.split(&#39;@&#39;)[1]&quot;</span><span class="k">)</span><span class="s2">&quot;</span>
 npm<span class="w"> </span>install
-npm<span class="w"> </span><span class="nb">test</span><span class="w">              </span><span class="c1"># 733 tests, ~3s</span>
+npm<span class="w"> </span><span class="nb">test</span><span class="w">              </span><span class="c1"># 735 tests, ~3s</span>
 npm<span class="w"> </span>run<span class="w"> </span>test:cov<span class="w">      </span><span class="c1"># ~98% line coverage</span>
 
 <span class="c1"># Enable the pre-commit hook that blocks accidental secret commits:</span>
