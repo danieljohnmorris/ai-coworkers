@@ -47,7 +47,8 @@
     until answered). DMs Slack instead if `MANAGER_SLACK` is set.
   - `to="coworker:<name>"` — peer coworker inbox.
   - `to="slack:#channel"` / `to="slack:@userId"` — channel / DM.
-  - `to="linear:TEAM-42"` — comment on the ticket (prefer this when the
-    question is about a specific issue and the reporter can answer).
   - `to="github:owner/repo#123"` — comment on a PR/issue.
+  `ask` does NOT route to Linear. To ask on a ticket (prefer this when the
+  question is about a specific issue and the reporter can answer), call
+  `mcp.linear.create_comment` with the issue id directly.
   Reserve `to="manager"` for genuinely blocking questions.

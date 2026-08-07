@@ -129,6 +129,22 @@ describe("ask routing to external channels", () => {
     expect(r.error).toMatch(/ILO-1/);
   });
 
+  // The schema description is what the model reads when deciding where to send
+  // a question. Advertising a recipient the handler rejects costs a tool call
+  // from MAX_TOOLS_PER_TICK on a guaranteed failure, every time.
+  it("does not advertise a recipient shape the handler rejects", async () => {
+    const desc = (ask.inputSchema as any).properties.to.description as string;
+    const advertised = [...desc.matchAll(/"([a-z]+):[^"]*"/g)].map((m) => m[1]);
+    for (const prefix of new Set(advertised)) {
+      const r = await ask.handler(
+        { to: `${prefix}:probe`, question: "hi" },
+        ctxLive({ SLACK_BOT_TOKEN: "t", GITHUB_TOKEN: "t" }),
+      ) as any;
+      expect(r?.error ?? "").not.toMatch(/no longer routes|unknown recipient shape/);
+    }
+    expect(advertised).not.toContain("linear");
+  });
+
   it("github:owner/repo#123 routes to githubPRComment", async () => {
     const r = await ask.handler({ to: "github:foo/bar#7", question: "hi" }, ctxLive({ GITHUB_TOKEN: "t" })) as any;
     expect(calls.some((u) => u.includes("api.github.com"))).toBe(true);

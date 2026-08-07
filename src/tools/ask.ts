@@ -42,7 +42,7 @@ export const ask: ToolDef = {
       to: {
         type: "string",
         description:
-          'Recipient. One of: "manager" (persistent human question log), "coworker:<name>" (peer coworker inbox), "slack:@userId" (DM), "slack:#channel" (channel), "linear:ISSUE-ID" (comment on ticket), "github:owner/repo#123" (comment on PR). Choose the channel the person originally contacted you on wherever possible — reply in the same thread they started. Reserve "manager" for genuinely blocking questions; reserve email/urgent DMs for time-sensitive things.',
+          'Recipient. One of: "manager" (persistent human question log), "coworker:<name>" (peer coworker inbox), "slack:@userId" (DM), "slack:#channel" (channel), "github:owner/repo#123" (comment on PR). To ask on a Linear ticket, do NOT use this tool — call mcp.linear.create_comment with the issue id instead. Choose the channel the person originally contacted you on wherever possible — reply in the same thread they started. Reserve "manager" for genuinely blocking questions; reserve email/urgent DMs for time-sensitive things.',
       },
       question: { type: "string", description: "One-paragraph question. Terse and specific." },
       context: { type: "string", description: "Optional: ticket ID, URL, or quote of what triggered it." },
