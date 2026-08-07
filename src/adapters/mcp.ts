@@ -79,7 +79,22 @@ export function buildHttpHeaders(
   cfg: McpServerConfig,
   env: NodeJS.ProcessEnv,
 ): Record<string, string> {
-  const headers: Record<string, string> = { ...(cfg.headers ?? {}) };
+  // Header values may reference env vars as ${NAME}. Servers that authenticate
+  // with a custom header (X-API-Key and friends) rather than a bearer token get
+  // the same treatment as bearerEnv: the secret lives in the coworker's .env,
+  // never in mcp.json, which sits next to the role docs and is easy to share.
+  const headers: Record<string, string> = {};
+  for (const [key, raw] of Object.entries(cfg.headers ?? {})) {
+    headers[key] = raw.replace(/\$\{([A-Za-z_][A-Za-z0-9_]*)\}/g, (_m, name: string) => {
+      const val = env[name];
+      if (!val) {
+        throw new Error(
+          `MCP server "${cfg.name}": header "${key}" references \${${name}}, which is not set in the process env.`,
+        );
+      }
+      return val;
+    });
+  }
   if (cfg.bearerEnv) {
     const val = env[cfg.bearerEnv];
     if (!val) {
