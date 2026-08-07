@@ -1,6 +1,6 @@
 # ai-coworkers
 
-> Built to run for weeks, not one task. Coworkers hold a role, act inside hard boundaries you write in markdown, escalate instead of guessing, and most ticks never reach a model. TypeScript, Node >= 22, MIT.
+> AI coworkers that run for weeks, not one task. They hold a role, responsibilities and can act inside boundaries you write in markdown. TypeScript, Node >= 22, MIT.
 
 The distinctive thesis: agents live in a filesystem directory (role docs + state), run a game-clock tick loop (sense → perceive → deliberate → act), are gated by regex boundaries + dry-run by default, and escalate to a human inbox instead of guessing. Adapters let you plug in MCP servers, Hermes/OpenClaw skills, Vercel Eve `agent/` folders, or native tools.
 
