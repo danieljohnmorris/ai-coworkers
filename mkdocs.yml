@@ -9,7 +9,7 @@
 #              markdown surfaced via nav entries; no symlinks needed.
 
 site_name: ai-coworkers
-site_description: AI coworkers that run for weeks, not one task. They hold a role, responsibilities and can act inside boundaries you write in markdown.
+site_description: Long-running AI coworkers. They have sensors and can act. They hold a role, with their own responsibilities and boundaries, written in markdown.
 site_url: https://danieljohnmorris.github.io/ai-coworkers
 repo_url: https://github.com/danieljohnmorris/ai-coworkers
 repo_name: danieljohnmorris/ai-coworkers
