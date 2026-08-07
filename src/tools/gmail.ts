@@ -67,6 +67,15 @@ async function runGoogleApi(coworker: string, args: string[], timeoutMs = 30_000
   });
 }
 
+// The tick loop calls sensors with no arguments (runtime/tick.ts sense phase),
+// so gmail.search needs its own query on that path. Override per coworker with
+// GMAIL_SENSOR_QUERY in coworkers/<name>/.env.
+export const DEFAULT_SENSOR_QUERY = "is:unread newer_than:1d";
+
+export function resolveQuery(query: string | undefined, env: Record<string, string | undefined> | undefined): string {
+  return query?.trim() || env?.GMAIL_SENSOR_QUERY?.trim() || DEFAULT_SENSOR_QUERY;
+}
+
 function notReady(coworker: string): { warning: string } | null {
   if (!skillInstalled()) return { warning: `Hermes google-workspace skill not installed at ${SKILL_DIR} — install Hermes first.` };
   if (!tokenReady(coworker)) return { warning: `Gmail not configured for '${coworker}' — run bin/setup-gmail.sh ${coworker}` };
@@ -79,17 +88,17 @@ export const gmailSearch: ToolDef = {
   description: "Search Gmail. Query uses Gmail search syntax: is:unread from:x@y.com newer_than:1d subject:\"parser\" etc. Returns a compact list of message IDs + subjects + snippets.",
   inputSchema: {
     type: "object",
-    required: ["query"],
     properties: {
-      query: { type: "string", description: "Gmail search query (see https://support.google.com/mail/answer/7190)" },
+      query: { type: "string", description: `Gmail search query (see https://support.google.com/mail/answer/7190). Optional: the tick loop calls sensors with no arguments, and then GMAIL_SENSOR_QUERY (or "${DEFAULT_SENSOR_QUERY}") is used.` },
       max:   { type: "number", description: "Max results (default 10, cap 50)" },
     },
   },
-  handler: async (input: { query: string; max?: number }, ctx: ToolCtx) => {
+  handler: async (input: { query?: string; max?: number }, ctx: ToolCtx) => {
     const ready = notReady(ctx.coworker);
     if (ready) return ready;
     const max = Math.min(input.max ?? 10, 50);
-    const r = await runGoogleApi(ctx.coworker, ["gmail", "search", input.query, "--max", String(max)]);
+    const query = resolveQuery(input.query, ctx.env);
+    const r = await runGoogleApi(ctx.coworker, ["gmail", "search", query, "--max", String(max)]);
     if (!r.ok) return { error: `gmail.search failed (exit ${r.code}): ${r.stderr.slice(0, 400)}` };
     try { return JSON.parse(r.stdout); } catch { return { raw: r.stdout }; }
   },
