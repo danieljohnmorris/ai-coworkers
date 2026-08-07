@@ -1542,7 +1542,7 @@ other thing: a long-running process that holds a job.</p>
 <tr><td><b>Asks instead of guessing</b></td><td>A single <code>ask</code> tool routes to you, a peer coworker, Slack, or a GitHub PR. Questions to you persist in <code>state/questions.md</code> until answered, so nothing quietly gets invented.</td></tr>
 <tr><td><b>Cheap while nothing happens</b></td><td>A tick that finds nothing new returns before any model is called, triage included. The interval backs off while quiet and resets on a webhook or <code>/wake</code>.</td></tr>
 <tr><td><b>Runs your existing agent artifacts</b></td><td>MCP servers via one env var, Hermes / OpenClaw skills from <code>~/.hermes/skills/</code>, Vercel Eve <code>agent/</code> folders, and coding work delegated to any ACP agent (Goose, Codex, Claude Code).</td></tr>
-<tr><td><b>Remembers across restarts</b></td><td>Six memory tiers (working, episodic, semantic, entity, procedural, reflective) in SQLite with FTS5, plus per-person and per-project notes it maintains itself.</td></tr>
+<tr><td><b>Remembers across restarts</b></td><td>Six memory tiers (working, episodic, semantic, entity, procedural, reflective) in local SQLite with FTS5, plus per-person and per-project notes it maintains itself. Recall needs no network. For a shared brain across your chat clients, point <code>MCP_SERVERS</code> at <a href="https://github.com/NateBJones-Projects/OB1">OB1</a>.</td></tr>
 </table>
 
 <p><strong>Two ways in.</strong> To run a coworker, start with the
@@ -1843,6 +1843,22 @@ a ticket with <code>mcp.linear.create_comment</code> directly. See
 </tr>
 </tbody>
 </table>
+<p><strong>Pairs with the tools you already run.</strong> A coworker is the unattended half;
+these are the human-facing halves it plugs into:</p>
+<ul>
+<li><a href="https://github.com/NousResearch/hermes-agent">Hermes</a> — its skills load
+  directly from <code>~/.hermes/skills/</code>, and <code>bin/aicw gmail</code> reuses its Google
+  OAuth plumbing. <code>bin/import-hermes.sh</code> migrates an existing setup.</li>
+<li><a href="https://github.com/NateBJones-Projects/OB1">OB1 / Open Brain</a> — a shared
+  memory layer behind an MCP server. Add it to <code>MCP_SERVERS</code> and a coworker
+  reads and writes the same brain your chat clients use, as
+  <code>mcp.&lt;name&gt;.capture_thought</code> / <code>search_thoughts</code>. No code change.</li>
+<li><a href="https://github.com/rowboatlabs/rowboat">Rowboat</a> and desktop coworkers
+  like it — chat-first, human present. Run one of those for conversation and
+  an ai-coworker for the job nobody watches. Different halves of the day.</li>
+<li>Claude Code / <a href="https://github.com/block/goose">Goose</a> / Codex — a coworker
+  hands them coding work over ACP via <code>code.delegate</code>.</li>
+</ul>
 <p><strong>Verify setup landed:</strong>
 <div class="highlight"><pre><span></span><code>bin/aicw<span class="w"> </span>verify-gmail<span class="w"> </span>&lt;coworker&gt;<span class="w">    </span><span class="c1"># runs one &#39;in:inbox&#39; read via Hermes google_api.py</span>
 bin/aicw<span class="w"> </span>verify-slack<span class="w"> </span>&lt;coworker&gt;<span class="w">    </span><span class="c1"># calls Slack auth.test with the coworker&#39;s token</span>
