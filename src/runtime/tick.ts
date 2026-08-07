@@ -62,6 +62,12 @@ export interface TickContext {
   dryRun: boolean;
   log: Log;
   forceDeliberate?: boolean;   // set by external wake — bypass quiet gate this tick
+  // AIC-116 — cooperative cancellation. Returns true once a shutdown signal
+  // has arrived. Checked between tool-call steps so a stop lands within one
+  // step instead of waiting out the whole tick. Without it, a tick chaining
+  // MAX_TOOLS_PER_TICK LLM calls can outlive systemd's stop timeout and get
+  // SIGKILLed, which skips the MCP close path and orphans stdio subprocesses.
+  shouldStop?: () => boolean;
   // Per-coworker env. When omitted, falls back to process.env for backwards
   // compatibility with existing tests. Production callers should pass a
   // scoped env built by loadCoworkerEnv() so multiple coworkers in one
@@ -356,6 +362,12 @@ export async function tick(ctx: TickContext): Promise<TickOutcome> {
   let lastPace: "faster" | "hold" | "slower" | undefined;
 
   for (let step = 0; step < maxToolsPerTick; step++) {
+    // Stop before starting another deliberate/act round. Anything already
+    // done this tick has been logged and recorded; we just stop adding more.
+    if (ctx.shouldStop?.()) {
+      ctx.log.highlight(`shutdown requested — stopping after ${step} tool call(s)`);
+      break;
+    }
     let decision: any;
     try {
       decision = await deliberate(augmentedRole, perception, availableActions, ctx.llm, priorSteps);

@@ -310,6 +310,7 @@ async function main() {
         tools, llm, triageLlm, dryRun: !live, log,
         ...(evaluatorLlm ? { evaluatorLlm } : {}),
         forceDeliberate: forceNext,
+        shouldStop: () => stop.flag,
         env: coworkerEnv,
         ...(mcpSensorRunner ? { mcpSensors: mcpSensorRunner } : {}),
       });

@@ -54,6 +54,18 @@ The unit sets `Restart=on-failure` with `RestartSec=10s`. If the process exits
 non-zero, systemd will restart it after 10 seconds. Crash log lives at
 `coworkers/<name>/state/crash.log`; the events db keeps a per-tick timeline.
 
+## Shutdown
+
+On `SIGTERM` the coworker stops between tool calls: an idle one exits within a
+second, and a busy one finishes the call in flight and then stops chaining. It
+then closes its MCP connections, which are stdio subprocesses that would
+otherwise be orphaned.
+
+The unit sets `TimeoutStopSec=120s` to give that path room. The systemd default
+is 90s, which an LLM call with retries can exceed, and once systemd gives up it
+sends `SIGKILL` and the close never runs. Lower it only if you know your model
+calls are fast.
+
 ## Run multiple coworkers on the same machine
 
 Each becomes its own unit instance:
