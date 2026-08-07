@@ -30,6 +30,7 @@ import { knownSecretsFrom } from "./runtime/secret_redaction.ts";
 import { loadHermesSkills, renderSkillsIndex } from "./adapters/hermes.ts";
 import { startWakeServer } from "./runtime/wake.ts";
 import { parseWakeMode } from "./runtime/wake_mode.ts";
+import { isInHours, describeHours } from "./runtime/work_hours.ts";
 import { loadWebhooks } from "./runtime/webhooks_loader.ts";
 import { loadSensors } from "./runtime/sensors_loader.ts";
 import { McpSensorRunner } from "./runtime/mcp_sensor.ts";
@@ -247,6 +248,23 @@ async function main() {
   const stop = { flag: false };
   const wake = { flag: false };            // event-driven wake trigger
 
+  // Optional work_hours support — see src/runtime/work_hours.ts. If unset,
+  // the coworker runs 24/7 (unchanged). If set, out-of-hours cadence is
+  // adjusted per `out_of_hours` mode; webhooks/rituals/promises are
+  // unaffected. `lastInHours` tracks boundary crossings so we emit a
+  // work_hours.transition event exactly once per crossing.
+  const workHours = coworkerConfig.work_hours;
+  let lastInHours: boolean | null = null;
+  if (workHours) log.stream(`work_hours: ${describeHours(workHours)}`);
+  // Dead-time combination: with wake_mode=tick there is no wake HTTP server,
+  // and with out_of_hours=webhook_only the periodic tick is disabled
+  // out-of-hours. Together they leave the coworker with no wake source
+  // out-of-hours at all — rituals and promises will queue until the next
+  // in-hours tick. See AGENTS.md work_hours section.
+  if (workHours && wakeMode === "tick" && workHours.out_of_hours === "webhook_only") {
+    log.stream(`[WARNING] wake_mode=tick + work_hours.out_of_hours=webhook_only — coworker has no out-of-hours wake source; rituals and promises will not fire on time. Consider wake_mode=both.`);
+  }
+
   // Optional HTTP /wake endpoint (WAKE_PORT env). Lets Linear/Slack/GitHub
   // webhooks (or any curl) fire an immediate tick.
   const wakePort = Number(coworkerEnv.WAKE_PORT ?? 0);
@@ -300,15 +318,35 @@ async function main() {
       log.event("note", { fatal: false, error: String(err) });
       log.stream(`tick error: ${err}`);
     }
+    // Work-hours cadence adjustment. Recomputed each iteration so the loop
+    // reacts to boundary crossings within one tick.
+    const nowIn = isInHours(workHours);
+    if (workHours && lastInHours !== null && lastInHours !== nowIn) {
+      log.event("work_hours.transition", { in_hours: nowIn, mode: workHours.out_of_hours });
+      log.stream(`work_hours: ${nowIn ? "entered" : "left"} working hours (mode=${workHours.out_of_hours})`);
+    }
+    lastInHours = nowIn;
+    const effBase = (workHours && !nowIn && workHours.out_of_hours === "webhook_only")
+      ? 24 * 60 * 60_000
+      : baseIntervalMs;
+    const effMax = (workHours && !nowIn && workHours.out_of_hours === "webhook_only")
+      ? 24 * 60 * 60_000
+      : maxIntervalMs;
     // Coworker-chosen pacing hint (bounded by env limits). Overrides the
     // adaptive quiet/reset rule when explicit — the model owns the wheel.
-    const minMs = Number(coworkerEnv.MIN_TICK_INTERVAL_MS ?? 15_000);
+    const rawMinMs = Number(coworkerEnv.MIN_TICK_INTERVAL_MS ?? 15_000);
+    const minMs = (workHours && !nowIn && workHours.out_of_hours === "reduced")
+      ? Math.max(rawMinMs, (workHours.out_of_hours_interval_min ?? 60) * 60_000)
+      : rawMinMs;
+    // Clamp current intervalMs into the effective window before pace math.
+    if (intervalMs > effMax) intervalMs = effMax;
+    if (intervalMs < minMs) intervalMs = minMs;
     if (outcome.pace === "faster") {
       intervalMs = Math.max(minMs, Math.floor(intervalMs / 2));
       consecutiveQuiet = 0;
       log.stream(`pace=faster — next tick in ${Math.round(intervalMs / 1000)}s`);
     } else if (outcome.pace === "slower") {
-      intervalMs = Math.min(maxIntervalMs, intervalMs * 2);
+      intervalMs = Math.min(effMax, intervalMs * 2);
       log.stream(`pace=slower — next tick in ${Math.round(intervalMs / 1000)}s`);
     } else if (outcome.pace === "hold") {
       log.stream(`pace=hold — next tick in ${Math.round(intervalMs / 1000)}s`);
@@ -317,11 +355,11 @@ async function main() {
       // chose to do nothing → back off. Repeatedly deciding "nothing to do"
       // should not keep us spinning at base cadence.
       consecutiveQuiet++;
-      intervalMs = Math.min(intervalMs * 2, maxIntervalMs);
+      intervalMs = Math.min(intervalMs * 2, effMax);
       log.stream(`idle x${consecutiveQuiet} — next tick in ${Math.round(intervalMs / 1000)}s`);
     } else if (consecutiveQuiet > 0) {
       consecutiveQuiet = 0;
-      intervalMs = baseIntervalMs;
+      intervalMs = Math.max(minMs, Math.min(effBase, effMax));
       log.stream(`activity resumed — interval reset to ${Math.round(intervalMs / 1000)}s`);
     }
     // sleep in small slices so we exit promptly on signal OR /wake
@@ -331,7 +369,7 @@ async function main() {
     }
     if (wake.flag) {
       wake.flag = false;
-      intervalMs = baseIntervalMs;         // reset backoff on external wake
+      intervalMs = effBase;                // reset backoff on external wake
       consecutiveQuiet = 0;
       forceNext = true;                    // bypass quiet gate — they poked us
       log.stream(`woken by event — next tick immediately`);

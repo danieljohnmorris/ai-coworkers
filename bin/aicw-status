@@ -91,4 +91,37 @@ echo "  mode: $wake_mode   $port_state"
 echo "  ticks today: $ticks_today"
 echo "  last action: $last_action"
 echo "  sensor errors (1h): $sensor_errs"
+
+# work_hours — only shown when configured. Uses node to evaluate the same
+# helpers the runtime does (isInHours / nextInHours) so the answer matches
+# reality including timezone + spanning-midnight semantics.
+cfg_file="$root/coworkers/$name/config.json"
+if [ -f "$cfg_file" ] && grep -q '"work_hours"' "$cfg_file"; then
+  # Pass paths via env vars — never string-interpolate into the node -e
+  # source (shell-injection risk if a coworker name or repo path contained
+  # a quote). Errors go to stderr inside node and are captured to the same
+  # stream so real failures are visible, not silently swallowed.
+  hours_line="$(AICW_ROOT="$root" AICW_CFG="$cfg_file" \
+    node --experimental-strip-types --no-warnings --input-type=module -e '
+      import { readFileSync } from "node:fs";
+      import { pathToFileURL } from "node:url";
+      const modUrl = pathToFileURL(process.env.AICW_ROOT + "/src/runtime/work_hours.ts").href;
+      const { isInHours, nextInHours, describeHours } = await import(modUrl);
+      try {
+        const cfg = JSON.parse(readFileSync(process.env.AICW_CFG, "utf8")).work_hours;
+        const desc = describeHours(cfg);
+        if (isInHours(cfg)) {
+          process.stdout.write("hours: IN HOURS  [" + desc + "]");
+        } else {
+          const next = nextInHours(cfg);
+          const when = next ? next.toISOString() : "unknown";
+          process.stdout.write("hours: OUT OF HOURS (mode: " + cfg.out_of_hours + ", next in: " + when + ")  [" + desc + "]");
+        }
+      } catch (e) {
+        process.stderr.write("hours: (unavailable: " + (e && e.message ? e.message : String(e)) + ")");
+      }
+    ' 2>&1)"
+  [ -n "$hours_line" ] && echo "  $hours_line"
+fi
+
 if [ -n "$vanish_warning" ]; then echo "$vanish_warning"; fi

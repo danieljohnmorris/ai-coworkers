@@ -17,6 +17,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import Ajv2020 from "ajv/dist/2020.js";
+import type { WorkHoursConfig } from "./work_hours.ts";
 
 export interface CoworkerConfig {
   wake_mode: "tick" | "webhook" | "both";
@@ -24,6 +25,7 @@ export interface CoworkerConfig {
   max_tools_per_tick: number;
   pii_mask: boolean;
   note_require_signed: boolean;
+  work_hours?: WorkHoursConfig;
 }
 
 // Which config key maps to which legacy env var. The env var name is the
@@ -132,6 +134,28 @@ export function loadCoworkerConfig(
       }
     }
     // else: keep schema default
+  }
+  // work_hours has no env fallback and no default (absent = 24/7).
+  if ("work_hours" in fileConfig) {
+    const wh = fileConfig.work_hours as Partial<WorkHoursConfig> | undefined;
+    if (wh) {
+      // Enforce paired start/end (schema can't cross-validate this cheaply).
+      const hasStart = typeof wh.start === "string";
+      const hasEnd = typeof wh.end === "string";
+      if (hasStart !== hasEnd) {
+        throw new Error(
+          `config.json validation failed at ${path}: /work_hours: 'start' and 'end' must be set together`,
+        );
+      }
+      out.work_hours = {
+        out_of_hours: (wh.out_of_hours as WorkHoursConfig["out_of_hours"]) ?? "normal",
+        ...(wh.timezone !== undefined ? { timezone: wh.timezone } : {}),
+        ...(wh.days !== undefined ? { days: wh.days } : {}),
+        ...(wh.start !== undefined ? { start: wh.start } : {}),
+        ...(wh.end !== undefined ? { end: wh.end } : {}),
+        out_of_hours_interval_min: wh.out_of_hours_interval_min ?? 60,
+      };
+    }
   }
   return out;
 }

@@ -108,6 +108,78 @@ describe("loadCoworkerConfig", () => {
     } finally { rmSync(dir, { recursive: true, force: true }); }
   });
 
+  it("leaves work_hours unset by default (24/7)", () => {
+    const dir = tmpCoworker();
+    try {
+      const cfg = loadCoworkerConfig(dir, {});
+      expect(cfg.work_hours).toBeUndefined();
+    } finally { rmSync(dir, { recursive: true, force: true }); }
+  });
+
+  it("loads work_hours from config.json with defaults filled in", () => {
+    const dir = tmpCoworker();
+    try {
+      writeFileSync(join(dir, "config.json"), JSON.stringify({
+        work_hours: {
+          timezone: "Europe/London",
+          days: [1, 2, 3, 4, 5],
+          start: "09:00",
+          end: "18:00",
+          out_of_hours: "webhook_only",
+        },
+      }));
+      const cfg = loadCoworkerConfig(dir, {});
+      expect(cfg.work_hours).toEqual({
+        timezone: "Europe/London",
+        days: [1, 2, 3, 4, 5],
+        start: "09:00",
+        end: "18:00",
+        out_of_hours: "webhook_only",
+        out_of_hours_interval_min: 60,
+      });
+    } finally { rmSync(dir, { recursive: true, force: true }); }
+  });
+
+  it("rejects work_hours with malformed start", () => {
+    const dir = tmpCoworker();
+    try {
+      writeFileSync(join(dir, "config.json"), JSON.stringify({
+        work_hours: { start: "9am", end: "18:00", out_of_hours: "normal" },
+      }));
+      expect(() => loadCoworkerConfig(dir, {})).toThrow(/start|pattern/);
+    } finally { rmSync(dir, { recursive: true, force: true }); }
+  });
+
+  it("rejects work_hours with only one of start/end set", () => {
+    const dir = tmpCoworker();
+    try {
+      writeFileSync(join(dir, "config.json"), JSON.stringify({
+        work_hours: { start: "09:00", out_of_hours: "normal" },
+      }));
+      expect(() => loadCoworkerConfig(dir, {})).toThrow(/start.*end|end.*start/);
+    } finally { rmSync(dir, { recursive: true, force: true }); }
+  });
+
+  it("rejects work_hours with an unknown out_of_hours mode", () => {
+    const dir = tmpCoworker();
+    try {
+      writeFileSync(join(dir, "config.json"), JSON.stringify({
+        work_hours: { out_of_hours: "shrug" },
+      }));
+      expect(() => loadCoworkerConfig(dir, {})).toThrow(/out_of_hours|enum/);
+    } finally { rmSync(dir, { recursive: true, force: true }); }
+  });
+
+  it("rejects work_hours with an out-of-range day", () => {
+    const dir = tmpCoworker();
+    try {
+      writeFileSync(join(dir, "config.json"), JSON.stringify({
+        work_hours: { days: [0, 8], out_of_hours: "normal" },
+      }));
+      expect(() => loadCoworkerConfig(dir, {})).toThrow(/days/);
+    } finally { rmSync(dir, { recursive: true, force: true }); }
+  });
+
   it("rejects out-of-range max_tools_per_tick", () => {
     const dir = tmpCoworker();
     try {

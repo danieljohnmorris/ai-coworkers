@@ -33,6 +33,44 @@
       "type": "boolean",
       "default": false,
       "description": "Reject operator notes that lack a valid HMAC signature. Requires NOTE_HMAC_SECRET to be set; use bin/note-to.sh to write signed notes."
+    },
+    "work_hours": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Optional working-hours window. If omitted the coworker runs 24/7 (unchanged behaviour). If set, out-of-hours ticks behave per 'out_of_hours'. Webhooks, rituals and due promises always fire regardless.",
+      "properties": {
+        "timezone": {
+          "type": "string",
+          "description": "IANA timezone name (e.g. 'Europe/London'). Defaults to the system timezone if omitted."
+        },
+        "days": {
+          "type": "array",
+          "items": { "type": "integer", "minimum": 1, "maximum": 7 },
+          "description": "ISO weekday numbers on which work_hours apply (1=Mon..7=Sun). Empty or omitted = every day."
+        },
+        "start": {
+          "type": "string",
+          "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$",
+          "description": "HH:MM 24-hour local start time. If 'end' is earlier than 'start' the window spans midnight."
+        },
+        "end": {
+          "type": "string",
+          "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$",
+          "description": "HH:MM 24-hour local end time. See 'start' for spanning-midnight semantics."
+        },
+        "out_of_hours": {
+          "type": "string",
+          "enum": ["webhook_only", "reduced", "normal"],
+          "default": "normal",
+          "description": "Behaviour outside work_hours. 'webhook_only' pins tick base+max intervals to 24h (same as wake_mode=webhook, time-scoped). 'reduced' clamps the minimum tick interval to out_of_hours_interval_min minutes. 'normal' makes no cadence change."
+        },
+        "out_of_hours_interval_min": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 60,
+          "description": "Minimum tick interval in minutes when out-of-hours and out_of_hours='reduced'. Ignored for other modes."
+        }
+      }
     }
   }
 }

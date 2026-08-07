@@ -125,6 +125,68 @@ Currently migrated (env still works as a deprecated fallback):
 | `max_tools_per_tick` | `MAX_TOOLS_PER_TICK` | integer 1–100 | `8` |
 | `pii_mask` | `PII_MASK` | boolean | `false` |
 | `note_require_signed` | `NOTE_REQUIRE_SIGNED` | boolean | `false` |
+| `work_hours` | — | object (optional) | absent (24/7) |
+
+### Work hours
+
+Optional. If `work_hours` is absent from `config.json`, the coworker
+runs 24/7 exactly as before — no change. If it is present, the periodic
+tick cadence is adjusted outside the configured window per
+`out_of_hours`. **Webhooks, rituals and due promises always fire
+regardless of the window** — work_hours only touches the tick loop.
+
+```json
+{
+  "work_hours": {
+    "timezone": "Europe/London",
+    "days": [1, 2, 3, 4, 5],
+    "start": "09:00",
+    "end": "18:00",
+    "out_of_hours": "webhook_only",
+    "out_of_hours_interval_min": 60
+  }
+}
+```
+
+Fields:
+
+- `timezone` — IANA name (`Europe/London`, `Asia/Tokyo`, …). Defaults to
+  the system timezone if omitted.
+- `days` — ISO weekday numbers on which the window applies (1=Mon, 7=Sun).
+  Empty or omitted = every day.
+- `start`, `end` — `HH:MM` 24-hour local. Both required if either set.
+  If `end < start` the window spans midnight (e.g. `22:00`-`06:00`).
+- `out_of_hours` — one of:
+  - `"normal"` (default) — no cadence change; the block is informational.
+  - `"webhook_only"` — periodic tick disabled outside hours (base + max
+    interval pinned to 24h). Same effect as `wake_mode=webhook`, but
+    time-scoped: in-hours behaviour follows `wake_mode`.
+  - `"reduced"` — minimum tick interval clamped to
+    `out_of_hours_interval_min` minutes outside hours; in-hours cadence
+    is unchanged.
+- `out_of_hours_interval_min` — integer minutes, default `60`. Only
+  meaningful when `out_of_hours` is `"reduced"`.
+
+Composes with [`wake_mode`](#activity-modes): a coworker can have
+`wake_mode=both` for full in-hours coverage and effectively become
+webhook-only overnight via `work_hours.out_of_hours=webhook_only`. The
+runtime emits a `work_hours.transition` event on each boundary crossing
+so the shift is auditable in `stream.log` and the event log.
+
+**Caveat — dead-time combination:** if `wake_mode=tick` (no wake HTTP
+server) AND `out_of_hours=webhook_only` (periodic tick disabled
+out-of-hours), the coworker has no wake source out-of-hours at all.
+Rituals and due promises will queue until the next in-hours tick — they
+will not fire on their scheduled time. The runtime logs a startup
+warning when it sees this combination. Use `wake_mode=both` if you want
+event-driven wakes to still work out-of-hours.
+
+**Transition latency:** the `work_hours.transition` event fires on the
+first tick *after* a boundary is crossed, not at the boundary itself.
+Under `out_of_hours=webhook_only` this can mean hours of latency — the
+transition back into working hours won't be emitted until a webhook (or
+the pinned 24h tick) wakes the coworker. Combine with `wake_mode=both`
+if you need tight transition timing.
 
 Non-technical operators can walk the schema interactively:
 
@@ -714,6 +776,10 @@ shortcut — the loop still exists, it just doesn't fire on its own. That
 means scheduled `rituals/*.json` and pending promises will not fire on
 time in `webhook` mode; they fire on the next wake-driven tick. If you
 need on-schedule rituals, use `both`.
+
+`wake_mode` composes with the optional [`work_hours`](#work-hours) block:
+a coworker can run `wake_mode=both` with `work_hours.out_of_hours=webhook_only`
+to get full cadence during working hours and webhook-only quiet outside them.
 
 ---
 
