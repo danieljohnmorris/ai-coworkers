@@ -54,8 +54,9 @@ or `/wake` resets it:
 [09:14:13] alex-triage [LIVE] → ask: {"to":"linear:TRIAGE-88","q":"Which browser?"}
 ```
 
-Line formats above are the ones in `src/runtime/log.ts`; `quiet`, `idle x{n}`
-and `activity resumed` are emitted from `src/runtime/tick.ts`.
+Those are the real line formats. `quiet` comes from `src/runtime/tick.ts`,
+`idle x{n}` and `activity resumed` from `src/index.ts`, and the
+`[time] coworker message` prefix from `src/runtime/log.ts`.
 
 ---
 
@@ -250,8 +251,8 @@ Edit markdown → restart → new behavior. No YAML, no code changes for tuning.
 
 ## Boundaries + dry-run
 
-Boundaries are per-coworker, not global. Below is an abridged
-`role/BOUNDARIES.md` from the triage template
+Each coworker has its own `role/BOUNDARIES.md`. Below is an abridged one
+from the triage template
 ([examples/generic-triage/role/BOUNDARIES.md](examples/generic-triage/role/BOUNDARIES.md),
 which also gates individual Linear MCP write tools):
 
@@ -390,13 +391,13 @@ without touching real services.
 
 ## Contributing
 
-Issues and pull requests are welcome. Start here:
+Issues and pull requests are welcome. Where to look first:
 
 - [CONTRIBUTING.md](CONTRIBUTING.md), how to set up, test and open a PR
 - [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)
 - [SECURITY.md](SECURITY.md), how to report a vulnerability
 - [`docs/adr/`](docs/adr/), one ADR per design decision. If you disagree with a
-  choice, the ADR is the place to argue with it
+  choice, the ADR is where to argue with it
 
 Run `npm test` before opening a PR. CI runs the same suite on Node 22.
 
