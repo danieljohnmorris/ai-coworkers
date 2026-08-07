@@ -22,7 +22,7 @@ other thing: a long-running process that holds a job.
 <tr><td><b>Asks instead of guessing</b></td><td>A single <code>ask</code> tool routes to you, a peer coworker, Slack, or a GitHub PR. Questions to you persist in <code>state/questions.md</code> until answered, so nothing quietly gets invented.</td></tr>
 <tr><td><b>Cheap while nothing happens</b></td><td>A tick that finds nothing new returns before any model is called, triage included. The interval backs off while quiet and resets on a webhook or <code>/wake</code>.</td></tr>
 <tr><td><b>Runs your existing agent artifacts</b></td><td>MCP servers via one env var, Hermes / OpenClaw skills from <code>~/.hermes/skills/</code>, Vercel Eve <code>agent/</code> folders, and coding work delegated to any ACP agent (Goose, Codex, Claude Code).</td></tr>
-<tr><td><b>Remembers across restarts</b></td><td>Six memory tiers (working, episodic, semantic, entity, procedural, reflective) in SQLite with FTS5, plus per-person and per-project notes it maintains itself.</td></tr>
+<tr><td><b>Remembers across restarts</b></td><td>Six memory tiers (working, episodic, semantic, entity, procedural, reflective) in local SQLite with FTS5, plus per-person and per-project notes it maintains itself. Recall needs no network. For a shared brain across your chat clients, point <code>MCP_SERVERS</code> at <a href="https://github.com/NateBJones-Projects/OB1">OB1</a>.</td></tr>
 </table>
 
 **Two ways in.** To run a coworker, start with the
@@ -280,6 +280,22 @@ a ticket with `mcp.linear.create_comment` directly. See
 | **Slack** | `bin/aicw slack <coworker>` → generates app manifest via `hermes slack manifest`, walks you through workspace install, prompts for tokens → written to `coworkers/<name>/.env` | [`src/tools/slack.ts`](src/tools/slack.ts) |
 | **Linear** | Add Linear's remote MCP server (`https://mcp.linear.app/mcp`, OAuth 2.1 + DCR) to `MCP_SERVERS` in `coworkers/<name>/.env`; declare sensors in `role/SENSORS.json`. First tick opens a browser to consent. | [`src/adapters/mcp.ts`](src/adapters/mcp.ts) + [`examples/generic-triage/role/SENSORS.json`](examples/generic-triage/role/SENSORS.json) |
 | **Native tools** | New `src/tools/<name>.ts` exporting `ToolDef[]` | [`src/tools/github.ts`](src/tools/github.ts) |
+
+**Pairs with the tools you already run.** A coworker is the unattended half;
+these are the human-facing halves it plugs into:
+
+- [Hermes](https://github.com/NousResearch/hermes-agent) — its skills load
+  directly from `~/.hermes/skills/`, and `bin/aicw gmail` reuses its Google
+  OAuth plumbing. `bin/import-hermes.sh` migrates an existing setup.
+- [OB1 / Open Brain](https://github.com/NateBJones-Projects/OB1) — a shared
+  memory layer behind an MCP server. Add it to `MCP_SERVERS` and a coworker
+  reads and writes the same brain your chat clients use, as
+  `mcp.<name>.capture_thought` / `search_thoughts`. No code change.
+- [Rowboat](https://github.com/rowboatlabs/rowboat) and desktop coworkers
+  like it — chat-first, human present. Run one of those for conversation and
+  an ai-coworker for the job nobody watches. Different halves of the day.
+- Claude Code / [Goose](https://github.com/block/goose) / Codex — a coworker
+  hands them coding work over ACP via `code.delegate`.
 
 **Verify setup landed:**
 ```bash
