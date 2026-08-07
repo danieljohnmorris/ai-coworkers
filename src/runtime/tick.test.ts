@@ -331,6 +331,61 @@ describe("tick — deliberate loop", () => {
     expect(out.didNoAction).toBe(false);
   });
 
+  // AIC-116 — a tick must stop chaining tool calls once a shutdown signal has
+  // arrived, so systemd's stop timeout only has to cover the call in flight
+  // rather than the whole tick.
+  it("stops chaining tool calls once shouldStop returns true", async () => {
+    process.env.MAX_TOOLS_PER_TICK = "5";
+    const ctx = makeCtx(dir, { tools: "- fake" });
+    let calls = 0;
+    ctx.tools.register({
+      name: "fake.write", kind: "action", description: "",
+      inputSchema: { type: "object" },
+      handler: async () => { calls++; return { ok: true }; },
+    });
+    // Signal a shutdown after the first tool call lands.
+    let stopping = false;
+    ctx.shouldStop = () => stopping;
+    mockFetchSequence([
+      { action: "call", tool: "fake.write", input: { a: 1 }, reason: "1" },
+      { action: "call", tool: "fake.write", input: { a: 2 }, reason: "2" },
+      { action: "call", tool: "fake.write", input: { a: 3 }, reason: "3" },
+    ]);
+    const realHandler = ctx.tools.get("fake.write")!.handler;
+    ctx.tools.register({
+      name: "fake.write", kind: "action", description: "",
+      inputSchema: { type: "object" },
+      handler: async (i: unknown) => { const r = await realHandler(i); stopping = true; return r; },
+    });
+
+    const out = await tick(ctx);
+
+    // One call ran, then the stop was observed before deliberating again.
+    expect(calls).toBe(1);
+    expect(out.didNoAction).toBe(false);
+    const row = ctx.events.prepare(
+      `SELECT COUNT(*) AS n FROM events WHERE kind='action'`
+    ).get() as any;
+    expect(row.n).toBe(1);
+  }, 15000);
+
+  it("runs every step when shouldStop is absent", async () => {
+    process.env.MAX_TOOLS_PER_TICK = "2";
+    const ctx = makeCtx(dir, { tools: "- fake" });
+    let calls = 0;
+    ctx.tools.register({
+      name: "fake.write", kind: "action", description: "",
+      inputSchema: { type: "object" },
+      handler: async () => { calls++; return { ok: true }; },
+    });
+    mockFetchSequence([
+      { action: "call", tool: "fake.write", input: { a: 1 }, reason: "1" },
+      { action: "call", tool: "fake.write", input: { a: 2 }, reason: "2" },
+    ]);
+    await tick(ctx);
+    expect(calls).toBe(2);
+  }, 15000);
+
   it("deliberate error breaks the loop", async () => {
     const ctx = makeCtx(dir, { tools: "- fake" });
     globalThis.fetch = vi.fn(async () => { throw new Error("net down"); }) as any;

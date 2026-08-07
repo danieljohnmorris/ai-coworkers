@@ -10,6 +10,11 @@ EnvironmentFile=-%h/ai-coworkers/.env
 ExecStart=/usr/bin/node --experimental-strip-types --no-warnings src/index.ts %i
 Restart=on-failure
 RestartSec=10s
+# A tick stops between tool calls, but the call in flight when the signal
+# arrives still has to finish, and that can be an LLM request with retries.
+# 120s gives it room to reach the clean shutdown path, which closes MCP
+# stdio subprocesses. Too short and systemd SIGKILLs, orphaning them.
+TimeoutStopSec=120s
 StandardOutput=journal
 StandardError=journal
 
