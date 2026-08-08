@@ -1,7 +1,0 @@
-name: hermes-governance
-version: "0.1.0"
-description: "Runtime enforcement of BOUNDARIES.md — the governance layer from ai-coworkers, packaged as a Hermes plugin. Parses a plain-markdown policy file into three rule types (must-not-touch denylist, per-tool field allowlist, resource limits) and blocks any pre_tool_call that would violate them. Discovery order: $HERMES_HOME/BOUNDARIES.md, ./BOUNDARIES.md, $HOME/.hermes/BOUNDARIES.md. Missing file = no-op with a warning."
-author: "Dan (Cubitts) — ported from ai-coworkers/src/runtime/boundaries.ts"
-hooks:
-  - pre_tool_call
-  - on_session_start
