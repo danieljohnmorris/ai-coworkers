@@ -15,6 +15,14 @@ keeps working.
 Most "AI coworkers" are a chat interface with tools behind it. This is the
 other thing: a long-running process that holds a job.
 
+**Small enough to read cover-to-cover.** ~7.5k lines of TypeScript. Every
+non-trivial choice has an ADR under [`docs/adr/`](docs/adr/). `cat` a
+coworker's state directory to see exactly what it knows about the world — no
+query language, no Postgres, no admin panel. MIT-licensed. If a team
+platform with Slack + web UI + multiplayer channels + Postgres is what you
+actually need, [QM](https://github.com/yc-software/qm) is the right tool.
+[docs/comparison.md](docs/comparison.md) has the honest read.
+
 <table>
 <tr><td><b>Does a job, not a task</b></td><td>Ships with seven roles: triage engineer, PR reviewer, project manager, scribe, incident RCA, changelog, monitoring. Copy one, edit the markdown, restart.</td></tr>
 <tr><td><b>Configured like a hire</b></td><td>A coworker is a directory: <code>ROLE.md</code>, <code>RESPONSIBILITIES.md</code>, <code>AUTHORITY.md</code>, <code>BOUNDARIES.md</code>, <code>RITUALS.md</code>, <code>RELATIONSHIPS.md</code>. No YAML, no code changes to tune behaviour. <code>bin/aicw new-interview</code> writes them from a JD-style Q&A.</td></tr>
