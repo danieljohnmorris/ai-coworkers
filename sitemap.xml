@@ -2,74 +2,74 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://danieljohnmorris.github.io/ai-coworkers/</loc>
-         <lastmod>2026-08-07</lastmod>
+         <lastmod>2026-08-08</lastmod>
     </url>
     <url>
          <loc>https://danieljohnmorris.github.io/ai-coworkers/comparison/</loc>
-         <lastmod>2026-08-07</lastmod>
+         <lastmod>2026-08-08</lastmod>
     </url>
     <url>
          <loc>https://danieljohnmorris.github.io/ai-coworkers/contributing/</loc>
-         <lastmod>2026-08-07</lastmod>
+         <lastmod>2026-08-08</lastmod>
     </url>
     <url>
          <loc>https://danieljohnmorris.github.io/ai-coworkers/coworker-builder-guide/</loc>
-         <lastmod>2026-08-07</lastmod>
+         <lastmod>2026-08-08</lastmod>
     </url>
     <url>
          <loc>https://danieljohnmorris.github.io/ai-coworkers/dedicated-linear-user/</loc>
-         <lastmod>2026-08-07</lastmod>
+         <lastmod>2026-08-08</lastmod>
     </url>
     <url>
          <loc>https://danieljohnmorris.github.io/ai-coworkers/migration/</loc>
-         <lastmod>2026-08-07</lastmod>
+         <lastmod>2026-08-08</lastmod>
     </url>
     <url>
          <loc>https://danieljohnmorris.github.io/ai-coworkers/multi-machine/</loc>
-         <lastmod>2026-08-07</lastmod>
+         <lastmod>2026-08-08</lastmod>
     </url>
     <url>
          <loc>https://danieljohnmorris.github.io/ai-coworkers/release-process/</loc>
-         <lastmod>2026-08-07</lastmod>
+         <lastmod>2026-08-08</lastmod>
     </url>
     <url>
          <loc>https://danieljohnmorris.github.io/ai-coworkers/systemd/</loc>
-         <lastmod>2026-08-07</lastmod>
+         <lastmod>2026-08-08</lastmod>
     </url>
     <url>
          <loc>https://danieljohnmorris.github.io/ai-coworkers/tool-cookbook/</loc>
-         <lastmod>2026-08-07</lastmod>
+         <lastmod>2026-08-08</lastmod>
     </url>
     <url>
          <loc>https://danieljohnmorris.github.io/ai-coworkers/webhooks/</loc>
-         <lastmod>2026-08-07</lastmod>
+         <lastmod>2026-08-08</lastmod>
     </url>
     <url>
          <loc>https://danieljohnmorris.github.io/ai-coworkers/adr/0001-coala-memory-taxonomy/</loc>
-         <lastmod>2026-08-07</lastmod>
+         <lastmod>2026-08-08</lastmod>
     </url>
     <url>
          <loc>https://danieljohnmorris.github.io/ai-coworkers/adr/0002-acp-code-delegate/</loc>
-         <lastmod>2026-08-07</lastmod>
+         <lastmod>2026-08-08</lastmod>
     </url>
     <url>
          <loc>https://danieljohnmorris.github.io/ai-coworkers/adr/0003-container-isolation/</loc>
-         <lastmod>2026-08-07</lastmod>
+         <lastmod>2026-08-08</lastmod>
     </url>
     <url>
          <loc>https://danieljohnmorris.github.io/ai-coworkers/adr/0004-events-db-single-file/</loc>
-         <lastmod>2026-08-07</lastmod>
+         <lastmod>2026-08-08</lastmod>
     </url>
     <url>
          <loc>https://danieljohnmorris.github.io/ai-coworkers/adr/0005-evaluators-services/</loc>
-         <lastmod>2026-08-07</lastmod>
+         <lastmod>2026-08-08</lastmod>
     </url>
     <url>
          <loc>https://danieljohnmorris.github.io/ai-coworkers/adr/0006-filesystem-first-storage/</loc>
-         <lastmod>2026-08-07</lastmod>
+         <lastmod>2026-08-08</lastmod>
     </url>
     <url>
          <loc>https://danieljohnmorris.github.io/ai-coworkers/adr/0007-config-file-vs-env-vars/</loc>
-         <lastmod>2026-08-07</lastmod>
+         <lastmod>2026-08-08</lastmod>
     </url>
 </urlset>

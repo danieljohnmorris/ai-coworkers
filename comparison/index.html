@@ -560,6 +560,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#qm-y-combinator" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QM (Y Combinator)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#buzz-block" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1183,6 +1194,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#qm-y-combinator" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        QM (Y Combinator)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#buzz-block" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1376,16 +1398,18 @@ If we're beaten on a dimension, we say so.</p>
 for <strong>long-running AI agents with hard boundaries</strong>. It optimises for
 "the agent works safely while nobody's watching" — including <em>deciding
 not to act</em> — rather than "the agent answers when spoken to."</p>
-<p>If you want a desktop coworker you converse with → <strong>Rowboat</strong> or
+<p>If you want a <strong>team platform</strong> — agents alongside employees in Slack, per-scope
+sandboxes, Postgres-backed, YC-backed distribution → <strong>QM</strong> (yc-software/qm).
+If you want a desktop coworker you converse with → <strong>Rowboat</strong> or
 <strong>MindsHub's Anton</strong> (both chat-first, with the human present and watching).
 If you want a chat interface for agents → <strong>Buzz</strong>.
 If you want the widest coding-agent ecosystem → <strong>Claude Code / Codex / Goose</strong> (we speak their protocol, ACP).
 If you want dozens of pre-built domain skills → <strong>Hermes</strong> (we import them).
 If you want incident response as a product → <strong>OpenSRE</strong>.
 If you want an opinionated multi-agent orchestrator → <strong>CrewAI / LangGraph</strong>.
-If you want a persistent worker that runs quietly under <code>BOUNDARIES.md</code>,
-gates every write, and escalates to a human inbox when unsure →
-<strong>ai-coworkers</strong>.</p>
+If you want a <strong>small forkable filesystem-first single-coworker runtime</strong> that
+gates every write against <code>BOUNDARIES.md</code>, escalates to a human inbox when
+unsure, and can be read end-to-end in an afternoon → <strong>ai-coworkers</strong>.</p>
 <h2 id="feature-matrix">Feature matrix<a class="headerlink" href="#feature-matrix" title="Permanent link">&para;</a></h2>
 <p>Legend: ✓ present · ~ partial · — absent · ? not documented</p>
 <table>
@@ -1393,6 +1417,7 @@ gates every write, and escalates to a human inbox when unsure →
 <tr>
 <th></th>
 <th style="text-align: center;">ai-coworkers</th>
+<th style="text-align: center;">QM</th>
 <th style="text-align: center;">Buzz</th>
 <th style="text-align: center;">Hermes</th>
 <th style="text-align: center;">OpenClaw / NanoClaw</th>
@@ -1408,6 +1433,7 @@ gates every write, and escalates to a human inbox when unsure →
 <tr>
 <td><strong>Runtime shape</strong></td>
 <td style="text-align: center;">tick loop</td>
+<td style="text-align: center;">headless core + pluggable harness</td>
 <td style="text-align: center;">chat/rooms</td>
 <td style="text-align: center;">request/response</td>
 <td style="text-align: center;">message-dispatch</td>
@@ -1427,6 +1453,7 @@ gates every write, and escalates to a human inbox when unsure →
 <td style="text-align: center;">—</td>
 <td style="text-align: center;">—</td>
 <td style="text-align: center;">—</td>
+<td style="text-align: center;">—</td>
 <td style="text-align: center;">~ scheduler idle</td>
 <td style="text-align: center;">—</td>
 <td style="text-align: center;">—</td>
@@ -1434,6 +1461,7 @@ gates every write, and escalates to a human inbox when unsure →
 <tr>
 <td><strong>Filesystem-first config</strong></td>
 <td style="text-align: center;">✓ <code>role/*.md</code></td>
+<td style="text-align: center;">— (Postgres)</td>
 <td style="text-align: center;">— (Nostr events)</td>
 <td style="text-align: center;">✓ SKILL.md files</td>
 <td style="text-align: center;">✓ SOUL.md / AGENTS.md</td>
@@ -1447,6 +1475,7 @@ gates every write, and escalates to a human inbox when unsure →
 <tr>
 <td><strong>Hard boundary regex + dry-run default</strong></td>
 <td style="text-align: center;">✓</td>
+<td style="text-align: center;">~ Strict / Auto / Dangerous baseline modes</td>
 <td style="text-align: center;">— (identity scopes)</td>
 <td style="text-align: center;">—</td>
 <td style="text-align: center;">~ (NanoClaw containers)</td>
@@ -1460,6 +1489,7 @@ gates every write, and escalates to a human inbox when unsure →
 <tr>
 <td><strong>Multi-tier memory</strong></td>
 <td style="text-align: center;">✓ 6-tier (CoALA)</td>
+<td style="text-align: center;">~ per-scope</td>
 <td style="text-align: center;">~ event log</td>
 <td style="text-align: center;">~ MEMORY.md + skills</td>
 <td style="text-align: center;">~ 4-tier (SoulClaw fork)</td>
@@ -1473,6 +1503,7 @@ gates every write, and escalates to a human inbox when unsure →
 <tr>
 <td><strong>Reflect / dreaming ritual</strong></td>
 <td style="text-align: center;">✓ weekly compact + citations</td>
+<td style="text-align: center;">?</td>
 <td style="text-align: center;">—</td>
 <td style="text-align: center;">✓</td>
 <td style="text-align: center;">~</td>
@@ -1486,6 +1517,7 @@ gates every write, and escalates to a human inbox when unsure →
 <tr>
 <td><strong>Human ↔ agent channels</strong></td>
 <td style="text-align: center;">✓ inbox + questions + reactions + signed notes</td>
+<td style="text-align: center;">✓ Slack + web UI + admin</td>
 <td style="text-align: center;">✓ chat rooms</td>
 <td style="text-align: center;">~ chat surfaces</td>
 <td style="text-align: center;">~ platform adapters</td>
@@ -1499,6 +1531,7 @@ gates every write, and escalates to a human inbox when unsure →
 <tr>
 <td><strong>Cross-framework artifact import</strong></td>
 <td style="text-align: center;">✓ Hermes / OpenClaw / Eve loaders</td>
+<td style="text-align: center;">✓ Pi / OpenCode / Codex / Claude Code as harness</td>
 <td style="text-align: center;">—</td>
 <td style="text-align: center;">—</td>
 <td style="text-align: center;">—</td>
@@ -1512,6 +1545,7 @@ gates every write, and escalates to a human inbox when unsure →
 <tr>
 <td><strong>ACP (coding-agent) protocol</strong></td>
 <td style="text-align: center;">✓ client</td>
+<td style="text-align: center;">~ (via harness plugins)</td>
 <td style="text-align: center;">✓ (buzz-cli harness)</td>
 <td style="text-align: center;">✓ via skills</td>
 <td style="text-align: center;">~</td>
@@ -1528,6 +1562,7 @@ gates every write, and escalates to a human inbox when unsure →
 <td style="text-align: center;">✓</td>
 <td style="text-align: center;">✓</td>
 <td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
 <td style="text-align: center;">~</td>
 <td style="text-align: center;">~</td>
 <td style="text-align: center;">✓</td>
@@ -1538,6 +1573,7 @@ gates every write, and escalates to a human inbox when unsure →
 <tr>
 <td><strong>Per-tool credential filtering</strong></td>
 <td style="text-align: center;">✓ <code>requiresCreds</code></td>
+<td style="text-align: center;">✓ per-scope</td>
 <td style="text-align: center;">~ identity scopes</td>
 <td style="text-align: center;">~</td>
 <td style="text-align: center;">~</td>
@@ -1551,6 +1587,7 @@ gates every write, and escalates to a human inbox when unsure →
 <tr>
 <td><strong>Secret redaction at persistence</strong></td>
 <td style="text-align: center;">✓ same list as pre-commit hook</td>
+<td style="text-align: center;">~ content-screening</td>
 <td style="text-align: center;">?</td>
 <td style="text-align: center;">?</td>
 <td style="text-align: center;">?</td>
@@ -1564,6 +1601,7 @@ gates every write, and escalates to a human inbox when unsure →
 <tr>
 <td><strong>Reversible identifier masking pre-LLM</strong></td>
 <td style="text-align: center;">✓ opt-in <code>PII_MASK=1</code></td>
+<td style="text-align: center;">?</td>
 <td style="text-align: center;">—</td>
 <td style="text-align: center;">—</td>
 <td style="text-align: center;">—</td>
@@ -1577,6 +1615,7 @@ gates every write, and escalates to a human inbox when unsure →
 <tr>
 <td><strong>Subprocess sandbox for delegated agents</strong></td>
 <td style="text-align: center;">✓ bwrap / firejail</td>
+<td style="text-align: center;">✓ per-scope sandbox (first-class)</td>
 <td style="text-align: center;">?</td>
 <td style="text-align: center;">?</td>
 <td style="text-align: center;">✓ containers (NanoClaw)</td>
@@ -1599,10 +1638,12 @@ gates every write, and escalates to a human inbox when unsure →
 <td style="text-align: center;">?</td>
 <td style="text-align: center;">?</td>
 <td style="text-align: center;">?</td>
+<td style="text-align: center;">?</td>
 </tr>
 <tr>
 <td><strong>Prometheus metrics endpoint</strong></td>
 <td style="text-align: center;">✓</td>
+<td style="text-align: center;">?</td>
 <td style="text-align: center;">?</td>
 <td style="text-align: center;">?</td>
 <td style="text-align: center;">?</td>
@@ -1616,6 +1657,7 @@ gates every write, and escalates to a human inbox when unsure →
 <tr>
 <td><strong>Scored benchmark of agent behaviour</strong></td>
 <td style="text-align: center;">✓ small (3 scenarios)</td>
+<td style="text-align: center;">?</td>
 <td style="text-align: center;">—</td>
 <td style="text-align: center;">—</td>
 <td style="text-align: center;">—</td>
@@ -1629,6 +1671,7 @@ gates every write, and escalates to a human inbox when unsure →
 <tr>
 <td><strong>Long-running-agent focus</strong></td>
 <td style="text-align: center;">✓ core thesis</td>
+<td style="text-align: center;">✓ per-scope background jobs</td>
 <td style="text-align: center;">~</td>
 <td style="text-align: center;">~</td>
 <td style="text-align: center;">~</td>
@@ -1642,6 +1685,7 @@ gates every write, and escalates to a human inbox when unsure →
 <tr>
 <td><strong>Multi-agent per host</strong></td>
 <td style="text-align: center;">✓ one dir per coworker</td>
+<td style="text-align: center;">✓ multi-scope (person + room)</td>
 <td style="text-align: center;">✓ per identity</td>
 <td style="text-align: center;">~</td>
 <td style="text-align: center;">✓ per agent group</td>
@@ -1653,8 +1697,23 @@ gates every write, and escalates to a human inbox when unsure →
 <td style="text-align: center;">✓ multi-node</td>
 </tr>
 <tr>
+<td><strong>Multi-user collaboration surface</strong></td>
+<td style="text-align: center;">— (per-coworker isolation)</td>
+<td style="text-align: center;">✓ channels / group messages / projects</td>
+<td style="text-align: center;">✓ (chat-native)</td>
+<td style="text-align: center;">~</td>
+<td style="text-align: center;">~</td>
+<td style="text-align: center;">~</td>
+<td style="text-align: center;">~</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">—</td>
+</tr>
+<tr>
 <td><strong>Small forkable harness (Pi CLI philosophy)</strong></td>
-<td style="text-align: center;">✓ ~6.5k LOC</td>
+<td style="text-align: center;">✓ ~7.5k LOC</td>
+<td style="text-align: center;">— (headless + plugins + Postgres)</td>
 <td style="text-align: center;">— (Rust relay + Tauri desktop)</td>
 <td style="text-align: center;">— (large)</td>
 <td style="text-align: center;">~ (NanoClaw is small; OpenClaw is 500k LOC)</td>
@@ -1668,6 +1727,7 @@ gates every write, and escalates to a human inbox when unsure →
 <tr>
 <td><strong>Primary language</strong></td>
 <td style="text-align: center;">TypeScript / Node ≥22</td>
+<td style="text-align: center;">TypeScript / Node</td>
 <td style="text-align: center;">Rust + TS</td>
 <td style="text-align: center;">Python</td>
 <td style="text-align: center;">Python + TS (Nano)</td>
@@ -1681,6 +1741,7 @@ gates every write, and escalates to a human inbox when unsure →
 <tr>
 <td><strong>License</strong></td>
 <td style="text-align: center;">MIT</td>
+<td style="text-align: center;">? (check repo)</td>
 <td style="text-align: center;">Apache 2.0</td>
 <td style="text-align: center;">Apache 2.0</td>
 <td style="text-align: center;">mix</td>
@@ -1691,9 +1752,55 @@ gates every write, and escalates to a human inbox when unsure →
 <td style="text-align: center;">MIT</td>
 <td style="text-align: center;">MIT</td>
 </tr>
+<tr>
+<td><strong>Backing / distribution</strong></td>
+<td style="text-align: center;">solo</td>
+<td style="text-align: center;">YC (12k+ ⭐)</td>
+<td style="text-align: center;">Block (Square)</td>
+<td style="text-align: center;">Nous Research</td>
+<td style="text-align: center;">Anthropic-community forks</td>
+<td style="text-align: center;">Vercel</td>
+<td style="text-align: center;">ai16z community</td>
+<td style="text-align: center;">community</td>
+<td style="text-align: center;">Anthropic</td>
+<td style="text-align: center;">community</td>
+<td style="text-align: center;">LangChain Inc.</td>
+</tr>
 </tbody>
 </table>
 <h2 id="per-framework-honest-read">Per-framework honest read<a class="headerlink" href="#per-framework-honest-read" title="Permanent link">&para;</a></h2>
+<h3 id="qm-y-combinator">QM (Y Combinator)<a class="headerlink" href="#qm-y-combinator" title="Permanent link">&para;</a></h3>
+<p><strong>Shape:</strong> TypeScript headless core + Postgres persistence. Employees each get
+their own isolated per-scope workspace (memory, files, credentials,
+permissions, background jobs, sandbox); collaboration also happens in
+channels, group messages, and projects. Slack (in-process), web UI (Vite /
+Lit), admin panel, and public portal all talk to the core over HTTP. The
+agent-loop tier is pluggable — Pi, OpenCode, Codex, Claude Code can all be
+the underlying harness. Baseline security modes: <strong>Strict</strong> / <strong>Auto</strong> /
+<strong>Dangerous</strong>, tightenable per scope. All activity audits under the acting
+user's identity.</p>
+<p><strong>They win on:</strong> distribution (YC backing, 12k+ ⭐), multi-user collaboration
+surfaces built in (channels / group messages / projects), first-class Slack
++ web UX, per-scope sandbox as a core primitive, pluggable agent runtime
+(you pick the harness), production-scale persistence (Postgres).</p>
+<p><strong>We win on:</strong> filesystem-first state (<code>cat state/entities/people/dan.md</code>
+answers "what does this coworker know about Dan" without a query language —
+ADR 0006). Finer-grained governance: <code>BOUNDARIES.md</code> + per-tool field
+allowlist + dry-run default is more surgical than a three-way baseline
+switch. Smaller: 7.5k LOC end-to-end, readable in an afternoon. No Postgres
+required, no ops surface, no admin panel — one process per coworker on
+whatever machine you have. MIT.</p>
+<p><strong>When to pick which:</strong> if you need an AI-employee platform for a real team
+(multiplayer, Slack-native, sandboxes, admin story), pick <strong>QM</strong>. If you
+need a single long-running coworker per human with tight boundaries and
+human-readable state you can fork and read cover-to-cover, pick
+<strong>ai-coworkers</strong>. They are not the same product; they don't compete
+head-on.</p>
+<p><strong>Also worth naming:</strong> ai-coworkers' <code>hermes-governance</code> plugin
+(<code>github.com/danieljohnmorris/hermes-governance</code>) ports our BOUNDARIES.md
+enforcement into any Hermes install — including a QM deployment that uses
+Hermes as its harness. Governance travels; you don't have to switch
+runtimes to adopt one piece.</p>
 <h3 id="buzz-block">Buzz (Block)<a class="headerlink" href="#buzz-block" title="Permanent link">&para;</a></h3>
 <p><strong>Shape:</strong> Nostr relay + Tauri desktop client. Every message / reaction /
 workflow step / git event is a signed event in one log; agents get their
