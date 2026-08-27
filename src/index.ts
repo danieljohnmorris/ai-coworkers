@@ -23,6 +23,7 @@ import { roleTools } from "./tools/role.ts";
 import { codeDelegateTools } from "./tools/code_delegate.ts";
 import { branchRoomTools } from "./tools/branch_room.ts";
 import { gmailTools } from "./tools/gmail.ts";
+import { memWalkTools } from "./tools/mem_walk.ts";
 import { connectMcp, parseMcpEnv, type McpConnection } from "./adapters/mcp.ts";
 import { loadCoworkerEnv } from "./runtime/credentials.ts";
 import { loadCoworkerConfig } from "./runtime/coworker_config.ts";
@@ -114,6 +115,7 @@ async function main() {
   for (const t of codeDelegateTools) tools.register(t);
   for (const t of branchRoomTools) tools.register(t);
   for (const t of gmailTools) tools.register(t);
+  for (const t of memWalkTools) tools.register(t);
 
   // Optional MCP servers via MCP_SERVERS env var.
   const mcpConnections: McpConnection[] = [];
