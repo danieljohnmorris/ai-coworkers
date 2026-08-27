@@ -13,6 +13,7 @@ import type { SemanticMemory } from "./semantic.ts";
 import type { LLMConfig } from "./llm.ts";
 import { chat } from "./llm.ts";
 import type { Log } from "./log.ts";
+import { eventIdsResolve } from "./memory.ts";
 import { appendFileSync, mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 
@@ -99,11 +100,30 @@ export async function dreamOnce(args: {
   }
 
   // 3. Save the longer rollup to memory.db (uncapped, for later retrieval).
+  // AIC-128: the weekly rollup is rung 2 of the memory ladder — it records
+  // its level and the raw-event id span it distilled, then adopts any
+  // day-level rollups (level 1) whose period falls inside this week. A span
+  // that does not resolve against events/events_archive is written as NULL
+  // and logged — bad provenance is worse than none (ADR-0008).
   if (rollup) {
     const now = new Date().toISOString();
+    const firstId = rows[0].id;
+    const lastId = rows[rows.length - 1].id;
+    let sourceRange: string | null = null;
+    if (eventIdsResolve(events, [firstId, lastId])) {
+      sourceRange = JSON.stringify([firstId, lastId]);
+    } else {
+      log.event("memory.compact", {
+        step: "provenance", ok: false,
+        reason: `rollup source range [${firstId},${lastId}] did not resolve against events/events_archive — wrote NULL`,
+      });
+    }
+    const info = memory
+      .prepare(`INSERT INTO rollups (period, period_start, period_end, body, level, source_range) VALUES ('week', ?, ?, ?, 2, ?)`)
+      .run(since, now, rollup, sourceRange);
     memory
-      .prepare(`INSERT INTO rollups (period, period_start, period_end, body) VALUES ('week', ?, ?, ?)`)
-      .run(since, now, rollup);
+      .prepare(`UPDATE rollups SET parent_id = ? WHERE level = 1 AND parent_id IS NULL AND period_start >= ? AND period_end <= ?`)
+      .run(Number(info.lastInsertRowid), since, now);
   }
 
   // 4. Promote learnings to semantic MEMORY.md — with AIC-38 promotion gate,

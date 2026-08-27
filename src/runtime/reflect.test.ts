@@ -231,3 +231,76 @@ describe("dreamOnce prune archival (AIC-127)", () => {
     expect(r.archivedRows).toBe(1);
   });
 });
+
+describe("dreamOnce ladder provenance (AIC-128)", () => {
+  function setup() {
+    const events = openEvents(join(dir, "e.db"));
+    return {
+      events,
+      memory: openMemory(join(dir, "m.db")),
+      semantic: openSemantic(join(dir, "MEMORY.md")),
+      log: new Log(events, "t"),
+    };
+  }
+
+  function insertAction(events: DatabaseSync, ts: string): number {
+    const info = events
+      .prepare("INSERT INTO events (ts, coworker, kind, payload) VALUES (?, 't', 'action', '{}')")
+      .run(ts);
+    return Number(info.lastInsertRowid);
+  }
+
+  it("writes the weekly rollup with level 2 and the distilled event id span", async () => {
+    const ctx = setup();
+    const now = new Date().toISOString();
+    const first = insertAction(ctx.events, now);
+    insertAction(ctx.events, now);
+    const last = insertAction(ctx.events, now);
+    llm.respondWith({ learnings: "- I noticed a pattern", rollup: "week rollup" });
+    await dreamOnce({ role, ...ctx, llm: llm.llm });
+    const r = ctx.memory
+      .prepare("SELECT level, parent_id, source_range FROM rollups WHERE period = 'week'")
+      .get() as Record<string, unknown>;
+    expect(r.level).toBe(2);
+    expect(r.parent_id).toBeNull();
+    expect(r.source_range).toBe(JSON.stringify([first, last]));
+  });
+
+  it("adopts day rollups inside the week and leaves outside/legacy rows unlinked", async () => {
+    const ctx = setup();
+    insertAction(ctx.events, new Date().toISOString());
+    const day = (startOffsetDays: number) => {
+      const start = new Date(Date.now() - startOffsetDays * 86400_000).toISOString();
+      const end = new Date(Date.now() - (startOffsetDays - 1) * 86400_000).toISOString();
+      const info = ctx.memory
+        .prepare(`INSERT INTO rollups (period, period_start, period_end, body, level, source_range)
+                  VALUES ('day', ?, ?, 'd', 1, NULL)`)
+        .run(start, end);
+      return Number(info.lastInsertRowid);
+    };
+    const inside = day(3);            // falls inside the 7-day dream window
+    const outside = day(20);          // older than the window — stays orphan
+    // Legacy day rollup with NULL level — must never be adopted.
+    const legacyInfo = ctx.memory
+      .prepare(`INSERT INTO rollups (period, period_start, period_end, body)
+                VALUES ('day', ?, ?, 'legacy')`)
+      .run(new Date(Date.now() - 2 * 86400_000).toISOString(), new Date().toISOString());
+    const legacy = Number(legacyInfo.lastInsertRowid);
+
+    llm.respondWith({ learnings: "- I noticed a pattern", rollup: "week rollup" });
+    await dreamOnce({ role, ...ctx, llm: llm.llm });
+
+    const week = ctx.memory
+      .prepare("SELECT id FROM rollups WHERE period = 'week'")
+      .get() as Record<string, unknown>;
+    const parentOf = (id: number) => {
+      const row = ctx.memory
+        .prepare("SELECT parent_id FROM rollups WHERE id = ?")
+        .get(id) as Record<string, unknown>;
+      return row.parent_id;
+    };
+    expect(parentOf(inside)).toBe(week.id);
+    expect(parentOf(outside)).toBeNull();
+    expect(parentOf(legacy)).toBeNull();
+  });
+});
