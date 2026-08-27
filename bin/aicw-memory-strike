@@ -1,0 +1,55 @@
+#!/usr/bin/env node
+// Strike MEMORY.md bullet(s) containing a text fragment (AIC-131).
+//
+// Usage:
+//   aicw memory-strike <coworker> <text-fragment>
+//
+// Removes every top-level bullet line of MEMORY.md that contains the
+// fragment (case-sensitive substring). A pre-strike snapshot is saved to
+// memory_versions (tag `strike-YYYY-MM-DD-before`, readable with
+// bin/memory-rollback.sh) and the strike is recorded in the dream diary.
+// Refuses — MEMORY.md untouched — when the fragment matches zero bullets or
+// more than five: a vague fragment must not quietly gut the semantic
+// memory.
+//
+// Exit codes: 0 struck · 1 refused (no match / too many matches / semantic
+// rejected) · 2 bad usage.
+
+import { join, dirname } from "node:path";
+import { existsSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { DatabaseSync } from "node:sqlite";
+
+const name = process.argv[2];
+const fragment = process.argv[3];
+if (!name || !fragment || !/^[a-zA-Z0-9_-]+$/.test(name)) {
+  process.stderr.write('usage: aicw memory-strike <coworker> <text-fragment>\n');
+  process.exit(2);
+}
+
+const root = join(dirname(fileURLToPath(import.meta.url)), "..");
+const coworkerDir = join(root, "coworkers", name);
+const memPath = join(coworkerDir, "state", "memory.db");
+if (!existsSync(memPath)) {
+  process.stderr.write(`aicw memory-strike: no memory.db for ${name} at ${memPath}\n`);
+  process.exit(1);
+}
+
+// See bin/aicw-memory-approve: the logic lives in src/runtime/reflect.ts.
+const { strikeMemoryBullets } = await import(join(root, "src/runtime/reflect.ts"));
+const { openSemantic } = await import(join(root, "src/runtime/semantic.ts"));
+
+const memory = new DatabaseSync(memPath);
+try {
+  const semantic = openSemantic(join(coworkerDir, "state", "memory", "MEMORY.md"));
+  const r = strikeMemoryBullets({
+    memory,
+    semantic,
+    role: { dir: join(coworkerDir, "role"), name },
+    fragment,
+  });
+  process.stdout.write(`${r.removed > 0 ? "struck" : "refused"}: ${r.reason}\n`);
+  process.exitCode = r.removed > 0 ? 0 : 1;
+} finally {
+  memory.close();
+}

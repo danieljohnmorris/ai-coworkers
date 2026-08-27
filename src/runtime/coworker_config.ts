@@ -25,6 +25,11 @@ export interface CoworkerConfig {
   max_tools_per_tick: number;
   pii_mask: boolean;
   note_require_signed: boolean;
+  // AIC-131 trust ladder for MEMORY.md promotions: "confident" (default —
+  // the reflect ritual applies low-loss promotions itself, unchanged
+  // behaviour) or "gated" (every promotion queues as a -candidate version
+  // for the owner to approve via bin/aicw memory-approve).
+  memory_promotions: "confident" | "gated";
   work_hours?: WorkHoursConfig;
 }
 
@@ -36,7 +41,8 @@ const ENV_MAP: Record<keyof CoworkerConfig, string> = {
   max_tools_per_tick: "MAX_TOOLS_PER_TICK",
   pii_mask: "PII_MASK",
   note_require_signed: "NOTE_REQUIRE_SIGNED",
-};
+  memory_promotions: "MEMORY_PROMOTIONS",
+}
 
 let cachedSchema: Record<string, unknown> | null = null;
 function loadSchema(): Record<string, unknown> {
@@ -55,6 +61,7 @@ function coerceEnv(key: keyof CoworkerConfig, raw: string): unknown {
   // Env values are always strings; coerce to the schema's target type.
   switch (key) {
     case "wake_mode":
+    case "memory_promotions":
       return raw;
     case "extract_entities":
     case "pii_mask":
@@ -76,7 +83,16 @@ function defaults(): CoworkerConfig {
     max_tools_per_tick: props.max_tools_per_tick.default as number,
     pii_mask: props.pii_mask.default as boolean,
     note_require_signed: props.note_require_signed.default as boolean,
+    memory_promotions: props.memory_promotions.default as CoworkerConfig["memory_promotions"],
   };
+}
+
+// AIC-131 — resolve the trust-ladder mode from an env string for call
+// sites that read env, not config (tick.ts's reflect dispatch). Anything
+// missing or unrecognised resolves to "confident": the knob is opt-in,
+// empty must mean unchanged behaviour.
+export function parseMemoryPromotions(raw: string | undefined): "confident" | "gated" {
+  return raw === "gated" ? "gated" : "confident";
 }
 
 export interface LoadCoworkerConfigOptions {

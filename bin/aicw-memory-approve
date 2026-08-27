@@ -1,0 +1,55 @@
+#!/usr/bin/env node
+// Approve the newest queued MEMORY.md promotion candidate (AIC-131).
+//
+// Usage:
+//   aicw memory-approve <coworker>
+//
+// The reflect ritual queues promotions it does not trust to apply itself
+// (the 25% loss guard, or memoryPromotions="gated") as `-candidate` rows in
+// memory_versions. This applies the newest one exactly the way a confident
+// in-ritual promotion would — before-snapshot, injection scan, size cap —
+// then retags it `-applied` so it leaves the queue. The queue is visible in
+// state/memory-map.md ("Queued promotions") and state/memory/DREAMS.md
+// ("QUEUED" entries).
+//
+// Exit codes: 0 applied · 1 nothing applied (empty queue / semantic
+// rejection) · 2 bad usage.
+
+import { join, dirname } from "node:path";
+import { existsSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { DatabaseSync } from "node:sqlite";
+
+const name = process.argv[2];
+if (!name || !/^[a-zA-Z0-9_-]+$/.test(name)) {
+  process.stderr.write("usage: aicw memory-approve <coworker>\n");
+  process.exit(2);
+}
+
+const root = join(dirname(fileURLToPath(import.meta.url)), "..");
+const coworkerDir = join(root, "coworkers", name);
+const memPath = join(coworkerDir, "state", "memory.db");
+if (!existsSync(memPath)) {
+  process.stderr.write(`aicw memory-approve: no memory.db for ${name} at ${memPath}\n`);
+  process.exit(1);
+}
+
+// The approve/strike logic lives next to the promotion path it mirrors
+// (src/runtime/reflect.ts) so there is one definition of "applied
+// normally". TypeScript module — Node's type stripping loads it directly.
+const { approvePendingPromotion } = await import(join(root, "src/runtime/reflect.ts"));
+const { openSemantic } = await import(join(root, "src/runtime/semantic.ts"));
+
+const memory = new DatabaseSync(memPath);
+try {
+  const semantic = openSemantic(join(coworkerDir, "state", "memory", "MEMORY.md"));
+  const r = approvePendingPromotion({
+    memory,
+    semantic,
+    role: { dir: join(coworkerDir, "role"), name },
+  });
+  process.stdout.write(`${r.applied ? "approved" : "not applied"}: ${r.reason}\n`);
+  process.exitCode = r.applied ? 0 : 1;
+} finally {
+  memory.close();
+}

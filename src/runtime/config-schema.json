@@ -34,6 +34,12 @@
       "default": false,
       "description": "Reject operator notes that lack a valid HMAC signature. Requires NOTE_HMAC_SECRET to be set; use bin/note-to.sh to write signed notes."
     },
+    "memory_promotions": {
+      "type": "string",
+      "enum": ["confident", "gated"],
+      "default": "confident",
+      "description": "Trust ladder for MEMORY.md promotions (AIC-131). 'confident' (default) — the weekly reflect ritual applies low-loss promotions itself, exactly as before; high-loss candidates queue as -candidate versions in memory_versions. 'gated' — every promotion queues as a -candidate and MEMORY.md is never touched in-ritual; approve with bin/aicw memory-approve. The queue is visible in state/memory-map.md and state/memory/DREAMS.md."
+    },
     "work_hours": {
       "type": "object",
       "additionalProperties": false,
