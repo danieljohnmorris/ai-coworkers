@@ -632,6 +632,7 @@ a promotion gate, a 25 %-loss guard, a version snapshot, and a
 rollup is written to `memory.db`, and raw events older than
 `REFLECT_RETENTION_DAYS` (default 30) are pruned.
 Events older than the retention window move to the events_archive table instead of being deleted; the hot FTS index covers the hot window only, and archived rows are reachable by id for the upcoming memory-ladder navigation (AIC-128).
+Rollups carry level, parent and an event-id source range, and decisions record the event ids they were distilled from; provenance that cannot be validated is written as NULL, never faked.
 
 Reflection ships as a built-in ritual (`reflect.weekly`, Sundays 03:00
 UTC) and applies to any coworker with no `role/rituals/` directory.
