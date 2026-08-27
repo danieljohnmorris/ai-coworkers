@@ -1206,7 +1206,7 @@ systemctl --user status  coworker@alex-triage.service
 </code></pre></div>
 <p>For the full structured event log (SQLite):</p>
 <div class="highlight"><pre><span></span><code>sqlite3 ~/ai-coworkers/coworkers/alex-triage/state/events.db \
-  &quot;SELECT ts, kind, substr(payload,1,150) FROM events ORDER BY id DESC LIMIT 20&quot;
+  "SELECT ts, kind, substr(payload,1,150) FROM events ORDER BY id DESC LIMIT 20"
 </code></pre></div>
 <h2 id="restart-on-failure-semantics">Restart-on-failure semantics<a class="headerlink" href="#restart-on-failure-semantics" title="Permanent link">&para;</a></h2>
 <p>The unit sets <code>Restart=on-failure</code> with <code>RestartSec=10s</code>. If the process exits

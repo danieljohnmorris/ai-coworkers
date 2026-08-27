@@ -593,6 +593,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#headlong-laude-institute" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Headlong (Laude Institute)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#openclaw-nanoclaw-soulclaw" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1227,6 +1238,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#headlong-laude-institute" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Headlong (Laude Institute)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#openclaw-nanoclaw-soulclaw" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1392,7 +1414,7 @@
 <p>An honest, non-marketing read of where ai-coworkers sits in a crowded
 space. Written for a visitor comparing frameworks; kept fair to each.
 If we're beaten on a dimension, we say so.</p>
-<p>Last refreshed: 2026-08-06.</p>
+<p>Last refreshed: 2026-08-27 (Headlong added; matrix column pending AIC-130).</p>
 <h2 id="the-one-sentence-positioning">The one-sentence positioning<a class="headerlink" href="#the-one-sentence-positioning" title="Permanent link">&para;</a></h2>
 <p><strong>ai-coworkers</strong> is a <strong>small, filesystem-first, tick-driven</strong> runtime
 for <strong>long-running AI agents with hard boundaries</strong>. It optimises for
@@ -1407,6 +1429,7 @@ If you want the widest coding-agent ecosystem → <strong>Claude Code / Codex / 
 If you want dozens of pre-built domain skills → <strong>Hermes</strong> (we import them).
 If you want incident response as a product → <strong>OpenSRE</strong>.
 If you want an opinionated multi-agent orchestrator → <strong>CrewAI / LangGraph</strong>.
+If you want an agent that thinks continuously and pings you when it decides to → <strong>Headlong</strong>.
 If you want a <strong>small forkable filesystem-first single-coworker runtime</strong> that
 gates every write against <code>BOUNDARIES.md</code>, escalates to a human inbox when
 unsure, and can be read end-to-end in an afternoon → <strong>ai-coworkers</strong>.</p>
@@ -1828,6 +1851,26 @@ per their AGENTS.md footguns ("do not reintroduce a planner denial").</p>
 <p><strong>Read our:</strong> <a href="../src/adapters/hermes.ts"><code>src/adapters/hermes.ts</code></a> — we
 load every Hermes skill as procedural memory. <code>bin/setup-gmail.sh</code> +
 <code>bin/setup-slack.sh</code> wrap their setup CLIs.</p>
+<h3 id="headlong-laude-institute">Headlong (Laude Institute)<a class="headerlink" href="#headlong-laude-institute" title="Permanent link">&para;</a></h3>
+<p><strong>Shape:</strong> Bash microharness (~10k lines) whose agent never sleeps. A Thinker
+loop generates the next thought, <code>shellm</code> (a recursive language model in Bash)
+executes bash blocks as the entire tool system, every run schedules its own
+next wake-up, and all humans share one thought stream over Slack/Telegram.
+Trajectory is a DAG of jsonl files; their progressive-resolution memory design
+is published but not yet implemented.</p>
+<p><strong>They win on:</strong> persistent agency as the default. The agent sets its own
+priorities and has produced unrequested, verified work — their Audel agent
+found and fixed an unwired recall process over 48 minutes, merged from the
+agent's own fork (their post, commit 80cbb1e). Agent self-modification of its
+own harness, and a team-presence feel no per-user-session harness has.</p>
+<p><strong>We win on:</strong> the quiet gate and boundaries. Headlong backs off when idle but
+never skips the model call ($1-2/hr reported); their own postmortem lists
+three accidental self-service-stops and a guard that over-matched neighbouring
+agents — failure classes our <code>BOUNDARIES.md</code> pre-execute checks and dry-run
+default exist to prevent. Priorities: theirs are agent-invented, ours are role
+docs a human writes.</p>
+<p><strong>Read our:</strong> <a href="../adr/0008-progressive-resolution-memory/">ADR 0008</a> — we
+adopt their ladder design on SQLite (AIC-127/128) and cut monologue ticks.</p>
 <h3 id="openclaw-nanoclaw-soulclaw">OpenClaw / NanoClaw / SoulClaw<a class="headerlink" href="#openclaw-nanoclaw-soulclaw" title="Permanent link">&para;</a></h3>
 <p><strong>Shape:</strong> OpenClaw = large agent monorepo (~500k LOC per README). NanoClaw
 = container-isolated lightweight fork ("understandability over features").
@@ -1922,6 +1965,9 @@ what a state machine would express, without you having to write one.</p>
   machine event log</li>
 <li><strong>Hermes</strong> — breadth of pre-built domain skills, agent-driven OAuth
   walkthroughs (we wrap theirs; we don't yet author our own)</li>
+<li><strong>Headlong</strong> — persistent agency as a default (agent-set priorities,
+  unrequested verified work), agent self-modification of its own harness,
+  single shared thought stream as team presence</li>
 <li><strong>NanoClaw</strong> — container isolation as the default primitive (we have
   it opt-in only)</li>
 <li><strong>OpenSRE</strong> — depth of observability integrations, size of scored

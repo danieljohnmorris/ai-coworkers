@@ -1198,8 +1198,8 @@ coworker can call from its normal deliberation loop.</p>
 </ul>
 <h3 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h3>
 <p>Set at least <code>ACP_AGENT_CMD</code> in the coworker's env (or globally):</p>
-<div class="highlight"><pre><span></span><code>ACP_AGENT_CMD=&quot;goose acp&quot;          # or &quot;claude-code --acp&quot; or &quot;codex acp&quot;
-ACP_ALLOW_KINDS=&quot;read,edit&quot;        # default; add &quot;execute&quot; carefully
+<div class="highlight"><pre><span></span><code>ACP_AGENT_CMD="goose acp"          # or "claude-code --acp" or "codex acp"
+ACP_ALLOW_KINDS="read,edit"        # default; add "execute" carefully
 ACP_TIMEOUT_MS=300000              # default 5 min per delegate call
 </code></pre></div>
 <p>The tool's default <code>cwd</code> is

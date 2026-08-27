@@ -10,7 +10,7 @@
       
       
       
-        <link rel="canonical" href="https://danieljohnmorris.github.io/ai-coworkers/coworker-builder-guide/">
+        <link rel="canonical" href="https://danieljohnmorris.github.io/ai-coworkers/adr/0008-progressive-resolution-memory/">
       
       
       
@@ -18,16 +18,16 @@
         
       
       
-      <link rel="icon" href="../assets/images/favicon.png">
+      <link rel="icon" href="../../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
     
     
       
-        <title>Coworker builder guide - ai-coworkers</title>
+        <title>ADR 0008 — progressive-resolution memory (the ladder) - ai-coworkers</title>
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
       
       
 
@@ -46,7 +46,7 @@
       
     
     
-    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -64,7 +64,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#coworker-builder-guide" class="md-skip">
+        <a href="#adr-0008-progressive-resolution-memory-the-ladder" class="md-skip">
           Skip to content
         </a>
       
@@ -80,7 +80,7 @@
 
 <header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href=".." title="ai-coworkers" class="md-header__button md-logo" aria-label="ai-coworkers" data-md-component="logo">
+    <a href="../.." title="ai-coworkers" class="md-header__button md-logo" aria-label="ai-coworkers" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -100,7 +100,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Coworker builder guide
+              ADR 0008 — progressive-resolution memory (the ladder)
             
           </span>
         </div>
@@ -190,7 +190,7 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href=".." title="ai-coworkers" class="md-nav__button md-logo" aria-label="ai-coworkers" data-md-component="logo">
+    <a href="../.." title="ai-coworkers" class="md-nav__button md-logo" aria-label="ai-coworkers" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -220,7 +220,7 @@
   
   
     <li class="md-nav__item">
-      <a href=".." class="md-nav__link">
+      <a href="../.." class="md-nav__link">
         
   
   
@@ -294,7 +294,7 @@
   
   
     <li class="md-nav__item">
-      <a href=".." class="md-nav__link">
+      <a href="../.." class="md-nav__link">
         
   
   
@@ -322,7 +322,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../contributing/" class="md-nav__link">
+      <a href="../../contributing/" class="md-nav__link">
         
   
   
@@ -404,7 +404,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../tool-cookbook/" class="md-nav__link">
+      <a href="../../tool-cookbook/" class="md-nav__link">
         
   
   
@@ -432,7 +432,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../migration/" class="md-nav__link">
+      <a href="../../migration/" class="md-nav__link">
         
   
   
@@ -460,7 +460,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../comparison/" class="md-nav__link">
+      <a href="../../comparison/" class="md-nav__link">
         
   
   
@@ -488,7 +488,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../dedicated-linear-user/" class="md-nav__link">
+      <a href="../../dedicated-linear-user/" class="md-nav__link">
         
   
   
@@ -570,7 +570,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../systemd/" class="md-nav__link">
+      <a href="../../systemd/" class="md-nav__link">
         
   
   
@@ -598,7 +598,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../multi-machine/" class="md-nav__link">
+      <a href="../../multi-machine/" class="md-nav__link">
         
   
   
@@ -626,7 +626,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../webhooks/" class="md-nav__link">
+      <a href="../../webhooks/" class="md-nav__link">
         
   
   
@@ -654,7 +654,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../release-process/" class="md-nav__link">
+      <a href="../../release-process/" class="md-nav__link">
         
   
   
@@ -736,7 +736,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../adr/0001-coala-memory-taxonomy/" class="md-nav__link">
+      <a href="../0001-coala-memory-taxonomy/" class="md-nav__link">
         
   
   
@@ -764,7 +764,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../adr/0002-acp-code-delegate/" class="md-nav__link">
+      <a href="../0002-acp-code-delegate/" class="md-nav__link">
         
   
   
@@ -792,7 +792,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../adr/0003-container-isolation/" class="md-nav__link">
+      <a href="../0003-container-isolation/" class="md-nav__link">
         
   
   
@@ -820,7 +820,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../adr/0004-events-db-single-file/" class="md-nav__link">
+      <a href="../0004-events-db-single-file/" class="md-nav__link">
         
   
   
@@ -848,7 +848,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../adr/0005-evaluators-services/" class="md-nav__link">
+      <a href="../0005-evaluators-services/" class="md-nav__link">
         
   
   
@@ -903,10 +903,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#what-is-a-coworker" class="md-nav__link">
+  <a href="#context" class="md-nav__link">
     <span class="md-ellipsis">
       
-        What is a coworker?
+        Context
       
     </span>
   </a>
@@ -914,10 +914,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#make-one" class="md-nav__link">
+  <a href="#decision" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Make one
+        Decision
       
     </span>
   </a>
@@ -925,10 +925,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#configure-it" class="md-nav__link">
+  <a href="#failure-modes-the-implementation-must-engineer-against" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Configure it
+        Failure modes the implementation must engineer against
       
     </span>
   </a>
@@ -936,10 +936,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#connect-a-service" class="md-nav__link">
+  <a href="#consequences" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Connect a service
+        Consequences
       
     </span>
   </a>
@@ -947,10 +947,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#watch-it-work" class="md-nav__link">
+  <a href="#not-doing" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Watch it work
+        Not doing
       
     </span>
   </a>
@@ -958,32 +958,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#when-it-goes-wrong" class="md-nav__link">
+  <a href="#reference" class="md-nav__link">
     <span class="md-ellipsis">
       
-        When it goes wrong
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#get-help-from-your-ai" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Get help from your AI
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#where-to-go-next" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Where to go next
+        Reference
       
     </span>
   </a>
@@ -1007,7 +985,7 @@
 
 
   
-    <a href="https://github.com/danieljohnmorris/ai-coworkers/edit/main/docs/coworker-builder-guide.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+    <a href="https://github.com/danieljohnmorris/ai-coworkers/edit/main/docs/adr/0008-progressive-resolution-memory.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
     </a>
@@ -1015,159 +993,98 @@
   
 
 
-<h1 id="coworker-builder-guide">Coworker builder guide<a class="headerlink" href="#coworker-builder-guide" title="Permanent link">&para;</a></h1>
-<p>This is the front door for people who want to <strong>build a coworker</strong> rather
-than work on the harness itself. No engineering background assumed. If you
-can edit a text file and paste a command into a terminal, you can get a
-coworker running.</p>
-<p>For the technical overview of the whole system, see <a href="../README.md">README.md</a>.
-For the AI assistant or engineer working alongside you, the setup guide is
-<a href="../AGENTS.md">AGENTS.md</a>.</p>
-<hr />
-<h2 id="what-is-a-coworker">What is a coworker?<a class="headerlink" href="#what-is-a-coworker" title="Permanent link">&para;</a></h2>
-<p>A coworker is a small autonomous helper that runs continuously in the
-background — like an intern who never sleeps. It watches the world through
-<strong>read-only sensors</strong> (your Linear tickets, your Slack mentions, a GitHub
-repo, a Gmail inbox), thinks about what it saw, and occasionally takes an
-action — <strong>but only within the boundaries you set</strong>. If it's unsure, it
-asks you. If it hits a limit, it stops. It leaves a trail so you can
-always see what it decided and why.</p>
-<p>Every coworker lives in its own directory. That directory holds a few
-markdown files describing who it is and what it may do, a JSON config for
-behavioural settings, and a <code>state/</code> folder where it keeps its notes and
-logs.</p>
-<h2 id="make-one">Make one<a class="headerlink" href="#make-one" title="Permanent link">&para;</a></h2>
-<p>Pick a starting template that resembles what you want:</p>
-<div class="highlight"><pre><span></span><code>cp -r examples/generic-triage coworkers/alex
-</code></pre></div>
-<p>The <code>examples/</code> folder has templates for ticket triage, PR review, project
-management, incident tracing, changelog writing, and a couple more. Copy
-the one closest to your intent and rename the copy.</p>
-<p>If you'd rather have the whole thing generated interactively — template
-choice, service integrations, and behaviour knobs — run the master
-wizard:</p>
-<div class="highlight"><pre><span></span><code>bin/aicw new alex --wizard
-</code></pre></div>
-<p>For a blank skeleton without the interview, drop the <code>--wizard</code>:</p>
-<div class="highlight"><pre><span></span><code>bin/aicw new alex
-</code></pre></div>
-<p>or the JD-style interview:</p>
-<div class="highlight"><pre><span></span><code>bin/aicw new-interview alex
-</code></pre></div>
-<p>If you scaffolded without <code>--wizard</code>, configure the coworker's behaviour
-after the fact:</p>
-<div class="highlight"><pre><span></span><code>bin/aicw configure alex
-</code></pre></div>
-<p>The older <code>bin/new-coworker.sh</code> and <code>bin/configure.sh</code> names still work
-via deprecated symlinks.</p>
-<p>The wizard walks you through each setting one at a time, shows you what it
-means, and offers a sensible default. Press Enter to accept a default;
-type a value to change it.</p>
-<h2 id="configure-it">Configure it<a class="headerlink" href="#configure-it" title="Permanent link">&para;</a></h2>
-<p>Two things you'll edit:</p>
-<p><strong>Behaviour</strong> — <code>coworkers/alex/config.json</code>. Managed by the wizard
-above. Controls things like how the coworker wakes up, how many tools it
-may call in one turn, whether it masks sensitive identifiers before
-thinking about them. You never have to hand-edit this file; the wizard
-does it for you.</p>
-<p><strong>Personality and authority</strong> — the markdown files under
-<code>coworkers/alex/role/</code>. These describe who the coworker is, what it owns,
-what it may decide alone versus escalate, what it must never touch, and
-what recurring rituals it runs (a daily standup summary, a weekly cleanup,
-etc.). Open them in any text editor and write in plain English. There is
-<strong>no compile step</strong> — save the file and the coworker picks up the change
-on its next tick.</p>
-<p><strong>Work hours (optional).</strong> By default a coworker is always on — it ticks
-around the clock, ready to react. If yours only needs to think during
-office hours, the wizard will offer to set a <code>work_hours</code> block: pick a
-timezone, weekdays, start/end times, and what should happen outside
-those hours. Three choices:</p>
+<h1 id="adr-0008-progressive-resolution-memory-the-ladder">ADR 0008 — progressive-resolution memory (the ladder)<a class="headerlink" href="#adr-0008-progressive-resolution-memory-the-ladder" title="Permanent link">&para;</a></h1>
+<p><strong>Status:</strong> Proposed (2026-08-27). Implementation starting under AIC-127/128.
+<strong>Tickets:</strong> <a href="https://plane.danieljohnmorris.com/dan/ai-coworkers/issues/127">AIC-127</a>
+(retention archive), <a href="https://plane.danieljohnmorris.com/dan/ai-coworkers/issues/128">AIC-128</a>
+(ladder + <code>mem.walk</code>), <a href="https://plane.danieljohnmorris.com/dan/ai-coworkers/issues/129">AIC-129</a>
+(this ADR).</p>
+<h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">&para;</a></h2>
+<p>Memory today is two columns that do not know about each other:</p>
+<ol>
+<li><strong>Curated semantic memory</strong> — <code>MEMORY.md</code> capped at 2 KB, distilled weekly by
+   the reflect ritual, plus <code>decisions</code>, <code>people</code>, <code>promises</code> tables. Decides what
+   matters. Loses everything nobody thought to keep.</li>
+<li><strong>Episodic rollups</strong> — <code>rollups</code> rows at day/week/month granularity over the
+   hot event window. Automatic. Cannot be navigated, and the raw events under
+   them are deleted after the retention window (<code>reflect.ts</code> prune cascading
+   into <code>events_fts</code>), so the ladder has no bottom rung at all.</li>
+</ol>
+<p>The trigger for this ADR was <a href="https://github.com/laude-institute/headlong">Headlong</a>
+(Laude Institute, August 2026): a Bash runtime whose agent thinks continuously,
+and whose published design doc,
+<a href="https://github.com/laude-institute/headlong/blob/main/design/unified_progressive_resolution_memory.md"><code>unified_progressive_resolution_memory.md</code></a>,
+describes exactly the structure we lack: every memory entry at a resolution
+level, linked to coarser summaries above and finer detail below, navigated
+top-down at roughly 10 summaries per level (log-scale cost). Their doc is
+marked NOT YET IMPLEMENTED; their production memory has the same two
+disconnected columns ours does. We implement the design on SQLite first.</p>
+<p>A vetting pass against the project's positioning (quiet gate, Hermes-community
+funnel, small forkable harness) set the decisions below.</p>
+<h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
+<ol>
+<li><strong>Adopt the ladder, as one deliverable</strong> (AIC-128): schema links
+   (<code>rollups.level</code>, <code>parent_id</code>, source event ranges; decisions record source
+   event-ids) plus the <code>mem.walk</code> drill-down tool (FTS5 entry point → coarsest
+   summaries → children → raw events) plus a navigation skill. The schema alone
+   ships nothing; the tool alone cannot navigate; they land together with an
+   explicit refusal path when no entry point is confident.</li>
+<li><strong>Archive before building</strong> (AIC-127): replace the retention delete with an
+   <code>events_archive</code> table. The ladder is worthless if level 0 is gone; a
+   product pitched on auditability must not delete its own audit trail.</li>
+<li><strong>Ship the navigation pattern as a standalone Hermes skill</strong> (inside
+   AIC-128): genericized drill-down recall over notes, reference implementation
+   against our schema. It is the inbound item for the Hermes community and
+   follows the adapters-not-plugin-formats thesis.</li>
+<li><strong>Frequent tier-1 sealing: DEFERRED.</strong> Hourly cheap-model sealing of small
+   blocks adds background token spend to a product whose pitch is that most
+   ticks never reach the model. Day/week/month + raw is a four-rung ladder,
+   enough to validate drill-down. Revisit only if AIC-128 usage telemetry shows
+   the day rung is too coarse.</li>
+<li><strong>Monologue / always-think ticks: CUT.</strong> An opt-in idle rumination mode is
+   the one item that contradicts the sharpest row in <code>docs/comparison.md</code>
+   ("decides when NOT to act"). Converters arrive from chat-native
+   always-thinking agents; shipping one says the boundaries story was a phase.
+   The honest version of initiative already exists: human-authored scheduled
+   rituals. If quiet gaps later prove to miss things, the answer is better
+   rollups, not self-talk.</li>
+</ol>
+<h2 id="failure-modes-the-implementation-must-engineer-against">Failure modes the implementation must engineer against<a class="headerlink" href="#failure-modes-the-implementation-must-engineer-against" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong><code>webhook_only</code></strong> — outside hours the scheduled tick loop sleeps
-  (24-hour idle). Webhooks, rituals and time-based promises still fire.
-  Good for a coworker whose only out-of-hours job is "react to an alert".</li>
-<li><strong><code>reduced</code></strong> — outside hours the minimum time between ticks is
-  clamped (default 60 minutes). Good for background maintenance.</li>
-<li><strong><code>normal</code></strong> — the block is informational; cadence is unchanged.
-  Useful if you just want the hours recorded but no scheduler change.</li>
+<li><strong>Link rot:</strong> LLM-written rollups citing wrong or nonexistent event ranges.
+  Validate ranges at write time; never synthesise provenance for legacy
+  backfill — unlinked old entries are honest, faked links are not.</li>
+<li><strong>Confident-wrong recall:</strong> an FTS keyword miss walking down the wrong branch
+  with authoritative-looking citations. <code>mem.walk</code> must refuse when it has no
+  confident entry point.</li>
 </ul>
-<p>Leaving <code>work_hours</code> unset means 24/7, exactly as it was. Webhooks,
-rituals and due promises fire regardless of the window — work_hours
-only ever slows down the <em>unprompted</em> tick loop.</p>
-<p>The most important role file is <code>BOUNDARIES.md</code>. Read it. Adjust it. This
-is where you tell the coworker what it must never do (delete tickets,
-send emails on your behalf, touch a particular project) and where you
-cap its resources (max LLM calls per day, max background jobs). The
-coworker checks every action against this file before running it.</p>
-<h2 id="connect-a-service">Connect a service<a class="headerlink" href="#connect-a-service" title="Permanent link">&para;</a></h2>
-<p>Coworkers can talk to Linear, Slack, Gmail, GitHub, and anything with an
-MCP server. Each service has its own setup script:</p>
-<div class="highlight"><pre><span></span><code>bin/aicw slack alex
-bin/aicw gmail alex
-
-# For any other MCP server, webhook, or sensor, use the generic wizards:
-bin/aicw connect alex &lt;server-name&gt;       # add an MCP server to .env
-bin/aicw webhook alex &lt;name&gt;              # declare an inbound webhook
-bin/aicw sensors alex &lt;name&gt;              # declare a declarative MCP sensor
-</code></pre></div>
-<p>Linear is set up by editing <code>coworkers/alex/.env</code> and adding an MCP
-server line — the coworker's first tick prints a URL you open in a
-browser to authorise. See AGENTS.md for the exact snippet.</p>
-<p>Secrets (API keys, tokens) always go in the coworker's <code>.env</code> file, never
-in <code>config.json</code>. The setup scripts handle this for you.</p>
-<h2 id="watch-it-work">Watch it work<a class="headerlink" href="#watch-it-work" title="Permanent link">&para;</a></h2>
-<p>Start the coworker in safe mode (nothing it does will actually happen —
-you see what it <em>would</em> have done):</p>
-<div class="highlight"><pre><span></span><code>node --experimental-strip-types --no-warnings src/index.ts alex
-</code></pre></div>
-<p>While it's running, in another terminal:</p>
-<div class="highlight"><pre><span></span><code>bin/aicw status alex
-tail -f coworkers/alex/state/highlights.log
-</code></pre></div>
-<p><code>aicw status</code> gives you a one-shot summary — is it running, is it live or
-dry-run, how many ticks today, what did it last do. <code>highlights.log</code>
-scrolls its thoughts and actions in near-real-time.</p>
-<p>Once you trust it, promote it to live by adding <code>--live</code> on the command
-line. Watch it for a day in dry-run first. There's no rush.</p>
-<h2 id="when-it-goes-wrong">When it goes wrong<a class="headerlink" href="#when-it-goes-wrong" title="Permanent link">&para;</a></h2>
-<p><strong>The coworker asks you a question.</strong> Answer with:</p>
-<div class="highlight"><pre><span></span><code>bin/answer.sh alex "yes, go ahead"
-</code></pre></div>
-<p>The next tick, it picks up your reply and continues.</p>
-<p><strong>You want to know why it did something.</strong> Check the highlights log for
-the decision, then check the events database:</p>
-<div class="highlight"><pre><span></span><code>sqlite3 coworkers/alex/state/events.db \
-  "SELECT ts, kind, substr(payload,1,200) FROM events ORDER BY id DESC LIMIT 20"
-</code></pre></div>
-<p>Every deliberation, every proposed action, every boundary check, every
-sensor read is in there.</p>
-<p><strong>A boundary blocked it.</strong> You'll see a <code>boundary.block</code> line in the
-highlights log with the reason. Either the coworker was about to do the
-right thing and your boundary is too tight, or the coworker was about to
-do the wrong thing and the boundary saved you. Read <code>BOUNDARIES.md</code> and
-decide.</p>
-<p><strong>Something crashed before the log started.</strong> Check
-<code>coworkers/alex/state/crash.log</code>.</p>
-<h2 id="get-help-from-your-ai">Get help from your AI<a class="headerlink" href="#get-help-from-your-ai" title="Permanent link">&para;</a></h2>
-<p>Any modern AI coding assistant — Claude Code, Cursor, GPT — can read this
-repo cold and help you configure a coworker. Point it at:</p>
+<h2 id="consequences">Consequences<a class="headerlink" href="#consequences" title="Permanent link">&para;</a></h2>
+<p><strong>+</strong> "Auditable actions" extends to "auditable memory": a coworker can answer
+why it remembers something by walking month → week → day → the exact raw
+events, every step an audit row. No surveyed framework ships this today.</p>
+<p><strong>+</strong> The Hermes skill turns the differentiator into a funnel artifact.</p>
+<p><strong>−</strong> <code>events.db</code> grows monotonically (bounded by event size; archival table
+documented with a manual purge path). WAL checkpoint discipline added in
+AIC-127.</p>
+<p><strong>−</strong> Two more schema fields and one tool on the reader's plate; the
+navigation skill must stay one page.</p>
+<h2 id="not-doing">Not doing<a class="headerlink" href="#not-doing" title="Permanent link">&para;</a></h2>
 <ul>
-<li><code>src/runtime/config-schema.json</code> for the list of every behavioural knob,
-  what it does, and what values it accepts. The assistant can write a
-  valid <code>config.json</code> from this alone.</li>
-<li><code>AGENTS.md</code> for the deeper technical view of how the harness works.</li>
-<li>The <code>role/*.md</code> files under <code>examples/</code> for reference personalities and
-  boundary shapes worth copying.</li>
+<li>Continuous background thinking (see Decision 5).</li>
+<li>Replacing FTS5 with embeddings as the entry point. Wrong-entry-point
+  mitigation is the refusal path, not a vector index; revisit with evidence.</li>
+<li>Same-level <code>related</code> links (Headlong's phase 5). The drill-down skill can
+  discover siblings under a shared parent without stored edges.</li>
 </ul>
-<p>You do not have to learn how the harness works. Describe what you want
-the coworker to do; let your assistant translate that into the right
-files.</p>
-<h2 id="where-to-go-next">Where to go next<a class="headerlink" href="#where-to-go-next" title="Permanent link">&para;</a></h2>
+<h2 id="reference">Reference<a class="headerlink" href="#reference" title="Permanent link">&para;</a></h2>
 <ul>
-<li>Deeper technical overview: <a href="../README.md">README.md</a>.</li>
-<li>For your AI assistant or an engineer: <a href="../AGENTS.md">AGENTS.md</a>.</li>
-<li>Why config is split between <code>.env</code> and <code>config.json</code>:
-  <a href="../adr/0007-config-file-vs-env-vars/">ADR 0007</a>.</li>
+<li>Headlong design doc (source of the ladder, levels, and cost model):
+  <code>design/unified_progressive_resolution_memory.md</code> in the Headlong repo.</li>
+<li>Comparison context: <a href="../../comparison/">docs/comparison.md</a> (Headlong section
+  added alongside this ADR).</li>
+<li>Related ADRs: <a href="../0001-coala-memory-taxonomy/">0001 memory taxonomy</a>,
+  <a href="../0004-events-db-single-file/">0004 events.db single file</a>,
+  <a href="../0005-evaluators-services/">0005 evaluators + services</a>.</li>
 </ul>
 
 
@@ -1224,10 +1141,10 @@ files.</p>
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.instant", "navigation.tracking", "navigation.top", "content.code.copy", "content.action.edit"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.instant", "navigation.tracking", "navigation.top", "content.code.copy", "content.action.edit"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
       
     
   </body>

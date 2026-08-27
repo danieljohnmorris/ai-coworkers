@@ -1121,7 +1121,7 @@ are deleted.</p>
 <li>Add the Linear MCP server entry to the coworker's <code>.env</code> (see the
    <a href="../AGENTS.md#oauth-based-mcp-servers">OAuth-based MCP servers section of AGENTS.md</a>):</li>
 </ol>
-<div class="highlight"><pre><span></span><code>MCP_SERVERS=&#39;[{&quot;name&quot;:&quot;linear&quot;,&quot;url&quot;:&quot;https://mcp.linear.app/mcp&quot;,&quot;oauth&quot;:{&quot;scopes&quot;:[&quot;read&quot;,&quot;write&quot;]}}]&#39;
+<div class="highlight"><pre><span></span><code>MCP_SERVERS='[{"name":"linear","url":"https://mcp.linear.app/mcp","oauth":{"scopes":["read","write"]}}]'
 </code></pre></div>
 <ol>
 <li>Start the coworker. On first tick it will print an authorization URL

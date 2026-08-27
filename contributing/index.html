@@ -1233,7 +1233,7 @@ optional dependencies on every <code>npm install</code>, which silently breaks i
 on Alpine. CI regenerates the lockfile and fails on any difference.</p>
 <div class="highlight"><pre><span></span><code>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/danieljohnmorris/ai-coworkers
 <span class="nb">cd</span><span class="w"> </span>ai-coworkers
-npm<span class="w"> </span>i<span class="w"> </span>-g<span class="w"> </span><span class="s2">&quot;npm@</span><span class="k">$(</span>node<span class="w"> </span>-p<span class="w"> </span><span class="s2">&quot;require(&#39;./package.json&#39;).packageManager.split(&#39;@&#39;)[1]&quot;</span><span class="k">)</span><span class="s2">&quot;</span>
+npm<span class="w"> </span>i<span class="w"> </span>-g<span class="w"> </span><span class="s2">"npm@</span><span class="k">$(</span>node<span class="w"> </span>-p<span class="w"> </span><span class="s2">"require('./package.json').packageManager.split('@')[1]"</span><span class="k">)</span><span class="s2">"</span>
 npm<span class="w"> </span>install
 npm<span class="w"> </span><span class="nb">test</span><span class="w">              </span><span class="c1"># 735 tests, ~3s</span>
 npm<span class="w"> </span>run<span class="w"> </span>test:cov<span class="w">      </span><span class="c1"># ~98% line coverage</span>

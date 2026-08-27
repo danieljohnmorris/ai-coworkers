@@ -1350,7 +1350,7 @@ outbound message before it leaves the process."</p>
 <h3 id="proposed-shape">Proposed shape<a class="headerlink" href="#proposed-shape" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="k">export</span><span class="w"> </span><span class="kd">interface</span><span class="w"> </span><span class="nx">Evaluator</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="nx">name</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="p">;</span>
-<span class="w">  </span><span class="c1">// Fires after each tool call in the tick&#39;s chain, before the outcome</span>
+<span class="w">  </span><span class="c1">// Fires after each tool call in the tick's chain, before the outcome</span>
 <span class="w">  </span><span class="c1">// is written to events.db. May transform the outcome (redaction),</span>
 <span class="w">  </span><span class="c1">// may return { block: true } to short-circuit further chained calls,</span>
 <span class="w">  </span><span class="c1">// may push its own events. Errors are logged, not thrown — an</span>
@@ -1365,7 +1365,7 @@ outbound message before it leaves the process."</p>
 <span class="w">    </span><span class="o">|</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">outcome?</span><span class="o">:</span><span class="w"> </span><span class="kt">unknown</span><span class="p">;</span><span class="w"> </span><span class="nx">block?</span><span class="o">:</span><span class="w"> </span><span class="kt">boolean</span><span class="p">;</span><span class="w"> </span><span class="nx">note?</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="w"> </span><span class="p">}</span>
 <span class="w">  </span><span class="o">&gt;</span><span class="p">;</span>
 <span class="w">  </span><span class="c1">// Optional: fires when the boundary layer rejects an action. Useful</span>
-<span class="w">  </span><span class="c1">// for a &quot;why did we get blocked&quot; observability evaluator.</span>
+<span class="w">  </span><span class="c1">// for a "why did we get blocked" observability evaluator.</span>
 <span class="w">  </span><span class="nx">onBoundaryBlock</span><span class="o">?</span><span class="p">(</span><span class="nx">evt</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="nx">tool</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="p">;</span>
 <span class="w">    </span><span class="nx">input</span><span class="o">:</span><span class="w"> </span><span class="kt">unknown</span><span class="p">;</span>
@@ -1374,8 +1374,8 @@ outbound message before it leaves the process."</p>
 <span class="p">}</span>
 </code></pre></div>
 <p>Register evaluators alongside tools in <code>src/index.ts</code>:</p>
-<div class="highlight"><pre><span></span><code><span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">redactPII</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s2">&quot;./evaluators/redact.ts&quot;</span><span class="p">;</span>
-<span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">costAttribution</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s2">&quot;./evaluators/cost.ts&quot;</span><span class="p">;</span>
+<div class="highlight"><pre><span></span><code><span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">redactPII</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s2">"./evaluators/redact.ts"</span><span class="p">;</span>
+<span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">costAttribution</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s2">"./evaluators/cost.ts"</span><span class="p">;</span>
 <span class="kd">const</span><span class="w"> </span><span class="nx">evaluators</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="nx">redactPII</span><span class="p">,</span><span class="w"> </span><span class="nx">costAttribution</span><span class="p">];</span>
 </code></pre></div>
 <p>Tick loop wires them at the two existing hook points (<code>log.event("action",
@@ -1421,8 +1421,8 @@ becomes part of perception directly.</p>
 <span class="p">}</span>
 </code></pre></div>
 <p>Register in <code>src/index.ts</code>:</p>
-<div class="highlight"><pre><span></span><code><span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">slackSocketService</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s2">&quot;./services/slack_socket.ts&quot;</span><span class="p">;</span>
-<span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">githubWebhookService</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s2">&quot;./services/github_webhook.ts&quot;</span><span class="p">;</span>
+<div class="highlight"><pre><span></span><code><span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">slackSocketService</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s2">"./services/slack_socket.ts"</span><span class="p">;</span>
+<span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">githubWebhookService</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s2">"./services/github_webhook.ts"</span><span class="p">;</span>
 <span class="kd">const</span><span class="w"> </span><span class="nx">services</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="nx">slackSocketService</span><span class="p">,</span><span class="w"> </span><span class="nx">githubWebhookService</span><span class="p">];</span>
 </code></pre></div>
 <p><code>src/index.ts</code> calls <code>start()</code> for each after the tick loop's <code>while</code>

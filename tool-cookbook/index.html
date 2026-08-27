@@ -1334,11 +1334,11 @@ before you flip a coworker to <code>--live</code>.</p>
 ships servers for most APIs. We spawn them as subprocesses via
 <code>src/adapters/mcp.ts</code>; their tools land in the registry with the
 declared prefix.</p>
-<div class="highlight"><pre><span></span><code>MCP_SERVERS=&#39;[
-  {&quot;name&quot;:&quot;gdrive&quot;,&quot;command&quot;:&quot;npx&quot;,&quot;args&quot;:[&quot;-y&quot;,&quot;@modelcontextprotocol/server-gdrive&quot;]},
-  {&quot;name&quot;:&quot;pg&quot;,&quot;command&quot;:&quot;npx&quot;,&quot;args&quot;:[&quot;-y&quot;,&quot;@modelcontextprotocol/server-postgres&quot;,&quot;postgresql://...&quot;]},
-  {&quot;name&quot;:&quot;fs&quot;,&quot;command&quot;:&quot;npx&quot;,&quot;args&quot;:[&quot;-y&quot;,&quot;@modelcontextprotocol/server-filesystem&quot;,&quot;/scoped/path&quot;]}
-]&#39;
+<div class="highlight"><pre><span></span><code>MCP_SERVERS='[
+  {"name":"gdrive","command":"npx","args":["-y","@modelcontextprotocol/server-gdrive"]},
+  {"name":"pg","command":"npx","args":["-y","@modelcontextprotocol/server-postgres","postgresql://..."]},
+  {"name":"fs","command":"npx","args":["-y","@modelcontextprotocol/server-filesystem","/scoped/path"]}
+]'
 </code></pre></div>
 <p><strong>OAuth caveat.</strong> MCP servers are subprocesses; they can't do a browser
 OAuth flow while running headless. For Google APIs you have to do the
@@ -1378,7 +1378,7 @@ need features the native path does not cover.</p>
 (see <a href="../src/runtime/credentials.ts"><code>src/runtime/credentials.ts</code></a>).
 MCP servers currently receive the whole coworker env — scope
 sensitive tokens inside the MCP block's own <code>env</code>:</p>
-<div class="highlight"><pre><span></span><code>{&quot;name&quot;:&quot;gmail&quot;,&quot;command&quot;:&quot;npx&quot;,&quot;args&quot;:[...], &quot;env&quot;:{&quot;GMAIL_OAUTH_TOKEN&quot;:&quot;...&quot;}}
+<div class="highlight"><pre><span></span><code>{"name":"gmail","command":"npx","args":[...], "env":{"GMAIL_OAUTH_TOKEN":"..."}}
 </code></pre></div>
 <p>Hermes skills that run scripts inherit <code>HERMES_HOME</code> and any env the
 operator has set — same rule: don't put secrets in the coworker's own

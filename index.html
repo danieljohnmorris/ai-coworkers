@@ -1597,8 +1597,8 @@ resets it:</p>
 <div class="highlight"><pre><span></span><code>[09:14:11] alex-triage activity resumed — interval reset to 60s
 [09:14:13] alex-triage 💭 New bug report, no repro steps. Asking rather
                        than guessing at the browser.
-[09:14:13] alex-triage [LIVE] → mcp.linear.create_comment: {&quot;issueId&quot;:&quot;e6ce...&quot;,
-                       &quot;body&quot;:&quot;Which browser were you on?&quot;}
+[09:14:13] alex-triage [LIVE] → mcp.linear.create_comment: {"issueId":"e6ce...",
+                       "body":"Which browser were you on?"}
 </code></pre></div>
 <p>The <code>💭</code> lines are the coworker's own reasoning. It asked rather than guessed
 because <a href="examples/generic-triage/role/BOUNDARIES.md"><code>BOUNDARIES.md</code></a> does not
@@ -1612,8 +1612,8 @@ let it invent a label.</p>
 <div class="highlight"><pre><span></span><code>OLLAMA_API_KEY=...    # or any OpenAI-compatible endpoint
 COWORKER_MODEL=...    # optional, main model, defaults to gemma4:cloud
 TRIAGE_MODEL=...      # optional, cheap-first preflight; when set,
-                      #   every tick asks this small model &quot;act or
-                      #   skip?&quot; before spending the expensive prompt
+                      #   every tick asks this small model "act or
+                      #   skip?" before spending the expensive prompt
 METRICS_ENABLED=1     # optional, expose Prometheus /metrics on WAKE_PORT
 </code></pre></div>
 <p>Run it:</p>
@@ -1705,10 +1705,10 @@ npm<span class="w"> </span>run<span class="w"> </span>coworker<span class="w"> <
 <div class="highlight"><pre><span></span><code>[22:57:51] 📬 note from manager: The linear.set_labels tool is fixed.
                                 Please retry TRIAGE-42.
 [22:57:54] 💭 Manager confirmed linear.set_labels is fixed. TRIAGE-42
-             (webhook adapter) needs &#39;Feature&#39; label. I have the UUID
+             (webhook adapter) needs 'Feature' label. I have the UUID
              and label ID from previous failed attempts. Retrying now.
-[22:57:54] → linear.set_labels: {&quot;issueId&quot;:&quot;e6ce...&quot;,&quot;labelIds&quot;:[&quot;98d9...&quot;]}
-[22:57:56] 💭 TRIAGE-42 labeled &#39;Feature&#39; successfully. Backlog catch-up
+[22:57:54] → linear.set_labels: {"issueId":"e6ce...","labelIds":["98d9..."]}
+[22:57:56] 💭 TRIAGE-42 labeled 'Feature' successfully. Backlog catch-up
              continues, but this specific task is done.
 </code></pre></div>
 <p><code>💭</code> lines are the coworker's private thoughts, a running notebook that
@@ -1748,7 +1748,7 @@ human can skim.</p>
     ROLE.md            who they are, working style
     RESPONSIBILITIES.md  what they own
     AUTHORITY.md       decide alone vs escalate
-    BOUNDARIES.md      hard &quot;must not touch&quot; + resource caps
+    BOUNDARIES.md      hard "must not touch" + resource caps
     RITUALS.md         recurring behaviors + tempo targets
     WORKSPACE.md       stable facts about the world
     TOOLS.md           which tools they may use
@@ -1784,10 +1784,10 @@ reach the target system. Coworkers get promoted to <code>--live</code> independe
 <hr />
 <h2 id="humans-coworker">Humans ↔ coworker<a class="headerlink" href="#humans-coworker" title="Permanent link">&para;</a></h2>
 <p><strong>You → coworker.</strong> Leaves a note that surfaces in the next tick's prompt:
-<div class="highlight"><pre><span></span><code>bin/aicw<span class="w"> </span>note<span class="w"> </span>alex-triage<span class="w"> </span><span class="s2">&quot;Prioritise ILO parser bugs today&quot;</span>
+<div class="highlight"><pre><span></span><code>bin/aicw<span class="w"> </span>note<span class="w"> </span>alex-triage<span class="w"> </span><span class="s2">"Prioritise ILO parser bugs today"</span>
 </code></pre></div></p>
 <p><strong>Coworker → you.</strong> A persistent question log they see until answered:
-<div class="highlight"><pre><span></span><code>bin/aicw<span class="w"> </span>answer<span class="w"> </span>alex-triage<span class="w"> </span><span class="s2">&quot;Keep it as perf, don&#39;t split yet.&quot;</span>
+<div class="highlight"><pre><span></span><code>bin/aicw<span class="w"> </span>answer<span class="w"> </span>alex-triage<span class="w"> </span><span class="s2">"Keep it as perf, don't split yet."</span>
 </code></pre></div></p>
 <p><strong>Coworker → coworker / Slack / GitHub.</strong> One <code>ask</code> tool with
 <code>to="manager"</code> · <code>to="coworker:sam"</code> · <code>to="slack:#triage"</code> ·
@@ -1867,9 +1867,9 @@ these are the human-facing halves it plugs into:</p>
   hands them coding work over ACP via <code>code.delegate</code>.</li>
 </ul>
 <p><strong>Verify setup landed:</strong>
-<div class="highlight"><pre><span></span><code>bin/aicw<span class="w"> </span>verify-gmail<span class="w"> </span>&lt;coworker&gt;<span class="w">    </span><span class="c1"># runs one &#39;in:inbox&#39; read via Hermes google_api.py</span>
-bin/aicw<span class="w"> </span>verify-slack<span class="w"> </span>&lt;coworker&gt;<span class="w">    </span><span class="c1"># calls Slack auth.test with the coworker&#39;s token</span>
-<span class="c1"># For Linear: check stream.log for &quot;mcp: connected linear (N tools)&quot;</span>
+<div class="highlight"><pre><span></span><code>bin/aicw<span class="w"> </span>verify-gmail<span class="w"> </span>&lt;coworker&gt;<span class="w">    </span><span class="c1"># runs one 'in:inbox' read via Hermes google_api.py</span>
+bin/aicw<span class="w"> </span>verify-slack<span class="w"> </span>&lt;coworker&gt;<span class="w">    </span><span class="c1"># calls Slack auth.test with the coworker's token</span>
+<span class="c1"># For Linear: check stream.log for "mcp: connected linear (N tools)"</span>
 <span class="c1"># and coworkers/&lt;coworker&gt;/state/mcp-tokens/linear.json existence.</span>
 </code></pre></div></p>
 <hr />
@@ -1895,7 +1895,7 @@ bin/aicw<span class="w"> </span>new-interview<span class="w"> </span>&lt;name&gt
 <div class="highlight"><pre><span></span><code>tail<span class="w"> </span>-f<span class="w"> </span>coworkers/&lt;name&gt;/state/highlights.log<span class="w">   </span><span class="c1"># actions + thoughts + escalations</span>
 tail<span class="w"> </span>-f<span class="w"> </span>coworkers/&lt;name&gt;/state/stream.log<span class="w">       </span><span class="c1"># everything</span>
 sqlite3<span class="w"> </span>coworkers/&lt;name&gt;/state/events.db<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span><span class="s2">&quot;SELECT ts, kind, substr(payload,1,150) FROM events ORDER BY id DESC LIMIT 20&quot;</span>
+<span class="w">  </span><span class="s2">"SELECT ts, kind, substr(payload,1,150) FROM events ORDER BY id DESC LIMIT 20"</span>
 
 node<span class="w"> </span>--experimental-strip-types<span class="w"> </span>src/dashboard.ts<span class="w">     </span><span class="c1"># fleet view on :7777</span>
 </code></pre></div>
