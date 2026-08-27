@@ -4,7 +4,7 @@ An honest, non-marketing read of where ai-coworkers sits in a crowded
 space. Written for a visitor comparing frameworks; kept fair to each.
 If we're beaten on a dimension, we say so.
 
-Last refreshed: 2026-08-27 (Headlong added; matrix column pending AIC-130).
+Last refreshed: 2026-08-27 (Headlong added).
 
 ## The one-sentence positioning
 
@@ -31,32 +31,32 @@ unsure, and can be read end-to-end in an afternoon → **ai-coworkers**.
 
 Legend: ✓ present · ~ partial · — absent · ? not documented
 
-| | ai-coworkers | QM | Buzz | Hermes | OpenClaw / NanoClaw | Vercel Eve | ElizaOS | OpenSRE | Anthropic MA | CrewAI | LangGraph |
-|---|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
-| **Runtime shape** | tick loop | headless core + pluggable harness | chat/rooms | request/response | message-dispatch | request/response | event loop | alert-driven | scheduler + reactive | task DAG | graph traversal |
-| **Decides when NOT to act** | ✓ quiet gate + adaptive backoff | — | — | — | — | — | — | — | ~ scheduler idle | — | — |
-| **Filesystem-first config** | ✓ `role/*.md` | — (Postgres) | — (Nostr events) | ✓ SKILL.md files | ✓ SOUL.md / AGENTS.md | ✓ `agent/` folder | — (plugin registry) | ~ .env + Python | ~ config JSON | — (Python code) | — (Python code) |
-| **Hard boundary regex + dry-run default** | ✓ | ~ Strict / Auto / Dangerous baseline modes | — (identity scopes) | — | ~ (NanoClaw containers) | — | — | — (deliberately, per AGENTS.md) | ~ tool permissions | — | — |
-| **Multi-tier memory** | ✓ 6-tier (CoALA) | ~ per-scope | ~ event log | ~ MEMORY.md + skills | ~ 4-tier (SoulClaw fork) | ~ instructions.md | ~ providers | ~ session | ~ dreaming | ~ shared | ~ state graph |
-| **Reflect / dreaming ritual** | ✓ weekly compact + citations | ? | — | ✓ | ~ | — | ~ evaluators | — | ✓ dreaming pass | — | — |
-| **Human ↔ agent channels** | ✓ inbox + questions + reactions + signed notes | ✓ Slack + web UI + admin | ✓ chat rooms | ~ chat surfaces | ~ platform adapters | ~ HTTP/Slack channels | ~ | ~ Slack / PD / Telegram | ✓ | — | — |
-| **Cross-framework artifact import** | ✓ Hermes / OpenClaw / Eve loaders | ✓ Pi / OpenCode / Codex / Claude Code as harness | — | — | — | — | — | — | — | — | — |
-| **ACP (coding-agent) protocol** | ✓ client | ~ (via harness plugins) | ✓ (buzz-cli harness) | ✓ via skills | ~ | — | — | ✓ | — | — | — |
-| **MCP tool protocol** | ✓ client | ✓ | ✓ | ✓ | ✓ | ~ | ~ | ✓ | ✓ | — | ~ |
-| **Per-tool credential filtering** | ✓ `requiresCreds` | ✓ per-scope | ~ identity scopes | ~ | ~ | — | — | — | ? | — | — |
-| **Secret redaction at persistence** | ✓ same list as pre-commit hook | ~ content-screening | ? | ? | ? | ? | ? | ~ PII masking | ? | ? | ? |
-| **Reversible identifier masking pre-LLM** | ✓ opt-in `PII_MASK=1` | ? | — | — | — | — | — | ✓ (their original idea) | ? | — | — |
-| **Subprocess sandbox for delegated agents** | ✓ bwrap / firejail | ✓ per-scope sandbox (first-class) | ? | ? | ✓ containers (NanoClaw) | — | — | ~ platform/sandbox/ | ? | — | — |
-| **Rate-limit awareness per external API** | ✓ | ? | ? | ? | ? | ? | ? | ? | ? | ? | ? |
-| **Prometheus metrics endpoint** | ✓ | ? | ? | ? | ? | ? | ? | ~ opt-out PostHog | ? | ? | ? |
-| **Scored benchmark of agent behaviour** | ✓ small (3 scenarios) | ? | — | — | — | — | — | ✓ big (tests/synthetic/) | ? | — | — |
-| **Long-running-agent focus** | ✓ core thesis | ✓ per-scope background jobs | ~ | ~ | ~ | — | ~ | ✓ | ✓ | — | ~ |
-| **Multi-agent per host** | ✓ one dir per coworker | ✓ multi-scope (person + room) | ✓ per identity | ~ | ✓ per agent group | ✓ per `agent/` | ✓ per plugin | — (single agent) | ✓ | ✓ multi-role crew | ✓ multi-node |
-| **Multi-user collaboration surface** | — (per-coworker isolation) | ✓ channels / group messages / projects | ✓ (chat-native) | ~ | ~ | ~ | ~ | — | — | — | — |
-| **Small forkable harness (Pi CLI philosophy)** | ✓ ~7.5k LOC | — (headless + plugins + Postgres) | — (Rust relay + Tauri desktop) | — (large) | ~ (NanoClaw is small; OpenClaw is 500k LOC) | ~ | — | ~ (Python monorepo) | — | — | — |
-| **Primary language** | TypeScript / Node ≥22 | TypeScript / Node | Rust + TS | Python | Python + TS (Nano) | TypeScript | TypeScript | Python | ? | Python | Python |
-| **License** | MIT | ? (check repo) | Apache 2.0 | Apache 2.0 | mix | ? | ? | ? | proprietary | MIT | MIT |
-| **Backing / distribution** | solo | YC (12k+ ⭐) | Block (Square) | Nous Research | Anthropic-community forks | Vercel | ai16z community | community | Anthropic | community | LangChain Inc. |
+| | ai-coworkers | QM | Headlong | Buzz | Hermes | OpenClaw / NanoClaw | Vercel Eve | ElizaOS | OpenSRE | Anthropic MA | CrewAI | LangGraph |
+|---|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
+| **Runtime shape** | tick loop | headless core + pluggable harness | continuous thought loop | chat/rooms | request/response | message-dispatch | request/response | event loop | alert-driven | scheduler + reactive | task DAG | graph traversal |
+| **Decides when NOT to act** | ✓ quiet gate + adaptive backoff | — | — (backs off when idle, never skips the model) | — | — | — | — | — | — | ~ scheduler idle | — | — |
+| **Filesystem-first config** | ✓ `role/*.md` | — (Postgres) | ~ (markdown skills; jsonl trajectory) | — (Nostr events) | ✓ SKILL.md files | ✓ SOUL.md / AGENTS.md | ✓ `agent/` folder | — (plugin registry) | ~ .env + Python | ~ config JSON | — (Python code) | — (Python code) |
+| **Hard boundary regex + dry-run default** | ✓ | ~ Strict / Auto / Dangerous baseline modes | — (Docker sandbox default; spend-capped key advised) | — (identity scopes) | — | ~ (NanoClaw containers) | — | — | — (deliberately, per AGENTS.md) | ~ tool permissions | — | — |
+| **Multi-tier memory** | ✓ 6-tier (CoALA) | ~ per-scope | ~ (tiered rollups at decaying resolution; unified ladder design unimplemented) | ~ event log | ~ MEMORY.md + skills | ~ 4-tier (SoulClaw fork) | ~ instructions.md | ~ providers | ~ session | ~ dreaming | ~ shared | ~ state graph |
+| **Reflect / dreaming ritual** | ✓ weekly compact + citations | ? | ~ (recap compaction tiers) | — | ✓ | ~ | — | ~ evaluators | — | ✓ dreaming pass | — | — |
+| **Human ↔ agent channels** | ✓ inbox + questions + reactions + signed notes | ✓ Slack + web UI + admin | ~ (Slack/Telegram/mobile, one shared stream; agent decides when to reply) | ✓ chat rooms | ~ chat surfaces | ~ platform adapters | ~ HTTP/Slack channels | ~ | ~ Slack / PD / Telegram | ✓ | — | — |
+| **Cross-framework artifact import** | ✓ Hermes / OpenClaw / Eve loaders | ✓ Pi / OpenCode / Codex / Claude Code as harness | — | — | — | — | — | — | — | — | — | — |
+| **ACP (coding-agent) protocol** | ✓ client | ~ (via harness plugins) | — (Bash is the tool system) | ✓ (buzz-cli harness) | ✓ via skills | ~ | — | — | ✓ | — | — | — |
+| **MCP tool protocol** | ✓ client | ✓ | — | ✓ | ✓ | ✓ | ~ | ~ | ✓ | ✓ | — | ~ |
+| **Per-tool credential filtering** | ✓ `requiresCreds` | ✓ per-scope | — | ~ identity scopes | ~ | ~ | — | — | — | ? | — | — |
+| **Secret redaction at persistence** | ✓ same list as pre-commit hook | ~ content-screening | ? | ? | ? | ? | ? | ? | ~ PII masking | ? | ? | ? |
+| **Reversible identifier masking pre-LLM** | ✓ opt-in `PII_MASK=1` | ? | — | — | — | — | — | — | ✓ (their original idea) | ? | — | — |
+| **Subprocess sandbox for delegated agents** | ✓ bwrap / firejail | ✓ per-scope sandbox (first-class) | ✓ (Docker per bash block when present) | ? | ? | ✓ containers (NanoClaw) | — | — | ~ platform/sandbox/ | ? | — | — |
+| **Rate-limit awareness per external API** | ✓ | ? | — | ? | ? | ? | ? | ? | ? | ? | ? | ? |
+| **Prometheus metrics endpoint** | ✓ | ? | — | ? | ? | ? | ? | ? | ~ opt-out PostHog | ? | ? | ? |
+| **Scored benchmark of agent behaviour** | ✓ small (3 scenarios) | ? | — | — | — | — | — | — | ✓ big (tests/synthetic/) | ? | — | — |
+| **Long-running-agent focus** | ✓ core thesis | ✓ per-scope background jobs | ✓ | ~ | ~ | ~ | — | ~ | ✓ | ✓ | — | ~ |
+| **Multi-agent per host** | ✓ one dir per coworker | ✓ multi-scope (person + room) | ~ (multiple agents per box per their guard-bug postmortem) | ✓ per identity | ~ | ✓ per agent group | ✓ per `agent/` | ✓ per plugin | — (single agent) | ✓ | ✓ multi-role crew | ✓ multi-node |
+| **Multi-user collaboration surface** | — (per-coworker isolation) | ✓ channels / group messages / projects | ~ (one shared stream; team presence) | ✓ (chat-native) | ~ | ~ | ~ | ~ | — | — | — | — |
+| **Small forkable harness (Pi CLI philosophy)** | ✓ ~7.5k LOC | — (headless + plugins + Postgres) | ✓ (~10k LOC Bash) | — (Rust relay + Tauri desktop) | — (large) | ~ (NanoClaw is small; OpenClaw is 500k LOC) | ~ | — | ~ (Python monorepo) | — | — | — |
+| **Primary language** | TypeScript / Node ≥22 | TypeScript / Node | Bash | Rust + TS | Python | Python + TS (Nano) | TypeScript | TypeScript | Python | ? | Python | Python |
+| **License** | MIT | ? (check repo) | Apache 2.0 | Apache 2.0 | Apache 2.0 | mix | ? | ? | ? | proprietary | MIT | MIT |
+| **Backing / distribution** | solo | YC (12k+ ⭐) | Laude Institute research (MIT collab) | Block (Square) | Nous Research | Anthropic-community forks | Vercel | ai16z community | community | Anthropic | community | LangChain Inc. |
 
 ## Per-framework honest read
 
