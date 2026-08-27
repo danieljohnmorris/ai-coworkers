@@ -1414,7 +1414,7 @@
 <p>An honest, non-marketing read of where ai-coworkers sits in a crowded
 space. Written for a visitor comparing frameworks; kept fair to each.
 If we're beaten on a dimension, we say so.</p>
-<p>Last refreshed: 2026-08-27 (Headlong added; matrix column pending AIC-130).</p>
+<p>Last refreshed: 2026-08-27 (Headlong added).</p>
 <h2 id="the-one-sentence-positioning">The one-sentence positioning<a class="headerlink" href="#the-one-sentence-positioning" title="Permanent link">&para;</a></h2>
 <p><strong>ai-coworkers</strong> is a <strong>small, filesystem-first, tick-driven</strong> runtime
 for <strong>long-running AI agents with hard boundaries</strong>. It optimises for
@@ -1441,6 +1441,7 @@ unsure, and can be read end-to-end in an afternoon → <strong>ai-coworkers</str
 <th></th>
 <th style="text-align: center;">ai-coworkers</th>
 <th style="text-align: center;">QM</th>
+<th style="text-align: center;">Headlong</th>
 <th style="text-align: center;">Buzz</th>
 <th style="text-align: center;">Hermes</th>
 <th style="text-align: center;">OpenClaw / NanoClaw</th>
@@ -1457,6 +1458,7 @@ unsure, and can be read end-to-end in an afternoon → <strong>ai-coworkers</str
 <td><strong>Runtime shape</strong></td>
 <td style="text-align: center;">tick loop</td>
 <td style="text-align: center;">headless core + pluggable harness</td>
+<td style="text-align: center;">continuous thought loop</td>
 <td style="text-align: center;">chat/rooms</td>
 <td style="text-align: center;">request/response</td>
 <td style="text-align: center;">message-dispatch</td>
@@ -1471,6 +1473,7 @@ unsure, and can be read end-to-end in an afternoon → <strong>ai-coworkers</str
 <td><strong>Decides when NOT to act</strong></td>
 <td style="text-align: center;">✓ quiet gate + adaptive backoff</td>
 <td style="text-align: center;">—</td>
+<td style="text-align: center;">— (backs off when idle, never skips the model)</td>
 <td style="text-align: center;">—</td>
 <td style="text-align: center;">—</td>
 <td style="text-align: center;">—</td>
@@ -1485,6 +1488,7 @@ unsure, and can be read end-to-end in an afternoon → <strong>ai-coworkers</str
 <td><strong>Filesystem-first config</strong></td>
 <td style="text-align: center;">✓ <code>role/*.md</code></td>
 <td style="text-align: center;">— (Postgres)</td>
+<td style="text-align: center;">~ (markdown skills; jsonl trajectory)</td>
 <td style="text-align: center;">— (Nostr events)</td>
 <td style="text-align: center;">✓ SKILL.md files</td>
 <td style="text-align: center;">✓ SOUL.md / AGENTS.md</td>
@@ -1499,6 +1503,7 @@ unsure, and can be read end-to-end in an afternoon → <strong>ai-coworkers</str
 <td><strong>Hard boundary regex + dry-run default</strong></td>
 <td style="text-align: center;">✓</td>
 <td style="text-align: center;">~ Strict / Auto / Dangerous baseline modes</td>
+<td style="text-align: center;">— (Docker sandbox default; spend-capped key advised)</td>
 <td style="text-align: center;">— (identity scopes)</td>
 <td style="text-align: center;">—</td>
 <td style="text-align: center;">~ (NanoClaw containers)</td>
@@ -1513,6 +1518,7 @@ unsure, and can be read end-to-end in an afternoon → <strong>ai-coworkers</str
 <td><strong>Multi-tier memory</strong></td>
 <td style="text-align: center;">✓ 6-tier (CoALA)</td>
 <td style="text-align: center;">~ per-scope</td>
+<td style="text-align: center;">~ (tiered rollups at decaying resolution; unified ladder design unimplemented)</td>
 <td style="text-align: center;">~ event log</td>
 <td style="text-align: center;">~ MEMORY.md + skills</td>
 <td style="text-align: center;">~ 4-tier (SoulClaw fork)</td>
@@ -1527,6 +1533,7 @@ unsure, and can be read end-to-end in an afternoon → <strong>ai-coworkers</str
 <td><strong>Reflect / dreaming ritual</strong></td>
 <td style="text-align: center;">✓ weekly compact + citations</td>
 <td style="text-align: center;">?</td>
+<td style="text-align: center;">~ (recap compaction tiers)</td>
 <td style="text-align: center;">—</td>
 <td style="text-align: center;">✓</td>
 <td style="text-align: center;">~</td>
@@ -1541,6 +1548,7 @@ unsure, and can be read end-to-end in an afternoon → <strong>ai-coworkers</str
 <td><strong>Human ↔ agent channels</strong></td>
 <td style="text-align: center;">✓ inbox + questions + reactions + signed notes</td>
 <td style="text-align: center;">✓ Slack + web UI + admin</td>
+<td style="text-align: center;">~ (Slack/Telegram/mobile, one shared stream; agent decides when to reply)</td>
 <td style="text-align: center;">✓ chat rooms</td>
 <td style="text-align: center;">~ chat surfaces</td>
 <td style="text-align: center;">~ platform adapters</td>
@@ -1564,11 +1572,13 @@ unsure, and can be read end-to-end in an afternoon → <strong>ai-coworkers</str
 <td style="text-align: center;">—</td>
 <td style="text-align: center;">—</td>
 <td style="text-align: center;">—</td>
+<td style="text-align: center;">—</td>
 </tr>
 <tr>
 <td><strong>ACP (coding-agent) protocol</strong></td>
 <td style="text-align: center;">✓ client</td>
 <td style="text-align: center;">~ (via harness plugins)</td>
+<td style="text-align: center;">— (Bash is the tool system)</td>
 <td style="text-align: center;">✓ (buzz-cli harness)</td>
 <td style="text-align: center;">✓ via skills</td>
 <td style="text-align: center;">~</td>
@@ -1583,6 +1593,7 @@ unsure, and can be read end-to-end in an afternoon → <strong>ai-coworkers</str
 <td><strong>MCP tool protocol</strong></td>
 <td style="text-align: center;">✓ client</td>
 <td style="text-align: center;">✓</td>
+<td style="text-align: center;">—</td>
 <td style="text-align: center;">✓</td>
 <td style="text-align: center;">✓</td>
 <td style="text-align: center;">✓</td>
@@ -1597,6 +1608,7 @@ unsure, and can be read end-to-end in an afternoon → <strong>ai-coworkers</str
 <td><strong>Per-tool credential filtering</strong></td>
 <td style="text-align: center;">✓ <code>requiresCreds</code></td>
 <td style="text-align: center;">✓ per-scope</td>
+<td style="text-align: center;">—</td>
 <td style="text-align: center;">~ identity scopes</td>
 <td style="text-align: center;">~</td>
 <td style="text-align: center;">~</td>
@@ -1616,6 +1628,7 @@ unsure, and can be read end-to-end in an afternoon → <strong>ai-coworkers</str
 <td style="text-align: center;">?</td>
 <td style="text-align: center;">?</td>
 <td style="text-align: center;">?</td>
+<td style="text-align: center;">?</td>
 <td style="text-align: center;">~ PII masking</td>
 <td style="text-align: center;">?</td>
 <td style="text-align: center;">?</td>
@@ -1630,6 +1643,7 @@ unsure, and can be read end-to-end in an afternoon → <strong>ai-coworkers</str
 <td style="text-align: center;">—</td>
 <td style="text-align: center;">—</td>
 <td style="text-align: center;">—</td>
+<td style="text-align: center;">—</td>
 <td style="text-align: center;">✓ (their original idea)</td>
 <td style="text-align: center;">?</td>
 <td style="text-align: center;">—</td>
@@ -1639,6 +1653,7 @@ unsure, and can be read end-to-end in an afternoon → <strong>ai-coworkers</str
 <td><strong>Subprocess sandbox for delegated agents</strong></td>
 <td style="text-align: center;">✓ bwrap / firejail</td>
 <td style="text-align: center;">✓ per-scope sandbox (first-class)</td>
+<td style="text-align: center;">✓ (Docker per bash block when present)</td>
 <td style="text-align: center;">?</td>
 <td style="text-align: center;">?</td>
 <td style="text-align: center;">✓ containers (NanoClaw)</td>
@@ -1653,6 +1668,7 @@ unsure, and can be read end-to-end in an afternoon → <strong>ai-coworkers</str
 <td><strong>Rate-limit awareness per external API</strong></td>
 <td style="text-align: center;">✓</td>
 <td style="text-align: center;">?</td>
+<td style="text-align: center;">—</td>
 <td style="text-align: center;">?</td>
 <td style="text-align: center;">?</td>
 <td style="text-align: center;">?</td>
@@ -1667,6 +1683,7 @@ unsure, and can be read end-to-end in an afternoon → <strong>ai-coworkers</str
 <td><strong>Prometheus metrics endpoint</strong></td>
 <td style="text-align: center;">✓</td>
 <td style="text-align: center;">?</td>
+<td style="text-align: center;">—</td>
 <td style="text-align: center;">?</td>
 <td style="text-align: center;">?</td>
 <td style="text-align: center;">?</td>
@@ -1686,6 +1703,7 @@ unsure, and can be read end-to-end in an afternoon → <strong>ai-coworkers</str
 <td style="text-align: center;">—</td>
 <td style="text-align: center;">—</td>
 <td style="text-align: center;">—</td>
+<td style="text-align: center;">—</td>
 <td style="text-align: center;">✓ big (tests/synthetic/)</td>
 <td style="text-align: center;">?</td>
 <td style="text-align: center;">—</td>
@@ -1695,6 +1713,7 @@ unsure, and can be read end-to-end in an afternoon → <strong>ai-coworkers</str
 <td><strong>Long-running-agent focus</strong></td>
 <td style="text-align: center;">✓ core thesis</td>
 <td style="text-align: center;">✓ per-scope background jobs</td>
+<td style="text-align: center;">✓</td>
 <td style="text-align: center;">~</td>
 <td style="text-align: center;">~</td>
 <td style="text-align: center;">~</td>
@@ -1709,6 +1728,7 @@ unsure, and can be read end-to-end in an afternoon → <strong>ai-coworkers</str
 <td><strong>Multi-agent per host</strong></td>
 <td style="text-align: center;">✓ one dir per coworker</td>
 <td style="text-align: center;">✓ multi-scope (person + room)</td>
+<td style="text-align: center;">~ (multiple agents per box per their guard-bug postmortem)</td>
 <td style="text-align: center;">✓ per identity</td>
 <td style="text-align: center;">~</td>
 <td style="text-align: center;">✓ per agent group</td>
@@ -1723,6 +1743,7 @@ unsure, and can be read end-to-end in an afternoon → <strong>ai-coworkers</str
 <td><strong>Multi-user collaboration surface</strong></td>
 <td style="text-align: center;">— (per-coworker isolation)</td>
 <td style="text-align: center;">✓ channels / group messages / projects</td>
+<td style="text-align: center;">~ (one shared stream; team presence)</td>
 <td style="text-align: center;">✓ (chat-native)</td>
 <td style="text-align: center;">~</td>
 <td style="text-align: center;">~</td>
@@ -1737,6 +1758,7 @@ unsure, and can be read end-to-end in an afternoon → <strong>ai-coworkers</str
 <td><strong>Small forkable harness (Pi CLI philosophy)</strong></td>
 <td style="text-align: center;">✓ ~7.5k LOC</td>
 <td style="text-align: center;">— (headless + plugins + Postgres)</td>
+<td style="text-align: center;">✓ (~10k LOC Bash)</td>
 <td style="text-align: center;">— (Rust relay + Tauri desktop)</td>
 <td style="text-align: center;">— (large)</td>
 <td style="text-align: center;">~ (NanoClaw is small; OpenClaw is 500k LOC)</td>
@@ -1751,6 +1773,7 @@ unsure, and can be read end-to-end in an afternoon → <strong>ai-coworkers</str
 <td><strong>Primary language</strong></td>
 <td style="text-align: center;">TypeScript / Node ≥22</td>
 <td style="text-align: center;">TypeScript / Node</td>
+<td style="text-align: center;">Bash</td>
 <td style="text-align: center;">Rust + TS</td>
 <td style="text-align: center;">Python</td>
 <td style="text-align: center;">Python + TS (Nano)</td>
@@ -1767,6 +1790,7 @@ unsure, and can be read end-to-end in an afternoon → <strong>ai-coworkers</str
 <td style="text-align: center;">? (check repo)</td>
 <td style="text-align: center;">Apache 2.0</td>
 <td style="text-align: center;">Apache 2.0</td>
+<td style="text-align: center;">Apache 2.0</td>
 <td style="text-align: center;">mix</td>
 <td style="text-align: center;">?</td>
 <td style="text-align: center;">?</td>
@@ -1779,6 +1803,7 @@ unsure, and can be read end-to-end in an afternoon → <strong>ai-coworkers</str
 <td><strong>Backing / distribution</strong></td>
 <td style="text-align: center;">solo</td>
 <td style="text-align: center;">YC (12k+ ⭐)</td>
+<td style="text-align: center;">Laude Institute research (MIT collab)</td>
 <td style="text-align: center;">Block (Square)</td>
 <td style="text-align: center;">Nous Research</td>
 <td style="text-align: center;">Anthropic-community forks</td>
