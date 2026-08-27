@@ -611,6 +611,7 @@ coworker by listing `memory` (prefix match) in the role's `TOOLS.md`.
 
 | Tool | Input | Behaviour |
 |---|---|---|
+| `memory.walk` | `{ query: string }` | Drill-down over the memory ladder: lexical entry point, refusal when no confident match, then a capped walk (3 rungs-wide, ≤40 events) from the coarsest rollup to raw events via `source_range`, with every step in the returned audit trace. Read-only, no LLM calls. |
 | `memory.search` | `{ query: string, limit?: 1..25 }` | FTS5 search over the coworker's own event log. Read-only. |
 | `memory.recall` | `{ query: string, purpose?: string }` | `memory.search` + one-paragraph LLM summary. |
 | `memory.note_project` | `{ projectKey: string, body: string }` | Save/replace a per-project markdown note. Auto-loaded into perception when the key next appears. Injection-scanned + size-capped. |
@@ -633,6 +634,7 @@ rollup is written to `memory.db`, and raw events older than
 `REFLECT_RETENTION_DAYS` (default 30) are pruned.
 Events older than the retention window move to the events_archive table instead of being deleted; the hot FTS index covers the hot window only, and archived rows are reachable by id for the upcoming memory-ladder navigation (AIC-128).
 Rollups carry level, parent and an event-id source range, and decisions record the event ids they were distilled from; provenance that cannot be validated is written as NULL, never faked.
+memory.walk is the drill-down reader over the ladder: lexical entry point, refusal when no confident match, then a capped walk from coarsest rollup to raw events, with every step in the returned trace.
 
 Reflection ships as a built-in ritual (`reflect.weekly`, Sundays 03:00
 UTC) and applies to any coworker with no `role/rituals/` directory.

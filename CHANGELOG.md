@@ -9,6 +9,18 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 ## [Unreleased]
 
 ### Added
+- **`memory.walk` tool — drill-down recall over the memory ladder (AIC-128
+  stage 2)** — pure deterministic navigation (zero LLM calls) from a
+  lexical entry point (FTS5 over hot events + LIKE token-overlap over
+  rollup bodies) down month → week → day rollups to the raw events,
+  resolved against `events` ∪ `events_archive`. Returns an audit trace
+  (one `{level, id, why}` row per step) and refuses as a first-class
+  outcome when no entry point reaches the 0.5 matched-token confidence
+  threshold — a refused walk issues no queries beyond the entry scan.
+  Caps: 3 candidates per ladder level, 40 raw events, ~2 KB payloads.
+  Companion skill at `docs/skills/mem-walk/SKILL.md`; genericized Hermes
+  community artifact at `contrib/hermes-recall/`. Design:
+  [ADR 0008](docs/adr/0008-progressive-resolution-memory.md).
 - **Optional `work_hours` config block** — coworkers can now declare a
   working-hours window (`timezone`, `days`, `start`, `end`) in
   `config.json` and choose out-of-hours behaviour via `out_of_hours`
