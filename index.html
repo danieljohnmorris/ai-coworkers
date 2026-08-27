@@ -1527,7 +1527,7 @@
 <a href="#tests"><img alt="coverage" src="https://img.shields.io/badge/coverage-97.9%25-brightgreen" /></a>
 <a href="https://nodejs.org"><img alt="node" src="https://img.shields.io/badge/node-%E2%89%A522-brightgreen" /></a>
 <a href="LICENSE"><img alt="license" src="https://img.shields.io/badge/license-MIT-blue" /></a>
-<a href="#tests"><img alt="tests" src="https://img.shields.io/badge/tests-735-brightgreen" /></a></p>
+<a href="#tests"><img alt="tests" src="https://img.shields.io/badge/tests-782-brightgreen" /></a></p>
 <p><strong>A daemon with a job description.</strong> There is no chat window here. Nobody
 talks to a coworker, and nobody watches it work. It wakes on a clock or a
 webhook, reads its sensors, and acts inside a role you wrote in markdown, with
@@ -1549,7 +1549,7 @@ actually need, <a href="https://github.com/yc-software/qm">QM</a> is the right t
 <tr><td><b>Asks instead of guessing</b></td><td>A single <code>ask</code> tool routes to you, a peer coworker, Slack, or a GitHub PR. Questions to you persist in <code>state/questions.md</code> until answered, so nothing quietly gets invented.</td></tr>
 <tr><td><b>Cheap while nothing happens</b></td><td>A tick that finds nothing new returns before any model is called, triage included. The interval backs off while quiet and resets on a webhook or <code>/wake</code>.</td></tr>
 <tr><td><b>Runs your existing agent artifacts</b></td><td>MCP servers via one env var, Hermes / OpenClaw skills from <code>~/.hermes/skills/</code>, Vercel Eve <code>agent/</code> folders, and coding work delegated to any ACP agent (Goose, Codex, Claude Code).</td></tr>
-<tr><td><b>Remembers across restarts</b></td><td>Six memory tiers (working, episodic, semantic, entity, procedural, reflective) in local SQLite with FTS5, plus per-person and per-project notes it maintains itself. Recall needs no network. For a shared brain across your chat clients, point <code>MCP_SERVERS</code> at <a href="https://github.com/NateBJones-Projects/OB1">OB1</a>.</td></tr>
+<tr><td><b>Remembers across restarts</b></td><td>Six memory tiers (working, episodic, semantic, entity, procedural, reflective) in local SQLite with FTS5, plus per-person and per-project notes it maintains itself. Rollups link to the raw events they distilled; <code>memory.walk</code> drills the ladder with a refusal path instead of guessing. Recall needs no network. For a shared brain across your chat clients, point <code>MCP_SERVERS</code> at <a href="https://github.com/NateBJones-Projects/OB1">OB1</a>.</td></tr>
 </table>
 
 <p><strong>Two ways in.</strong> To run a coworker, start with the
@@ -1574,8 +1574,8 @@ inbox</strong> instead of guessing. Full comparison: <a href="docs/comparison.md
 </thead>
 <tbody>
 <tr>
-<td>~7.8k</td>
-<td>735</td>
+<td>~8k</td>
+<td>782</td>
 <td>97.9% lines · 95.9% statements · 91.2% branches</td>
 <td>MCP · Hermes · Eve · ACP · native</td>
 <td>working · episodic · semantic · entity · procedural · reflective</td>
@@ -1651,6 +1651,10 @@ npm<span class="w"> </span>run<span class="w"> </span>coworker<span class="w"> <
 <tr>
 <td><code>TRIAGE_MODEL</code></td>
 <td>Optional cheap-first preflight before the expensive prompt.</td>
+</tr>
+<tr>
+<td><code>MEMORY_PROMOTIONS</code></td>
+<td><code>confident</code> (default) or <code>gated</code>: hold every reflect promotion for <code>bin/aicw memory-approve</code> before it touches MEMORY.md.</td>
 </tr>
 <tr>
 <td><code>WAKE_PORT</code> / <code>WAKE_SECRET</code></td>
@@ -1759,6 +1763,7 @@ human can skim.</p>
     entities/          per-person + per-project notes
     inbox.md           notes from the human operator
     questions.md       questions the coworker is asking back
+    memory-map.md      the memory ladder as one readable page (regenerated weekly)
     stream.log         everything, chronological
     highlights.log     actions + thoughts + escalations only
 </code></pre></div>
@@ -1789,6 +1794,11 @@ reach the target system. Coworkers get promoted to <code>--live</code> independe
 <p><strong>Coworker → you.</strong> A persistent question log they see until answered:
 <div class="highlight"><pre><span></span><code>bin/aicw<span class="w"> </span>answer<span class="w"> </span>alex-triage<span class="w"> </span><span class="s2">"Keep it as perf, don't split yet."</span>
 </code></pre></div></p>
+<p><strong>Memory review.</strong> Approve a queued promotion, or strike something already remembered:
+<div class="highlight"><pre><span></span><code>bin/aicw<span class="w"> </span>memory-approve<span class="w"> </span>alex-triage
+bin/aicw<span class="w"> </span>memory-strike<span class="w"> </span>alex-triage<span class="w"> </span><span class="s2">"hardcoded model name"</span>
+</code></pre></div>
+Promotions queue in <code>state/memory-map.md</code>; a strike snapshots the previous MEMORY.md first.</p>
 <p><strong>Coworker → coworker / Slack / GitHub.</strong> One <code>ask</code> tool with
 <code>to="manager"</code> · <code>to="coworker:sam"</code> · <code>to="slack:#triage"</code> ·
 <code>to="slack:@userId"</code> · <code>to="github:owner/repo#123"</code>. The channel is
@@ -1954,7 +1964,7 @@ Hermes/OpenClaw (SOUL/USER/MEMORY files, skills, dreams), ElizaOS
 <a href="https://arxiv.org/abs/2309.02427">CoALA</a> (memory taxonomy).</p>
 <hr />
 <h2 id="tests">Tests<a class="headerlink" href="#tests" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code>npm<span class="w"> </span><span class="nb">test</span><span class="w">              </span><span class="c1"># 735 tests, ~3s</span>
+<div class="highlight"><pre><span></span><code>npm<span class="w"> </span><span class="nb">test</span><span class="w">              </span><span class="c1"># 782 tests, ~3s</span>
 npm<span class="w"> </span>run<span class="w"> </span>test:cov<span class="w">      </span><span class="c1"># 97.9% lines · 95.9% statements · 97.5% functions · 91.2% branches</span>
 </code></pre></div>
 <p>Fake LLM + fake API fixtures in <a href="test/fixtures.ts"><code>test/fixtures.ts</code></a> exercise the tick pipeline
