@@ -31,6 +31,7 @@ export function initEpisodic(events: DatabaseSync): void {
       INSERT INTO events_fts (event_id, ts, kind, payload)
       VALUES (new.id, new.ts, new.kind, new.payload);
     END;
+    -- events_ad mirrors the hot table only: archived rows (events_archive) are intentionally outside FTS until AIC-128 adds navigation.
     CREATE TRIGGER IF NOT EXISTS events_ad AFTER DELETE ON events BEGIN
       DELETE FROM events_fts WHERE event_id = old.id;
     END;

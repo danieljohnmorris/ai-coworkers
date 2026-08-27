@@ -2,7 +2,8 @@
 // the past week of its own events, asks the LLM to distill patterns and
 // decisions into a compact learnings paragraph, promotes that paragraph to
 // its semantic MEMORY.md (via injection scan + cap), writes a longer weekly
-// rollup to memory.db, and drops raw events older than the retention window.
+// rollup to memory.db, and moves raw events older than the retention window
+// into the events_archive cold table (AIC-127).
 //
 // Modelled on OpenClaw's "dreaming" concept + Generative Agents reflection.
 
@@ -29,7 +30,7 @@ export async function dreamOnce(args: {
   llm: LLMConfig;
   log: Log;
   opts?: DreamOptions;
-}): Promise<{ promoted: boolean; rollupChars: number; prunedRows: number; reason?: string }> {
+}): Promise<{ promoted: boolean; rollupChars: number; prunedRows: number; archivedRows: number; reason?: string }> {
   const { role, events, memory, semantic, llm, log } = args;
   const retentionDays = args.opts?.retentionDays ?? 30;
   const weekWindowDays = args.opts?.weekWindowDays ?? 7;
@@ -45,7 +46,7 @@ export async function dreamOnce(args: {
     .all(since) as { id: number; ts: string; kind: string; payload: string }[];
 
   if (rows.length === 0) {
-    return { promoted: false, rollupChars: 0, prunedRows: 0, reason: "no events in window" };
+    return { promoted: false, rollupChars: 0, prunedRows: 0, archivedRows: 0, reason: "no events in window" };
   }
 
   // 2. Ask the model for a compact "learnings" paragraph + a longer rollup.
@@ -94,7 +95,7 @@ export async function dreamOnce(args: {
     rollup = String(obj.rollup ?? "").trim();
   } catch (err) {
     log.event("memory.compact", { ok: false, error: String(err) });
-    return { promoted: false, rollupChars: 0, prunedRows: 0, reason: `llm error: ${err}` };
+    return { promoted: false, rollupChars: 0, prunedRows: 0, archivedRows: 0, reason: `llm error: ${err}` };
   }
 
   // 3. Save the longer rollup to memory.db (uncapped, for later retrieval).
@@ -164,15 +165,44 @@ export async function dreamOnce(args: {
     }
   }
 
-  // 5. Prune raw events older than retention.
+  // 5. Prune raw events older than retention. AIC-127: archive-then-delete —
+  // the retention window bounds the *hot* table only; older rows move to
+  // events_archive instead of vanishing. INSERT OR IGNORE on the carried-over
+  // id makes a re-run after a crash between insert and delete idempotent, and
+  // the transaction keeps archive + delete atomic.
   const cutoff = new Date(Date.now() - retentionDays * 86400_000).toISOString();
-  const pruneInfo = events
-    .prepare(`DELETE FROM events WHERE ts < ? AND kind NOT IN ('ritual.run','note')`)
-    .run(cutoff);
-  const prunedRows = Number(pruneInfo.changes);
+  let prunedRows = 0;
+  let archivedRows = 0;
+  events.exec("BEGIN");
+  try {
+    const archiveInfo = events
+      .prepare(
+        `INSERT OR IGNORE INTO events_archive (id, ts, coworker, kind, payload)
+         SELECT id, ts, coworker, kind, payload FROM events
+         WHERE ts < ? AND kind NOT IN ('ritual.run','note')`
+      )
+      .run(cutoff);
+    archivedRows = Number(archiveInfo.changes);
+    const pruneInfo = events
+      .prepare(`DELETE FROM events WHERE ts < ? AND kind NOT IN ('ritual.run','note')`)
+      .run(cutoff);
+    prunedRows = Number(pruneInfo.changes);
+    events.exec("COMMIT");
+  } catch (err) {
+    events.exec("ROLLBACK");
+    log.event("memory.compact", { step: "prune", ok: false, error: String(err) });
+  }
 
-  log.event("memory.compact", { step: "done", promoted, rollupChars: rollup.length, prunedRows });
-  return { promoted, rollupChars: rollup.length, prunedRows };
+  // Checkpoint the WAL so the events db file does not grow unboundedly
+  // between backups. Harmless no-op when the db is not in WAL mode.
+  try {
+    events.exec(`PRAGMA wal_checkpoint(TRUNCATE)`);
+  } catch (err) {
+    log.event("memory.compact", { step: "wal_checkpoint", ok: false, error: String(err) });
+  }
+
+  log.event("memory.compact", { step: "done", promoted, rollupChars: rollup.length, prunedRows, archivedRows });
+  return { promoted, rollupChars: rollup.length, prunedRows, archivedRows };
 }
 
 // --- AIC-39 memory_versions table (rollback support) ---
