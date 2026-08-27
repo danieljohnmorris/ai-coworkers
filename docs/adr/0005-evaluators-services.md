@@ -1,6 +1,7 @@
 # ADR 0005 — evaluators + services (design spike)
 
 **Status:** Proposed (2026-08-06). No implementation yet.
+**Superseded in part by:** [ADR 0009](./0009-extension-architecture.md) generalises the registration pattern into a uniform registry (memory providers join evaluators/services). Interfaces here survive unchanged; implementation still pending.
 **Ticket:** [AIC-81](https://linear.app/ilo-lang/issue/AIC-81)
 
 ## Context
