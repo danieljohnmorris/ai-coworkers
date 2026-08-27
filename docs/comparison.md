@@ -4,7 +4,7 @@ An honest, non-marketing read of where ai-coworkers sits in a crowded
 space. Written for a visitor comparing frameworks; kept fair to each.
 If we're beaten on a dimension, we say so.
 
-Last refreshed: 2026-08-06.
+Last refreshed: 2026-08-27 (Headlong added).
 
 ## The one-sentence positioning
 
@@ -20,6 +20,7 @@ If you want the widest coding-agent ecosystem → **Claude Code / Codex / Goose*
 If you want dozens of pre-built domain skills → **Hermes** (we import them).
 If you want incident response as a product → **OpenSRE**.
 If you want an opinionated multi-agent orchestrator → **CrewAI / LangGraph**.
+If you want an agent that thinks continuously and pings you when it decides to → **Headlong**.
 If you want a persistent worker that runs quietly under `BOUNDARIES.md`,
 gates every write, and escalates to a human inbox when unsure →
 **ai-coworkers**.
@@ -28,30 +29,30 @@ gates every write, and escalates to a human inbox when unsure →
 
 Legend: ✓ present · ~ partial · — absent · ? not documented
 
-| | ai-coworkers | Buzz | Hermes | OpenClaw / NanoClaw | Vercel Eve | ElizaOS | OpenSRE | Anthropic MA | CrewAI | LangGraph |
-|---|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
-| **Runtime shape** | tick loop | chat/rooms | request/response | message-dispatch | request/response | event loop | alert-driven | scheduler + reactive | task DAG | graph traversal |
-| **Decides when NOT to act** | ✓ quiet gate + adaptive backoff | — | — | — | — | — | — | ~ scheduler idle | — | — |
-| **Filesystem-first config** | ✓ `role/*.md` | — (Nostr events) | ✓ SKILL.md files | ✓ SOUL.md / AGENTS.md | ✓ `agent/` folder | — (plugin registry) | ~ .env + Python | ~ config JSON | — (Python code) | — (Python code) |
-| **Hard boundary regex + dry-run default** | ✓ | — (identity scopes) | — | ~ (NanoClaw containers) | — | — | — (deliberately, per AGENTS.md) | ~ tool permissions | — | — |
-| **Multi-tier memory** | ✓ 6-tier (CoALA) | ~ event log | ~ MEMORY.md + skills | ~ 4-tier (SoulClaw fork) | ~ instructions.md | ~ providers | ~ session | ~ dreaming | ~ shared | ~ state graph |
-| **Reflect / dreaming ritual** | ✓ weekly compact + citations | — | ✓ | ~ | — | ~ evaluators | — | ✓ dreaming pass | — | — |
-| **Human ↔ agent channels** | ✓ inbox + questions + reactions + signed notes | ✓ chat rooms | ~ chat surfaces | ~ platform adapters | ~ HTTP/Slack channels | ~ | ~ Slack / PD / Telegram | ✓ | — | — |
-| **Cross-framework artifact import** | ✓ Hermes / OpenClaw / Eve loaders | — | — | — | — | — | — | — | — | — |
-| **ACP (coding-agent) protocol** | ✓ client | ✓ (buzz-cli harness) | ✓ via skills | ~ | — | — | ✓ | — | — | — |
-| **MCP tool protocol** | ✓ client | ✓ | ✓ | ✓ | ~ | ~ | ✓ | ✓ | — | ~ |
-| **Per-tool credential filtering** | ✓ `requiresCreds` | ~ identity scopes | ~ | ~ | — | — | — | ? | — | — |
-| **Secret redaction at persistence** | ✓ same list as pre-commit hook | ? | ? | ? | ? | ? | ~ PII masking | ? | ? | ? |
-| **Reversible identifier masking pre-LLM** | ✓ opt-in `PII_MASK=1` | — | — | — | — | — | ✓ (their original idea) | ? | — | — |
-| **Subprocess sandbox for delegated agents** | ✓ bwrap / firejail | ? | ? | ✓ containers (NanoClaw) | — | — | ~ platform/sandbox/ | ? | — | — |
-| **Rate-limit awareness per external API** | ✓ | ? | ? | ? | ? | ? | ? | ? | ? | ? |
-| **Prometheus metrics endpoint** | ✓ | ? | ? | ? | ? | ? | ~ opt-out PostHog | ? | ? | ? |
-| **Scored benchmark of agent behaviour** | ✓ small (3 scenarios) | — | — | — | — | — | ✓ big (tests/synthetic/) | ? | — | — |
-| **Long-running-agent focus** | ✓ core thesis | ~ | ~ | ~ | — | ~ | ✓ | ✓ | — | ~ |
-| **Multi-agent per host** | ✓ one dir per coworker | ✓ per identity | ~ | ✓ per agent group | ✓ per `agent/` | ✓ per plugin | — (single agent) | ✓ | ✓ multi-role crew | ✓ multi-node |
-| **Small forkable harness (Pi CLI philosophy)** | ✓ ~6.5k LOC | — (Rust relay + Tauri desktop) | — (large) | ~ (NanoClaw is small; OpenClaw is 500k LOC) | ~ | — | ~ (Python monorepo) | — | — | — |
-| **Primary language** | TypeScript / Node ≥22 | Rust + TS | Python | Python + TS (Nano) | TypeScript | TypeScript | Python | ? | Python | Python |
-| **License** | MIT | Apache 2.0 | Apache 2.0 | mix | ? | ? | ? | proprietary | MIT | MIT |
+| | ai-coworkers | Headlong | Buzz | Hermes | OpenClaw / NanoClaw | Vercel Eve | ElizaOS | OpenSRE | Anthropic MA | CrewAI | LangGraph |
+|---|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
+| **Runtime shape** | tick loop | continuous thought loop | chat/rooms | request/response | message-dispatch | request/response | event loop | alert-driven | scheduler + reactive | task DAG | graph traversal |
+| **Decides when NOT to act** | ✓ quiet gate + adaptive backoff | — (backs off when idle, never skips the model) | — | — | — | — | — | — | ~ scheduler idle | — | — |
+| **Filesystem-first config** | ✓ `role/*.md` | ~ (markdown skills; jsonl trajectory) | — (Nostr events) | ✓ SKILL.md files | ✓ SOUL.md / AGENTS.md | ✓ `agent/` folder | — (plugin registry) | ~ .env + Python | ~ config JSON | — (Python code) | — (Python code) |
+| **Hard boundary regex + dry-run default** | ✓ | — (Docker sandbox default; spend-capped key advised) | — (identity scopes) | — | ~ (NanoClaw containers) | — | — | — (deliberately, per AGENTS.md) | ~ tool permissions | — | — |
+| **Multi-tier memory** | ✓ 6-tier (CoALA) | ~ (tiered rollups at decaying resolution; unified ladder design published, unimplemented) | ~ event log | ~ MEMORY.md + skills | ~ 4-tier (SoulClaw fork) | ~ instructions.md | ~ providers | ~ session | ~ dreaming | ~ shared | ~ state graph |
+| **Reflect / dreaming ritual** | ✓ weekly compact + citations | ~ (recap compaction tiers) | — | ✓ | ~ | — | ~ evaluators | — | ✓ dreaming pass | — | — |
+| **Human ↔ agent channels** | ✓ inbox + questions + reactions + signed notes | ~ (Slack/Telegram/mobile, one shared stream; agent decides when to reply) | ✓ chat rooms | ~ chat surfaces | ~ platform adapters | ~ HTTP/Slack channels | ~ | ~ Slack / PD / Telegram | ✓ | — | — |
+| **Cross-framework artifact import** | ✓ Hermes / OpenClaw / Eve loaders | — | — | — | — | — | — | — | — | — | — |
+| **ACP (coding-agent) protocol** | ✓ client | — (Bash is the tool system) | ✓ (buzz-cli harness) | ✓ via skills | ~ | — | — | ✓ | — | — | — |
+| **MCP tool protocol** | ✓ client | — | ✓ | ✓ | ✓ | ~ | ~ | ✓ | ✓ | — | ~ |
+| **Per-tool credential filtering** | ✓ `requiresCreds` | — | ~ identity scopes | ~ | ~ | — | — | — | ? | — | — |
+| **Secret redaction at persistence** | ✓ same list as pre-commit hook | ? | ? | ? | ? | ? | ? | ~ PII masking | ? | ? | ? |
+| **Reversible identifier masking pre-LLM** | ✓ opt-in `PII_MASK=1` | — | — | — | — | — | — | ✓ (their original idea) | ? | — | — |
+| **Subprocess sandbox for delegated agents** | ✓ bwrap / firejail | ✓ Docker per bash block when present | ? | ? | ? | ✓ containers (NanoClaw) | — | — | ~ platform/sandbox/ | ? | — | — |
+| **Rate-limit awareness per external API** | ✓ | — | ? | ? | ? | ? | ? | ? | ? | ? | ? |
+| **Prometheus metrics endpoint** | ✓ | — | ? | ? | ? | ? | ? | ~ opt-out PostHog | ? | ? | ? |
+| **Scored benchmark of agent behaviour** | ✓ small (3 scenarios) | — | — | — | — | — | — | ✓ big (tests/synthetic/) | ? | — | — |
+| **Long-running-agent focus** | ✓ core thesis | ✓ core thesis | ~ | ~ | ~ | — | ~ | ✓ | ✓ | — | ~ |
+| **Multi-agent per host** | ✓ one dir per coworker | ~ (multiple agents per box; their guard bug involved neighbours) | ✓ per identity | ~ | ✓ per agent group | ✓ per `agent/` | ✓ per plugin | — (single agent) | ✓ | ✓ multi-role crew | ✓ multi-node |
+| **Small forkable harness (Pi CLI philosophy)** | ✓ ~6.5k LOC | ✓ ~10k LOC Bash | — (Rust relay + Tauri desktop) | — (large) | ~ (NanoClaw is small; OpenClaw is 500k LOC) | ~ | — | ~ (Python monorepo) | — | — | — |
+| **Primary language** | TypeScript / Node ≥22 | Bash | Rust + TS | Python | Python + TS (Nano) | TypeScript | TypeScript | Python | ? | Python | Python |
+| **License** | MIT | Apache 2.0 | Apache 2.0 | Apache 2.0 | mix | ? | ? | ? | proprietary | MIT | MIT |
 
 ## Per-framework honest read
 
@@ -91,6 +92,31 @@ per their AGENTS.md footguns ("do not reintroduce a planner denial").
 **Read our:** [`src/adapters/hermes.ts`](../src/adapters/hermes.ts) — we
 load every Hermes skill as procedural memory. `bin/setup-gmail.sh` +
 `bin/setup-slack.sh` wrap their setup CLIs.
+
+### Headlong (Laude Institute)
+
+**Shape:** Bash microharness (~10k lines) whose agent never sleeps. A Thinker
+loop generates the next thought, `shellm` (a recursive language model in Bash)
+executes bash blocks as the entire tool system, every run schedules its own
+next wake-up, and all humans share one thought stream over Slack/Telegram.
+Trajectory is a DAG of jsonl files; their progressive-resolution memory design
+is published but not yet implemented.
+
+**They win on:** persistent agency as the default. The agent sets its own
+priorities and has produced unrequested, verified work — their Audel agent
+found and fixed an unwired recall process over 48 minutes, merged from the
+agent's own fork (their post, commit 80cbb1e). Agent self-modification of its
+own harness, and a team-presence feel no per-user-session harness has.
+
+**We win on:** the quiet gate and boundaries. Headlong backs off when idle but
+never skips the model call ($1-2/hr reported); their own postmortem lists
+three accidental self-service-stops and a guard that over-matched neighbouring
+agents — failure classes our `BOUNDARIES.md` pre-execute checks and dry-run
+default exist to prevent. Priorities: theirs are agent-invented, ours are role
+docs a human writes.
+
+**Read our:** [ADR 0008](adr/0008-progressive-resolution-memory.md) — we
+adopt their ladder design on SQLite (AIC-127/128) and cut monologue ticks.
 
 ### OpenClaw / NanoClaw / SoulClaw
 
@@ -217,6 +243,9 @@ what a state machine would express, without you having to write one.
 
 - **Buzz** — chat-native UX, cryptographic identity, cross-org / cross-
   machine event log
+- **Headlong** — persistent agency as a default (agent-set priorities,
+  unrequested verified work), agent self-modification of its own harness,
+  single shared thought stream as team presence
 - **Hermes** — breadth of pre-built domain skills, agent-driven OAuth
   walkthroughs (we wrap theirs; we don't yet author our own)
 - **NanoClaw** — container isolation as the default primitive (we have
