@@ -3,7 +3,7 @@
 **Status:** Proposed (2026-08-27). Implementation starting under AIC-127/128.
 **Tickets:** [AIC-127](https://plane.danieljohnmorris.com/dan/ai-coworkers/issues/127)
 (retention archive), [AIC-128](https://plane.danieljohnmorris.com/dan/ai-coworkers/issues/128)
-(ladder + `mem.walk`), [AIC-129](https://plane.danieljohnmorris.com/dan/ai-coworkers/issues/129)
+(ladder + `memory.walk`), [AIC-129](https://plane.danieljohnmorris.com/dan/ai-coworkers/issues/129)
 (this ADR).
 
 ## Context
@@ -35,7 +35,7 @@ funnel, small forkable harness) set the decisions below.
 
 1. **Adopt the ladder, as one deliverable** (AIC-128): schema links
    (`rollups.level`, `parent_id`, source event ranges; decisions record source
-   event-ids) plus the `mem.walk` drill-down tool (FTS5 entry point → coarsest
+   event-ids) plus the `memory.walk` drill-down tool (FTS5 entry point → coarsest
    summaries → children → raw events) plus a navigation skill. The schema alone
    ships nothing; the tool alone cannot navigate; they land together with an
    explicit refusal path when no entry point is confident.
@@ -65,7 +65,7 @@ funnel, small forkable harness) set the decisions below.
   Validate ranges at write time; never synthesise provenance for legacy
   backfill — unlinked old entries are honest, faked links are not.
 - **Confident-wrong recall:** an FTS keyword miss walking down the wrong branch
-  with authoritative-looking citations. `mem.walk` must refuse when it has no
+  with authoritative-looking citations. `memory.walk` must refuse when it has no
   confident entry point.
 
 ## Consequences
