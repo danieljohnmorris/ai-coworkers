@@ -997,7 +997,7 @@
 <p><strong>Status:</strong> Proposed (2026-08-27). Implementation starting under AIC-127/128.
 <strong>Tickets:</strong> <a href="https://plane.danieljohnmorris.com/dan/ai-coworkers/issues/127">AIC-127</a>
 (retention archive), <a href="https://plane.danieljohnmorris.com/dan/ai-coworkers/issues/128">AIC-128</a>
-(ladder + <code>mem.walk</code>), <a href="https://plane.danieljohnmorris.com/dan/ai-coworkers/issues/129">AIC-129</a>
+(ladder + <code>memory.walk</code>), <a href="https://plane.danieljohnmorris.com/dan/ai-coworkers/issues/129">AIC-129</a>
 (this ADR).</p>
 <h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">&para;</a></h2>
 <p>Memory today is two columns that do not know about each other:</p>
@@ -1025,7 +1025,7 @@ funnel, small forkable harness) set the decisions below.</p>
 <ol>
 <li><strong>Adopt the ladder, as one deliverable</strong> (AIC-128): schema links
    (<code>rollups.level</code>, <code>parent_id</code>, source event ranges; decisions record source
-   event-ids) plus the <code>mem.walk</code> drill-down tool (FTS5 entry point → coarsest
+   event-ids) plus the <code>memory.walk</code> drill-down tool (FTS5 entry point → coarsest
    summaries → children → raw events) plus a navigation skill. The schema alone
    ships nothing; the tool alone cannot navigate; they land together with an
    explicit refusal path when no entry point is confident.</li>
@@ -1055,7 +1055,7 @@ funnel, small forkable harness) set the decisions below.</p>
   Validate ranges at write time; never synthesise provenance for legacy
   backfill — unlinked old entries are honest, faked links are not.</li>
 <li><strong>Confident-wrong recall:</strong> an FTS keyword miss walking down the wrong branch
-  with authoritative-looking citations. <code>mem.walk</code> must refuse when it has no
+  with authoritative-looking citations. <code>memory.walk</code> must refuse when it has no
   confident entry point.</li>
 </ul>
 <h2 id="consequences">Consequences<a class="headerlink" href="#consequences" title="Permanent link">&para;</a></h2>
