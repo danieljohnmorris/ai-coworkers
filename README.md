@@ -4,7 +4,7 @@
 [![coverage](https://img.shields.io/badge/coverage-97.9%25-brightgreen)](#tests)
 [![node](https://img.shields.io/badge/node-%E2%89%A522-brightgreen)](https://nodejs.org)
 [![license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
-[![tests](https://img.shields.io/badge/tests-735-brightgreen)](#tests)
+[![tests](https://img.shields.io/badge/tests-782-brightgreen)](#tests)
 
 **A daemon with a job description.** There is no chat window here. Nobody
 talks to a coworker, and nobody watches it work. It wakes on a clock or a
@@ -30,7 +30,7 @@ actually need, [QM](https://github.com/yc-software/qm) is the right tool.
 <tr><td><b>Asks instead of guessing</b></td><td>A single <code>ask</code> tool routes to you, a peer coworker, Slack, or a GitHub PR. Questions to you persist in <code>state/questions.md</code> until answered, so nothing quietly gets invented.</td></tr>
 <tr><td><b>Cheap while nothing happens</b></td><td>A tick that finds nothing new returns before any model is called, triage included. The interval backs off while quiet and resets on a webhook or <code>/wake</code>.</td></tr>
 <tr><td><b>Runs your existing agent artifacts</b></td><td>MCP servers via one env var, Hermes / OpenClaw skills from <code>~/.hermes/skills/</code>, Vercel Eve <code>agent/</code> folders, and coding work delegated to any ACP agent (Goose, Codex, Claude Code).</td></tr>
-<tr><td><b>Remembers across restarts</b></td><td>Six memory tiers (working, episodic, semantic, entity, procedural, reflective) in local SQLite with FTS5, plus per-person and per-project notes it maintains itself. Recall needs no network. For a shared brain across your chat clients, point <code>MCP_SERVERS</code> at <a href="https://github.com/NateBJones-Projects/OB1">OB1</a>.</td></tr>
+<tr><td><b>Remembers across restarts</b></td><td>Six memory tiers (working, episodic, semantic, entity, procedural, reflective) in local SQLite with FTS5, plus per-person and per-project notes it maintains itself. Rollups link to the raw events they distilled; <code>memory.walk</code> drills the ladder with a refusal path instead of guessing. Recall needs no network. For a shared brain across your chat clients, point <code>MCP_SERVERS</code> at <a href="https://github.com/NateBJones-Projects/OB1">OB1</a>.</td></tr>
 </table>
 
 **Two ways in.** To run a coworker, start with the
@@ -48,7 +48,7 @@ inbox** instead of guessing. Full comparison: [docs/comparison.md](docs/comparis
 
 | LOC | tests | coverage | adapters | memory tiers |
 |---|---|---|---|---|
-| ~7.8k | 735 | 97.9% lines · 95.9% statements · 91.2% branches | MCP · Hermes · Eve · ACP · native | working · episodic · semantic · entity · procedural · reflective |
+| ~8k | 782 | 97.9% lines · 95.9% statements · 91.2% branches | MCP · Hermes · Eve · ACP · native | working · episodic · semantic · entity · procedural · reflective |
 
 ### Most ticks never reach the model
 
@@ -131,6 +131,7 @@ Linear has no setup script; it wires through its remote MCP server (OAuth 2.1). 
 | `OLLAMA_API_KEY` | Required. Or any OpenAI-compatible endpoint. |
 | `COWORKER_MODEL` | Main model. Defaults to `gemma4:cloud`. |
 | `TRIAGE_MODEL` | Optional cheap-first preflight before the expensive prompt. |
+| `MEMORY_PROMOTIONS` | `confident` (default) or `gated`: hold every reflect promotion for `bin/aicw memory-approve` before it touches MEMORY.md. |
 | `WAKE_PORT` / `WAKE_SECRET` | Wake server for webhooks. Declare hooks in `role/WEBHOOKS.json`; verifiers are `hmac-sha256`, `github-sha256`, `slack-v0`, `none`. See [docs/webhooks.md](docs/webhooks.md). |
 | `WAKE_MODE` | `tick`, `webhook` or `both` (default). See below. |
 | `MCP_SERVERS` | JSON array of MCP servers. Each tool registers as `mcp.<name>.<tool>`. |
@@ -220,6 +221,7 @@ coworkers/alex-triage/
     entities/          per-person + per-project notes
     inbox.md           notes from the human operator
     questions.md       questions the coworker is asking back
+    memory-map.md      the memory ladder as one readable page (regenerated weekly)
     stream.log         everything, chronological
     highlights.log     actions + thoughts + escalations only
 ```
@@ -263,6 +265,13 @@ bin/aicw note alex-triage "Prioritise ILO parser bugs today"
 ```bash
 bin/aicw answer alex-triage "Keep it as perf, don't split yet."
 ```
+
+**Memory review.** Approve a queued promotion, or strike something already remembered:
+```bash
+bin/aicw memory-approve alex-triage
+bin/aicw memory-strike alex-triage "hardcoded model name"
+```
+Promotions queue in `state/memory-map.md`; a strike snapshots the previous MEMORY.md first.
 
 **Coworker → coworker / Slack / GitHub.** One `ask` tool with
 `to="manager"` · `to="coworker:sam"` · `to="slack:#triage"` ·
@@ -375,7 +384,7 @@ Hermes/OpenClaw (SOUL/USER/MEMORY files, skills, dreams), ElizaOS
 ## Tests
 
 ```bash
-npm test              # 735 tests, ~3s
+npm test              # 782 tests, ~3s
 npm run test:cov      # 97.9% lines · 95.9% statements · 97.5% functions · 91.2% branches
 ```
 
