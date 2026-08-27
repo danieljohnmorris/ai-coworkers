@@ -44,6 +44,17 @@ export function openEvents(dbPath: string): DatabaseSync {
     );
     CREATE INDEX IF NOT EXISTS ix_events_ts ON events(ts);
     CREATE INDEX IF NOT EXISTS ix_events_kind ON events(kind);
+
+    -- AIC-127 cold storage: the reflect ritual moves events older than the
+    -- retention window here instead of deleting them. Same columns and id
+    -- primary key as events (ids are carried over, never regenerated).
+    CREATE TABLE IF NOT EXISTS events_archive (
+      id INTEGER PRIMARY KEY,
+      ts TEXT NOT NULL,
+      coworker TEXT NOT NULL,
+      kind TEXT NOT NULL,
+      payload TEXT NOT NULL
+    );
   `);
   return db;
 }

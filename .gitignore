@@ -22,3 +22,7 @@ token.json
 dist/
 
 coverage/
+
+# Python bytecode (contrib/ has some .py files)
+__pycache__/
+*.pyc

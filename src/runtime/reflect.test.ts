@@ -1,5 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { dreamOnce } from "./reflect.ts";
+import { initEpisodic } from "./episodic.ts";
+import type { DatabaseSync } from "node:sqlite";
+import type { SemanticMemory } from "./semantic.ts";
 import { openEvents, Log } from "./log.ts";
 import { openMemory } from "./memory.ts";
 import { openSemantic } from "./semantic.ts";
@@ -91,5 +94,140 @@ describe("dreamOnce", () => {
     });
     expect(r.promoted).toBe(false);
     expect(r.reason).toMatch(/llm error/);
+  });
+});
+
+describe("dreamOnce prune archival (AIC-127)", () => {
+  const oldTs = new Date(Date.now() - 60 * 86400_000).toISOString();
+
+  interface PruneCtx {
+    events: DatabaseSync;
+    memory: DatabaseSync;
+    semantic: SemanticMemory;
+  }
+
+  function setup(): PruneCtx {
+    const events = openEvents(join(dir, "e.db"));
+    initEpisodic(events);
+    return {
+      events,
+      memory: openMemory(join(dir, "m.db")),
+      semantic: openSemantic(join(dir, "MEMORY.md")),
+    };
+  }
+
+  function insert(events: DatabaseSync, ts: string, kind: string, payload = "{}") {
+    events.prepare("INSERT INTO events (ts, coworker, kind, payload) VALUES (?, 't', ?, ?)")
+      .run(ts, kind, payload);
+  }
+
+  async function dream(ctx: PruneCtx) {
+    llm.respondWith({ learnings: "- I noticed a pattern in old tickets", rollup: "week rollup" });
+    return dreamOnce({ role, ...ctx, llm: llm.llm, log: new Log(ctx.events, "t") });
+  }
+
+  it("archives rows older than the cutoff instead of deleting them", async () => {
+    const ctx = setup();
+    insert(ctx.events, oldTs, "action", JSON.stringify({ stale: true }));
+    insert(ctx.events, new Date().toISOString(), "action", JSON.stringify({ fresh: true }));
+    const r = await dream(ctx);
+    expect(typeof r.prunedRows).toBe("number");
+    expect(r.prunedRows).toBe(1);
+    expect(r.archivedRows).toBe(1);
+    const archived = ctx.events.prepare("SELECT ts, kind, payload FROM events_archive").all() as { payload: string }[];
+    expect(archived).toHaveLength(1);
+    expect(archived[0].payload).toContain("stale");
+    // The stale row is gone from the hot table; the fresh one survives.
+    const hot = ctx.events.prepare("SELECT payload FROM events WHERE kind = 'action'").all() as { payload: string }[];
+    expect(hot.some((h) => h.payload.includes("stale"))).toBe(false);
+    expect(hot.some((h) => h.payload.includes("fresh"))).toBe(true);
+  });
+
+  it("never prunes or archives ritual.run and note events", async () => {
+    const ctx = setup();
+    insert(ctx.events, oldTs, "ritual.run", JSON.stringify({ name: "reflect.weekly" }));
+    insert(ctx.events, oldTs, "note", JSON.stringify({ body: "keep me" }));
+    insert(ctx.events, new Date().toISOString(), "action", "{}");
+    const r = await dream(ctx);
+    expect(r.prunedRows).toBe(0);
+    expect(r.archivedRows).toBe(0);
+    expect(ctx.events.prepare("SELECT COUNT(*) AS n FROM events_archive").get()).toMatchObject({ n: 0 });
+    const kinds = (ctx.events.prepare("SELECT kind FROM events").all() as { kind: string }[]).map((k) => k.kind);
+    expect(kinds).toContain("ritual.run");
+    expect(kinds).toContain("note");
+  });
+
+  it("is idempotent — a row already archived by a crashed prune is not duplicated", async () => {
+    const ctx = setup();
+    insert(ctx.events, oldTs, "action", JSON.stringify({ stale: true }));
+    // Simulate a crash between archive-insert and hot-delete: the row already
+    // sits in the archive but still exists in the hot table.
+    ctx.events.exec(`INSERT INTO events_archive (id, ts, coworker, kind, payload)
+                     SELECT id, ts, coworker, kind, payload FROM events WHERE kind = 'action'`);
+    insert(ctx.events, new Date().toISOString(), "action", "{}");
+    const r = await dream(ctx);
+    expect(r.prunedRows).toBe(1);
+    expect(r.archivedRows).toBe(0); // INSERT OR IGNORE skipped the duplicate
+    const archived = ctx.events.prepare("SELECT id FROM events_archive").all() as { id: number }[];
+    expect(archived).toHaveLength(1);
+  });
+
+  it("keeps FTS consistent: archived ids leave events_fts, hot ids remain", async () => {
+    const ctx = setup();
+    insert(ctx.events, oldTs, "action", JSON.stringify({ ticket: "ILO-777" }));
+    insert(ctx.events, new Date().toISOString(), "action", JSON.stringify({ ticket: "ILO-888" }));
+    await dream(ctx);
+    // node:sqlite rows are untyped Records; the SELECT fixes the shape.
+    const archivedRow = ctx.events.prepare("SELECT id FROM events_archive").get() as { id: number };
+    const archivedId = archivedRow.id;
+    const ftsIds = (ctx.events.prepare("SELECT event_id FROM events_fts").all() as { event_id: number | string }[])
+      .map((r) => Number(r.event_id));
+    expect(ftsIds).not.toContain(Number(archivedId));
+    const hotRow = ctx.events.prepare("SELECT id FROM events WHERE payload LIKE '%ILO-888%'").get() as { id: number };
+    const hotId = hotRow.id;
+    expect(ftsIds).toContain(Number(hotId));
+  });
+
+  it("rolls back and keeps hot rows when the archive insert fails", async () => {
+    const ctx = setup();
+    insert(ctx.events, oldTs, "action", JSON.stringify({ stale: true }));
+    insert(ctx.events, new Date().toISOString(), "action", "{}");
+    ctx.events.exec("DROP TABLE events_archive");
+    const r = await dream(ctx);
+    // Prune failed but the dream itself still completes; nothing was lost.
+    expect(r.prunedRows).toBe(0);
+    expect(r.archivedRows).toBe(0);
+    const stale = ctx.events.prepare("SELECT COUNT(*) AS n FROM events WHERE payload LIKE '%stale%'").get() as { n: number };
+    expect(stale.n).toBe(1);
+  });
+
+  it("records but does not throw when the WAL checkpoint fails", async () => {
+    const ctx = setup();
+    insert(ctx.events, oldTs, "action", JSON.stringify({ stale: true }));
+    insert(ctx.events, new Date().toISOString(), "action", "{}");
+    // Wrap the real db so only the checkpoint PRAGMA blows up; native methods
+    // must stay bound to the real DatabaseSync instance.
+    const proxied = new Proxy(ctx.events, {
+      get(target, prop) {
+        if (prop === "exec") {
+          return (sql: string) => {
+            if (sql.includes("wal_checkpoint")) throw new Error("checkpoint boom");
+            return target.exec(sql);
+          };
+        }
+        const v = Reflect.get(target, prop, target);
+        return typeof v === "function" ? v.bind(target) : v;
+      },
+    });
+    // Structurally identical wrapper around a real DatabaseSync — cast is safe.
+    const poisoned = proxied as unknown as DatabaseSync;
+    llm.respondWith({ learnings: "- I noticed a pattern in old tickets", rollup: "week rollup" });
+    const r = await dreamOnce({
+      role, events: poisoned, memory: ctx.memory, semantic: ctx.semantic,
+      llm: llm.llm, log: new Log(ctx.events, "t"),
+    });
+    // Archive + delete already committed before the checkpoint failed.
+    expect(r.prunedRows).toBe(1);
+    expect(r.archivedRows).toBe(1);
   });
 });
