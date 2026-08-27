@@ -82,6 +82,9 @@ async function main() {
   coworkerEnv.MAX_TOOLS_PER_TICK = String(coworkerConfig.max_tools_per_tick);
   coworkerEnv.PII_MASK = coworkerConfig.pii_mask ? "1" : "";
   coworkerEnv.NOTE_REQUIRE_SIGNED = coworkerConfig.note_require_signed ? "1" : "";
+  // AIC-131 — trust ladder for MEMORY.md promotions; read by the reflect
+  // ritual dispatch in tick.ts.
+  coworkerEnv.MEMORY_PROMOTIONS = coworkerConfig.memory_promotions;
   // A few call sites still read process.env directly (inbox.ts, tick.ts).
   // Mirror the config-resolved value there so config.json actually takes
   // effect for those paths without a wider refactor.

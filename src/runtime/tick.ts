@@ -24,6 +24,7 @@ import { loadRituals, type RitualAction, type RitualSpec } from "./rituals_loade
 import { dreamOnce } from "./reflect.ts";
 import { auditRoleDocs } from "./role_audit.ts";
 import { filterEnvForTool } from "./credentials.ts";
+import { parseMemoryPromotions } from "./coworker_config.ts";
 import { triage } from "./triage.ts";
 import { rateLimitRemaining, recordRateLimit, retryAfterFrom, activeRateLimits } from "./rate_limits.ts";
 import { maskDeep, unmask, newMaskTable } from "./pii_mask.ts";
@@ -565,6 +566,12 @@ async function dispatchRitual(action: RitualAction, ctx: TickContext): Promise<v
         semantic: ctx.semantic,
         llm: ctx.llm,
         log: ctx.log,
+        // AIC-131 — MEMORY_PROMOTIONS=gated queues every promotion for the
+        // owner instead of applying it in-ritual (config.json
+        // memory_promotions, reflected into the coworker env by index.ts).
+        opts: {
+          memoryPromotions: parseMemoryPromotions((ctx.env ?? process.env).MEMORY_PROMOTIONS),
+        },
       });
       return;
 

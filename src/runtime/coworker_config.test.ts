@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { mkdtempSync, writeFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { loadCoworkerConfig, _resetWarnedKeysForTests } from "./coworker_config.ts";
+import { loadCoworkerConfig, parseMemoryPromotions, _resetWarnedKeysForTests } from "./coworker_config.ts";
 
 function tmpCoworker(): string {
   return mkdtempSync(join(tmpdir(), "cwcfg-"));
@@ -21,6 +21,7 @@ describe("loadCoworkerConfig", () => {
         max_tools_per_tick: 8,
         pii_mask: false,
         note_require_signed: false,
+        memory_promotions: "confident",
       });
     } finally { rmSync(dir, { recursive: true, force: true }); }
   });
@@ -54,6 +55,7 @@ describe("loadCoworkerConfig", () => {
         MAX_TOOLS_PER_TICK: "12",
         PII_MASK: "1",
         NOTE_REQUIRE_SIGNED: "1",
+        MEMORY_PROMOTIONS: "gated",
       }, { warn: (m) => warnings.push(m) });
       expect(cfg).toEqual({
         wake_mode: "tick",
@@ -61,8 +63,9 @@ describe("loadCoworkerConfig", () => {
         max_tools_per_tick: 12,
         pii_mask: true,
         note_require_signed: true,
+        memory_promotions: "gated",
       });
-      expect(warnings.filter((w) => w.includes("env fallback"))).toHaveLength(5);
+      expect(warnings.filter((w) => w.includes("env fallback"))).toHaveLength(6);
       // second call should not re-warn for the same key
       _resetWarnedKeysForTests();
     } finally { rmSync(dir, { recursive: true, force: true }); }
@@ -186,5 +189,30 @@ describe("loadCoworkerConfig", () => {
       writeFileSync(join(dir, "config.json"), JSON.stringify({ max_tools_per_tick: 0 }));
       expect(() => loadCoworkerConfig(dir, {})).toThrow(/max_tools_per_tick/);
     } finally { rmSync(dir, { recursive: true, force: true }); }
+  });
+
+  it("reads memory_promotions gated from config.json (AIC-131)", () => {
+    const dir = tmpCoworker();
+    try {
+      writeFileSync(join(dir, "config.json"), JSON.stringify({ memory_promotions: "gated" }));
+      const cfg = loadCoworkerConfig(dir, {});
+      expect(cfg.memory_promotions).toBe("gated");
+    } finally { rmSync(dir, { recursive: true, force: true }); }
+  });
+
+  it("rejects an unknown memory_promotions value", () => {
+    const dir = tmpCoworker();
+    try {
+      writeFileSync(join(dir, "config.json"), JSON.stringify({ memory_promotions: "vibes" }));
+      expect(() => loadCoworkerConfig(dir, {})).toThrow(/memory_promotions/);
+    } finally { rmSync(dir, { recursive: true, force: true }); }
+  });
+
+  it("parseMemoryPromotions: only the literal 'gated' gates; empty/garbage stays confident", () => {
+    expect(parseMemoryPromotions("gated")).toBe("gated");
+    expect(parseMemoryPromotions(undefined)).toBe("confident");
+    expect(parseMemoryPromotions("")).toBe("confident");
+    expect(parseMemoryPromotions("GATED")).toBe("confident"); // opt-in must be exact
+    expect(parseMemoryPromotions("nope")).toBe("confident");
   });
 });
