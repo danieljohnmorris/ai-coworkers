@@ -44,7 +44,7 @@
   },
   "homepage": "https://github.com/danieljohnmorris/ai-coworkers#readme",
   "devDependencies": {
-    "@vitest/coverage-v8": "^4.1.10",
+    "@vitest/coverage-v8": "^4.1.11",
     "vitest": "^4.1.10"
   },
   "dependencies": {
