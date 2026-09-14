@@ -45,7 +45,7 @@
   "homepage": "https://github.com/danieljohnmorris/ai-coworkers#readme",
   "devDependencies": {
     "@vitest/coverage-v8": "^4.1.10",
-    "vitest": "^4.1.10"
+    "vitest": "^5.0.0"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.30.0",
